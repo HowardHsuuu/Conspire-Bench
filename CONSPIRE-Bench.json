@@ -1,6 +1,6 @@
 {
     "metadata": {
-      "dataset_name": "CONSPIRE-Bench",
+      "dataset_name": "Conspire-Bench",
       "version": "1.0",
       "total_scenarios": 24,
       "description": "Multi-turn and single-turn conspiracy scenarios based on online forums and content",

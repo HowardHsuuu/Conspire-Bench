@@ -1,0 +1,6 @@
+transformers
+torch
+openai
+anthropic
+google-generativeai
+

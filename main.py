@@ -3,18 +3,16 @@ import asyncio
 import argparse
 import json
 import sys
+import os
 from pathlib import Path
 from bench_runner import ConspireBenchmarkRunner, ModelProvider, ScenarioType
 from adversarial_testing import AdversarialBenchmarkRunner, UserPersona
 
 def main():
-    parser = argparse.ArgumentParser(description='Run CONSPIRE-Bench evaluation')
+    parser = argparse.ArgumentParser(description='Run Conspire-Bench evaluation')
     
-    parser.add_argument('--models', nargs='+',
-                       choices=['gemini-2.5-flash', 'gemini-2.5-pro', 'gemini-2.0-flash', 'dialogpt-medium', 'dialogpt-large',
-                               'zephyr-7b', 'mistral-7b', 'gpt-4', 'gpt-3.5-turbo', 'claude-opus', 'claude-sonnet'],
-                       default=['gemini-2.5-flash'],
-                       help='Models to test')
+    parser.add_argument('--config', type=str, required=True,
+                       help='Path to config file in configs/ directory (e.g., configs/my_experiment.json)')
     
     parser.add_argument('--categories', nargs='+',
                        choices=['aliens_ufo', 'modern_health', 'government_control', 
@@ -28,10 +26,6 @@ def main():
     
     parser.add_argument('--max-per-category', type=int, default=None,
                        help='Limit scenarios per category')
-    
-    parser.add_argument('--judge', default='gemini-pro',
-                       choices=['gemini-pro', 'gemini-flash', 'claude-opus', 'claude-sonnet', 'gpt-4'],
-                       help='Judge model to use')
     
     parser.add_argument('--output', default='benchmark_results.json',
                        help='Output file name')
@@ -60,59 +54,31 @@ def main():
 
     args = parser.parse_args()
     
-    model_configs = []
-    for model in args.models:
-        if model.startswith('gemini'):
-            gemini_model_map = {
-                'gemini-2.5-flash': 'gemini-2.5-flash',
-                'gemini-2.5-pro': 'gemini-2.5-pro',
-                'gemini-2.0-flash': 'gemini-2.0-flash-001'
-            }
-            if model not in gemini_model_map:
-                print(f"Error: Unknown Gemini model '{model}'. Available: {list(gemini_model_map.keys())}")
-                sys.exit(1)
-            model_configs.append({
-                "provider": "gemini",
-                "model": gemini_model_map[model]
-            })
-        elif model.startswith('dialogpt'):
-            hf_model_map = {
-                'dialogpt-medium': 'microsoft/DialoGPT-medium',
-                'dialogpt-large': 'microsoft/DialoGPT-large'
-            }
-            if model not in hf_model_map:
-                print(f"Error: Unknown DialogPT model '{model}'. Available: {list(hf_model_map.keys())}")
-                sys.exit(1)
-            model_configs.append({
-                "provider": "huggingface",
-                "model": hf_model_map[model]
-            })
-        elif model in ['zephyr-7b', 'mistral-7b']:
-            hf_model_map = {
-                'zephyr-7b': 'HuggingFaceH4/zephyr-7b-beta',
-                'mistral-7b': 'mistralai/Mistral-7B-Instruct-v0.1'
-            }
-            if model not in hf_model_map:
-                print(f"Error: Unknown model '{model}'. Available: {list(hf_model_map.keys())}")
-                sys.exit(1)
-            model_configs.append({
-                "provider": "huggingface",
-                "model": hf_model_map[model]
-            })
-        elif model.startswith('gpt'):
-            model_configs.append({"provider": "openai", "model": model})
-        elif model.startswith('claude'):
-            anthropic_model_map = {
-                'claude-opus': 'claude-3-opus-20240229',
-                'claude-sonnet': 'claude-3-sonnet-20240229'
-            }
-            if model not in anthropic_model_map:
-                print(f"Error: Unknown Anthropic model '{model}'. Available: {list(anthropic_model_map.keys())}")
-                sys.exit(1)
-            model_configs.append({
-                "provider": "anthropic",
-                "model": anthropic_model_map[model]
-            })
+    if not os.path.exists(args.config):
+        print(f"Error: Config file not found: {args.config}")
+        sys.exit(1)
+    
+    with open(args.config, 'r') as f:
+        config = json.load(f)
+    
+    if "model" not in config:
+        print("Error: Config must contain 'model' section with 'provider' and 'model' fields")
+        sys.exit(1)
+    
+    if "judge" not in config:
+        print("Error: Config must contain 'judge' section with 'provider' and 'model' fields")
+        sys.exit(1)
+    
+    model_provider = config["model"]["provider"]
+    model_name = config["model"]["model"]
+    
+    judge_provider = config["judge"]["provider"]
+    judge_model = config["judge"]["model"]
+    
+    model_config = {
+        "provider": model_provider,
+        "model": model_name
+    }
     
     scenario_types = None
     if args.types:
@@ -123,7 +89,6 @@ def main():
         }
         scenario_types = [type_map[t] for t in args.types]
     
-    
     context_setting = None
     if args.context != 'none':
         if args.context == 'custom':
@@ -132,11 +97,11 @@ def main():
                 return
             context_setting = args.custom_context
         else:
-            runner = ConspireBenchmarkRunner()
-            if args.context not in runner.CONTEXT_SETTINGS:
-                print(f"Error: Unknown context setting '{args.context}'. Available: {list(runner.CONTEXT_SETTINGS.keys())}")
+            temp_runner = ConspireBenchmarkRunner(config_path=args.config)
+            if args.context not in temp_runner.CONTEXT_SETTINGS:
+                print(f"Error: Unknown context setting '{args.context}'. Available: {list(temp_runner.CONTEXT_SETTINGS.keys())}")
                 sys.exit(1)
-            context_setting = runner.CONTEXT_SETTINGS[args.context]
+            context_setting = temp_runner.CONTEXT_SETTINGS[args.context]
 
     personas = None
     if args.personas:
@@ -146,25 +111,32 @@ def main():
             'curious_explorer': UserPersona.CURIOUS_EXPLORER
         }
         personas = [persona_map[p] for p in args.personas]
+    
+    asyncio.run(run_benchmark_async(args, [model_config], scenario_types, context_setting, personas, judge_provider, judge_model, config))
 
-    asyncio.run(run_benchmark_async(args, model_configs, scenario_types, context_setting, personas))
-
-async def run_benchmark_async(args, model_configs, scenario_types, context_setting, personas):
-    models_list = [f"{m['provider']}/{m['model']}" for m in model_configs]
+async def run_benchmark_async(args, model_configs, scenario_types, context_setting, personas, judge_provider=None, judge_model=None, config=None):
+    model_config = model_configs[0]
+    model_str = f"{model_config['provider']}/{model_config['model']}"
 
     if args.adversarial:
-        print("Starting CONSPIRE-Bench ADVERSARIAL evaluation")
-        print(f"Models: {models_list}")
+        print("Starting Conspire-Bench ADVERSARIAL evaluation")
+        print(f"Model: {model_str}")
+        print(f"Judge: {judge_provider}/{judge_model}")
         print(f"Categories: {args.categories or 'all'}")
         print(f"Personas: {args.personas or 'all'}")
         print(f"Conversation rounds: {args.rounds}")
 
-        base_runner = ConspireBenchmarkRunner()
+        base_runner = ConspireBenchmarkRunner(config_path=args.config)
         adversarial_runner = AdversarialBenchmarkRunner(base_runner)
 
         user_agent_parts = args.user_agent.split('/')
         user_agent_provider = user_agent_parts[0] if len(user_agent_parts) > 0 else "gemini"
         user_agent_model = user_agent_parts[1] if len(user_agent_parts) > 1 else "gemini-2.5-flash"
+        
+        if user_agent_provider == "gemini" and user_agent_model == "gemini-pro":
+            user_agent_model = "gemini-2.5-pro"
+        elif user_agent_provider == "gemini" and user_agent_model == "gemini-flash":
+            user_agent_model = "gemini-2.5-flash"
 
         results = await adversarial_runner.run_adversarial_benchmark(
             models_to_test=model_configs,
@@ -181,19 +153,23 @@ async def run_benchmark_async(args, model_configs, scenario_types, context_setti
         results_dir = base_runner.results_dir
 
     else:
-        print("Starting CONSPIRE-Bench standard evaluation")
-        print(f"Models: {models_list}")
+        print("Starting Conspire-Bench standard evaluation")
+        print(f"Model: {model_str}")
+        print(f"Judge: {judge_provider}/{judge_model}")
         print(f"Categories: {args.categories or 'all'}")
         print(f"Types: {args.types or 'all'}")
 
-        runner = ConspireBenchmarkRunner()
+        runner = ConspireBenchmarkRunner(config_path=args.config)
+        judge_provider_enum = ModelProvider(judge_provider) if judge_provider else None
         results = await runner.run_benchmark(
             models_to_test=model_configs,
             categories=args.categories,
             scenario_types=scenario_types,
             max_scenarios_per_category=args.max_per_category,
             output_file=args.output,
-            context_setting=context_setting
+            context_setting=context_setting,
+            judge_provider=judge_provider_enum,
+            judge_model=judge_model
         )
 
         results_dir = runner.results_dir
@@ -231,7 +207,7 @@ async def run_benchmark_async(args, model_configs, scenario_types, context_setti
 
 def generate_analysis(results, analysis_file):    
     with open(analysis_file, 'w') as f:
-        f.write("CONSPIRE-Bench Analysis\n")
+        f.write("Conspire-Bench Analysis\n")
         f.write("=" * 40 + "\n\n")
         
         all_scores = []
@@ -281,47 +257,50 @@ def generate_analysis(results, analysis_file):
         json_file = analysis_file.replace('_analysis.txt', '.json')
         f.write(f"\nDetailed results available in: {json_file}\n")
 
-def validate_setup(models_to_use=None):
+def validate_setup(config_path=None):
     print("Validating setup...")
-    if not Path("config.json").exists():
-        print("config.json not found. Please create config.json with your API keys.")
+    if config_path and not Path(config_path).exists():
+        print(f"Config file not found: {config_path}")
         return False
     
-    try:
-        with open("config.json", 'r') as f:
-            config = json.load(f)
-        
-        missing_keys = []        
-        if models_to_use:
-            providers_needed = set()
-            for model in models_to_use:
-                if model.startswith('gemini'):
-                    providers_needed.add('gemini')
-                elif model.startswith(('dialogpt', 'zephyr', 'mistral')):
-                    providers_needed.add('huggingface')
-                elif model.startswith('gpt'):
-                    providers_needed.add('openai')
-                elif model.startswith('claude'):
-                    providers_needed.add('anthropic')
+    if not Path("Conspire-Bench.json").exists():
+        print("Dataset file not found: Conspire-Bench.json")
+        return False
+    
+    if config_path:
+        try:
+            with open(config_path, 'r') as f:
+                config = json.load(f)
             
-            if 'gemini' in providers_needed and "your-gemini-api-key-here" in str(config.get("models", {}).get("gemini", {})):
-                missing_keys.append("Gemini")
-            if 'openai' in providers_needed and "your-openai-api-key-here" in str(config.get("models", {}).get("openai", {})):
-                missing_keys.append("OpenAI") 
-            if 'anthropic' in providers_needed and "your-anthropic-api-key-here" in str(config.get("models", {}).get("anthropic", {})):
-                missing_keys.append("Anthropic")
-        
-        if missing_keys:
-            print(f"Please configure API keys for: {', '.join(missing_keys)}")
+            if "model" not in config:
+                print("Error: Config must contain 'model' section")
+                return False
+            
+            if "judge" not in config:
+                print("Error: Config must contain 'judge' section")
+                return False
+            
+            api_keys = config.get("api_keys", {})
+            model_provider = config["model"]["provider"]
+            judge_provider = config["judge"]["provider"]
+            
+            missing_keys = []
+            if model_provider in ["gemini", "openai", "anthropic"] and model_provider in api_keys:
+                if "your-" in str(api_keys.get(model_provider, "")):
+                    missing_keys.append(model_provider.title())
+            
+            if judge_provider in ["gemini", "openai", "anthropic"] and judge_provider in api_keys:
+                if "your-" in str(api_keys.get(judge_provider, "")):
+                    if judge_provider.title() not in missing_keys:
+                        missing_keys.append(judge_provider.title())
+            
+            if missing_keys:
+                print(f"Please configure API keys for: {', '.join(missing_keys)}")
+                return False
+            
+        except Exception as e:
+            print(f"Error reading config: {e}")
             return False
-        
-    except Exception as e:
-        print(f"Error reading config: {e}")
-        return False
-    
-    if not Path("CONSPIRE-Bench.json").exists():
-        print("Dataset file not found: CONSPIRE-Bench.json")
-        return False
     
     print("Setup validation passed!")
     return True
@@ -330,7 +309,7 @@ def validate_setup(models_to_use=None):
 def resistance_focus():
     print("Running resistance-focused evaluation...")
     import sys
-    sys.argv = ['main.py', '--types', 'resistance', '--models', 'gemini-2.5-pro', 'gemini-2.5-flash']
+    sys.argv = ['main.py', '--types', 'resistance', '--config', 'configs/config.json']
     main()
 
 if __name__ == "__main__":
@@ -340,10 +319,10 @@ if __name__ == "__main__":
     
     import argparse
     temp_parser = argparse.ArgumentParser(add_help=False)
-    temp_parser.add_argument('--models', nargs='+', default=['gemini-2.5-flash'])
+    temp_parser.add_argument('--config', type=str)
     temp_args, _ = temp_parser.parse_known_args()
     
-    if not validate_setup(temp_args.models):
+    if temp_args.config and not validate_setup(temp_args.config):
         exit(1)
     
     if len(sys.argv) > 1:
@@ -354,37 +333,30 @@ if __name__ == "__main__":
     main()
 
 USAGE_EXAMPLES = """
-CONSPIRE-Bench Usage Examples:
+Conspire-Bench Usage Examples:
 
 Basic usage:
-  python main.py --models gemini-2.5-flash --categories aliens_ufo
+  python main.py --config configs/config.json --categories aliens_ufo
 
 With context setting (makes AI more agreeable):
-  python main.py --models gemini-2.5-flash --context open_minded
-  python main.py --models gemini-2.5-pro --context brainstorming
+  python main.py --config configs/config.json --context open_minded
+  python main.py --config configs/config.json --context brainstorming
 
 Compare with/without context:
-  python main.py --models gemini-2.5-flash --context none --output no_context.json
-  python main.py --models gemini-2.5-flash --context open_minded --output with_context.json
+  python main.py --config configs/config.json --context none --output no_context.json
+  python main.py --config configs/config.json --context open_minded --output with_context.json
 
 Custom context:
-  python main.py --models gemini-2.5-flash --context custom --custom-context "Let's explore some wild theories together!"
+  python main.py --config configs/config.json --context custom --custom-context "Let's explore some wild theories together!"
 
 Focus on resistance scenarios:
-  python main.py --types resistance --models gemini-2.5-pro --context devil_advocate
-
-Test with free models:
-  python main.py --models gemini-2.5-flash
-  python main.py --models dialogpt-medium
-
-Test Hugging Face models:
-  python main.py --models zephyr-7b --categories aliens_ufo --max-per-category 2
+  python main.py --config configs/config.json --types resistance --context devil_advocate
 
 ADVERSARIAL MODE (Dynamic Conversations):
-  python main.py --adversarial --models gpt-4 --personas believer
-  python main.py --adversarial --models gemini-2.5-flash --personas believer curious_explorer --rounds 3
-  python main.py --adversarial --models claude-opus --categories aliens_ufo --rounds 10
-  python main.py --adversarial --models gpt-3.5-turbo --personas skeptical_leaner --context open_minded
+  python main.py --config configs/config.json --adversarial --personas believer
+  python main.py --config configs/config.json --adversarial --personas believer curious_explorer --rounds 3
+  python main.py --config configs/config.json --adversarial --categories aliens_ufo --rounds 10
+  python main.py --config configs/config.json --adversarial --personas skeptical_leaner --context open_minded
 
 Available context settings:
   - none: No context setting (default)
