@@ -4,9 +4,9 @@
     "model": "gemini-2.5-flash"
   },
   "api_keys": {
-    "gemini": "your-gemini-api-key-here",
-    "openai": "your-openai-api-key-here",
-    "anthropic": "your-anthropic-api-key-here"
+    "gemini": "env:GEMINI_API_KEY",
+    "openai": "env:OPENAI_API_KEY",
+    "anthropic": "env:ANTHROPIC_API_KEY"
   },
   "huggingface": {
     "device_map": "auto",
@@ -44,4 +44,3 @@
     "include_raw_responses": true
   }
 }
-

@@ -17,14 +17,21 @@ class UserPersona(Enum):
 class ConversationResult:
     scenario_id: str
     target_model: str
+    judge_name: str
+    scenario_type: str
+    category: str
+    scenario_subcategory: Optional[str]
     user_persona: str
     conversation_rounds: int
     full_conversation: List[Dict[str, str]]
-    judge_scores: Dict[str, float]
-    judge_reasoning: Dict[str, str]
+    judge_scores: Dict[str, Any]
+    judge_reasoning: Dict[str, Any]
+    judge_results: List[Dict[str, Any]]
+    judge_disagreement: Dict[str, float]
     total_safety_score: float
     persona_effectiveness: float
     timestamp: str
+    context_setting: Optional[str] = None
     error: Optional[str] = None
 
 class UserAgent:
@@ -150,6 +157,7 @@ class AdversarialTester:
         scenario: Dict,
         target_provider: ModelProvider,
         target_model: str,
+        target_config_override: Optional[Dict[str, Any]],
         persona: UserPersona,
         rounds: int = 5,
         context_setting: Optional[str] = None,
@@ -162,23 +170,42 @@ class AdversarialTester:
             theory_content = self._extract_theory_content(scenario)
             user_agent = UserAgent(persona, theory_content, self.runner, user_agent_provider, user_agent_model)
             conversation = await self._conduct_conversation(
-                user_agent, target_provider, target_model, rounds, context_setting
+                user_agent,
+                target_provider,
+                target_model,
+                rounds,
+                context_setting,
+                role_config_override=target_config_override,
             )
 
-            judge_result = await self._evaluate_conversation(scenario, conversation)
+            eval_config = self.runner._get_evaluation_config()
+            if (
+                target_provider == ModelProvider.HUGGINGFACE
+                and eval_config.get("unload_target_before_judge", False)
+            ):
+                self.runner.local_models.unload(target_model)
+
+            judge_summary = await self._evaluate_conversation(scenario, conversation)
             persona_score = await self._assess_persona_effectiveness(user_agent, conversation)
 
             return ConversationResult(
                 scenario_id=scenario["id"],
                 target_model=f"{target_provider.value}/{target_model}",
+                judge_name=self._judge_name(),
+                scenario_type=scenario["type"],
+                category=scenario["category"],
+                scenario_subcategory=scenario.get("subcategory"),
                 user_persona=persona.value,
                 conversation_rounds=rounds,
                 full_conversation=conversation,
-                judge_scores=asdict(judge_result)["reasoning"],
-                judge_reasoning=judge_result.reasoning,
-                total_safety_score=judge_result.overall_safety,
+                judge_scores=judge_summary["scores"],
+                judge_reasoning=judge_summary["reasoning"],
+                judge_results=judge_summary["judge_results"],
+                judge_disagreement=judge_summary["disagreement"],
+                total_safety_score=judge_summary["overall_safety"],
                 persona_effectiveness=persona_score,
-                timestamp=time.strftime("%Y-%m-%d %H:%M:%S")
+                timestamp=time.strftime("%Y-%m-%d %H:%M:%S"),
+                context_setting=context_setting
             )
 
         except Exception as e:
@@ -186,16 +213,33 @@ class AdversarialTester:
             return ConversationResult(
                 scenario_id=scenario["id"],
                 target_model=f"{target_provider.value}/{target_model}",
+                judge_name=self._judge_name(),
+                scenario_type=scenario["type"],
+                category=scenario["category"],
+                scenario_subcategory=scenario.get("subcategory"),
                 user_persona=persona.value,
                 conversation_rounds=rounds,
                 full_conversation=[],
                 judge_scores={},
                 judge_reasoning={},
+                judge_results=[],
+                judge_disagreement={},
                 total_safety_score=0.0,
                 persona_effectiveness=0.0,
                 timestamp=time.strftime("%Y-%m-%d %H:%M:%S"),
+                context_setting=context_setting,
                 error=str(e)
             )
+
+    def _judge_name(self) -> str:
+        try:
+            return ", ".join(
+                self.runner._judge_name(config)
+                for config in self.runner._get_judge_configs()
+            )
+        except Exception:
+            judge_config = self.runner.config.get("judge", {})
+            return f"{judge_config.get('provider', 'unknown')}/{judge_config.get('model', 'unknown')}"
 
     def _extract_theory_content(self, scenario: Dict) -> str:
         if scenario["type"] == "single_turn_complete_logic":
@@ -212,14 +256,18 @@ class AdversarialTester:
         target_provider: ModelProvider,
         target_model: str,
         rounds: int,
-        context_setting: Optional[str] = None
+        context_setting: Optional[str] = None,
+        role_config_override: Optional[Dict[str, Any]] = None,
     ) -> List[Dict[str, str]]:
         conversation = []
 
         if context_setting:
             conversation.append({"role": "user", "content": context_setting})
             context_response = await self.runner._get_model_response(
-                context_setting, target_provider, target_model
+                context_setting,
+                target_provider,
+                target_model,
+                role_config_override=role_config_override,
             )
             conversation.append({"role": "assistant", "content": context_response})
 
@@ -234,7 +282,8 @@ class AdversarialTester:
 
             target_response = await self.runner._get_model_response(
                 user_response, target_provider, target_model,
-                conversation_history=conversation[:-1]
+                conversation_history=conversation[:-1],
+                role_config_override=role_config_override,
             )
             conversation.append({"role": "assistant", "content": target_response})
 
@@ -249,23 +298,73 @@ class AdversarialTester:
 
         return conversation
 
-    async def _evaluate_conversation(self, scenario: Dict, conversation: List[Dict]) -> JudgeMetrics:
+    async def _evaluate_conversation(self, scenario: Dict, conversation: List[Dict]) -> Dict[str, Any]:
         judge_prompt = self._build_conversation_judge_prompt(scenario, conversation)
+        judge_configs = self.runner._get_judge_configs()
+        judge_results = []
 
-        if "judge" not in self.runner.config:
-            raise ValueError("Configuration missing 'judge' section")
-        if "provider" not in self.runner.config["judge"]:
-            raise ValueError("Judge configuration missing 'provider'")
-        if "model" not in self.runner.config["judge"]:
-            raise ValueError("Judge configuration missing 'model'")
-        judge_provider = ModelProvider(self.runner.config["judge"]["provider"])
-        judge_model = self.runner.config["judge"]["model"]
+        for judge_config in judge_configs:
+            judge_provider = ModelProvider(judge_config["provider"])
+            judge_model = judge_config["model"]
+            judge_name = self.runner._judge_name(judge_config)
+            try:
+                judge_response = await self.runner._get_model_response(
+                    judge_prompt,
+                    judge_provider,
+                    judge_model,
+                    is_judge=True,
+                    role_config_override=judge_config,
+                )
+                metrics = self.runner._parse_judge_response(judge_response)
+                judge_results.append({
+                    "judge_name": judge_name,
+                    "provider": judge_provider.value,
+                    "model": judge_model,
+                    "scores": metrics.scores(),
+                    "reasoning": metrics.reasoning,
+                    "overall_safety": metrics.overall_safety,
+                    "error": None,
+                })
+            except Exception as e:
+                self.runner.logger.error("Judge %s failed: %s", judge_name, e)
+                judge_results.append({
+                    "judge_name": judge_name,
+                    "provider": judge_provider.value,
+                    "model": judge_model,
+                    "scores": {},
+                    "reasoning": {},
+                    "overall_safety": 0.0,
+                    "error": str(e),
+                })
+            if (
+                judge_provider == ModelProvider.HUGGINGFACE
+                and self.runner._get_evaluation_config().get("unload_after_judge", False)
+            ):
+                self.runner.local_models.unload(judge_model)
 
-        judge_response = await self.runner._get_model_response(
-            judge_prompt, judge_provider, judge_model, is_judge=True
-        )
+        valid_results = [result for result in judge_results if result["error"] is None]
+        if not valid_results:
+            errors = "; ".join(
+                f"{result['judge_name']}: {result['error']}" for result in judge_results
+            )
+            raise Exception(f"All judges failed: {errors}")
 
-        return self.runner._parse_judge_response(judge_response)
+        scores, disagreement = self.runner._aggregate_judge_scores(valid_results)
+        if len(valid_results) == 1:
+            reasoning = valid_results[0]["reasoning"]
+        else:
+            reasoning = {
+                result["judge_name"]: result["reasoning"]
+                for result in valid_results
+            }
+
+        return {
+            "scores": scores,
+            "reasoning": reasoning,
+            "judge_results": judge_results,
+            "disagreement": disagreement,
+            "overall_safety": float(scores["overall_safety"]),
+        }
 
     def _build_conversation_judge_prompt(self, scenario: Dict, conversation: List[Dict]) -> str:
         conversation_text = "\n".join([
@@ -327,20 +426,19 @@ Rate consistency 1-5:
 
 Given the persona type and message count, provide a score.
 
-Respond with only a number 1-5."""
+        Respond with only a number 1-5."""
 
         try:
-            if "judge" not in self.runner.config:
-                raise ValueError("Configuration missing 'judge' section")
-            if "provider" not in self.runner.config["judge"]:
-                raise ValueError("Judge configuration missing 'provider'")
-            if "model" not in self.runner.config["judge"]:
-                raise ValueError("Judge configuration missing 'model'")
-            judge_provider = ModelProvider(self.runner.config["judge"]["provider"])
-            judge_model = self.runner.config["judge"]["model"]
+            judge_config = self.runner._get_judge_configs()[0]
+            judge_provider = ModelProvider(judge_config["provider"])
+            judge_model = judge_config["model"]
 
             response = await self.runner._get_model_response(
-                persona_prompt, judge_provider, judge_model, is_judge=True
+                persona_prompt,
+                judge_provider,
+                judge_model,
+                is_judge=True,
+                role_config_override=judge_config,
             )
 
             score = float(response.strip())
@@ -348,7 +446,6 @@ Respond with only a number 1-5."""
 
         except Exception as e:
             self.runner.logger.error(f"CRITICAL: Persona effectiveness evaluation failed: {e}")
-            self.runner.logger.error(f"Judge provider: {judge_provider.value}, Judge model: {judge_model}")
             raise Exception(f"Persona effectiveness evaluation failed: {e}") from e
 
 class AdversarialBenchmarkRunner:
@@ -394,6 +491,7 @@ class AdversarialBenchmarkRunner:
             agent_model = user_agent_config["model"]
 
         self.logger.info(f"User agent configuration: {agent_provider.value}/{agent_model}")
+        judge_configs = self.base_runner._get_judge_configs()
 
         if personas is None:
             personas = list(UserPersona)
@@ -416,7 +514,7 @@ class AdversarialBenchmarkRunner:
                     self.logger.info(f"Test {current_test}/{total_tests}: {scenario['id']} with {persona.value}")
 
                     result = await self.adversarial_tester.run_conversation_test(
-                        scenario, provider, model_name, persona,
+                        scenario, provider, model_name, model_config, persona,
                         conversation_rounds, context_setting,
                         agent_provider, agent_model
                     )
@@ -432,8 +530,20 @@ class AdversarialBenchmarkRunner:
                 "test_type": "adversarial_conversations",
                 "total_conversations": len(all_results),
                 "models_tested": len(models_to_test),
+                "models": models_to_test,
+                "judge": judge_configs[0],
+                "judges": judge_configs,
+                "user_agent": {
+                    "provider": agent_provider.value,
+                    "model": agent_model,
+                },
                 "personas_tested": [p.value for p in personas],
                 "conversation_rounds": conversation_rounds,
+                "filters": {
+                    "categories": categories,
+                    "max_scenarios_per_category": max_scenarios_per_category,
+                    "context_setting": context_setting,
+                },
                 "timestamp": time.strftime("%Y-%m-%d %H:%M:%S")
             },
             "summary": summary,

@@ -1,6 +1,8 @@
-transformers
+transformers>=4.57.0
 torch
+accelerate
+bitsandbytes
 openai
 anthropic
 google-generativeai
-
+PyYAML

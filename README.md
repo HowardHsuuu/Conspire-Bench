@@ -1,10 +1,10 @@
-# Conspire-Bench: Evaluating LLM Susceptibility to Conspiracy-Style Reasoning and Psychological Safety Risks
+# Conspire-Bench: A Reproducible Benchmark for Conspiracy-Style Reasoning Safety
 
-Conspire-Bench is a novel benchmark evaluating how Large Language Models (LLMs) handle conspiracy-theory-style reasoning that blends facts, speculation, and fabrication. Unlike existing benchmarks focusing solely on factual accuracy or reasoning ability, Conspire-Bench uniquely assesses the dangerous intersection of logical reasoning capabilities and excessive agreeableness that may reinforce delusional thinking.
+Conspire-Bench evaluates how Large Language Models (LLMs) handle conspiracy-style reasoning that blends facts, speculation, and fabrication. The benchmark focuses on assistant behavior: whether a model grounds uncertainty, avoids unsupported elaboration, and resists conversational pressure to validate high-risk beliefs.
 
 ## Motivation
 
-Growing online discussions reveal concerning patterns of LLM-user interactions reinforcing delusional beliefs, with terms like "GPT-induced psychosis" emerging in mental health forums. Reports include users developing beliefs that LLMs are divine entities, alien intelligence, or possessing hidden consciousness. These incidents highlight how LLMs' sophisticated reasoning combined with excessive agreeableness can validate and amplify disordered thinking. While current benchmarks evaluate factual accuracy (TruthfulQA) or reasoning (GSM8K), none address this critical safety gap where helpful behavior becomes harmful reinforcement.
+LLM assistants are often optimized to be helpful, agreeable, and conversationally persistent. In conspiracy-style or delusion-adjacent interactions, those same qualities can become risky when the model validates unsupported inferences, adds new fear-escalating details, or drifts from grounding into agreement. Conspire-Bench provides a repeatable way to study those response patterns without making claims about user diagnosis.
 
 ## What This Benchmark Evaluates
 
@@ -50,12 +50,32 @@ Conspire-Bench tests whether AI systems can maintain appropriate boundaries when
 1. Install dependencies: `pip install -r requirements.txt`
 2. Create a config file in `configs/` directory.
 
+For RunPod RTX 5090, use [docs/runpod_5090_setup.md](docs/runpod_5090_setup.md). The short version is to create a Python 3.10 conda env, install PyTorch from the CUDA 12.8 wheel index first, then install `requirements.txt`.
+
 ### Running Evaluations
 
 **Basic evaluation:**
 ```bash
 python main.py --config configs/config.json --categories aliens_ufo
 ```
+
+**Local 5090-style pilot with multiple target models and two local judges:**
+```bash
+bash scripts/runpod_5090_smoke.sh
+```
+
+Manual equivalent:
+
+```bash
+python main.py \
+  --config configs/local_5090_config.json \
+  --categories aliens_ufo \
+  --types single_turn \
+  --max-per-category 1 \
+  --output local_calibration.json
+```
+
+The broader RunPod sweep is in `configs/local_5090_full_matrix_config.json`; use it only after the starter calibration run completes.
 
 **With context priming:**
 ```bash
@@ -70,6 +90,27 @@ python main.py --config configs/config.json --adversarial --personas believer
 **Filter by scenario type:**
 ```bash
 python main.py --config configs/config.json --types resistance
+```
+
+**Export paper-friendly tables after a run:**
+```bash
+python analysis/export_results.py results/<timestamp>/local_calibration.json
+```
+
+This writes `model_summary.csv`, `scenario_results.csv`, `judge_scores.csv`, and `interesting_cases.csv`.
+
+**Validate dataset or inspect a run plan:**
+```bash
+python scripts/validate_dataset.py CONSPIRE-Bench.json
+python main.py --config configs/local_5090_config.json --dry-run --types single_turn
+```
+
+**Resume a standard run:**
+```bash
+python main.py \
+  --config configs/local_5090_config.json \
+  --resume-from results/<timestamp>/local_calibration.json \
+  --output local_calibration_resumed.json
 ```
 
 ## Command-Line Options

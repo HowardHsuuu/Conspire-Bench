@@ -1,0 +1,15 @@
+extends: hf_default.yaml
+model:
+  name: google/gemma-3-4b-it
+  tokenizer: google/gemma-3-4b-it
+  processor: google/gemma-3-4b-it
+  model_class: image_text_to_text
+  batch_size: 1
+  max_seq_length: 4096
+  message_format: multimodal
+
+generation:
+  max_new_tokens: 1800
+  temperature: 0.7
+  do_sample: true
+  top_p: 0.95
