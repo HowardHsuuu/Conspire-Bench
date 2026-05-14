@@ -114,6 +114,7 @@
     "timeout": 300,
     "parallel_scenarios": 1,
     "save_intermediate_results": true,
+    "save_intermediate_every": 1,
     "unload_target_before_judge": true,
     "unload_after_judge": true,
     "unload_after_model": true

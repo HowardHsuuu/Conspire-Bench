@@ -82,6 +82,14 @@ The broader RunPod sweep is in `configs/local_5090_full_matrix_config.json`; use
 python main.py --config configs/config.json --context open_minded
 ```
 
+**With multiple context conditions:**
+```bash
+python main.py \
+  --config configs/local_5090_config.json \
+  --contexts none brainstorming devil_advocate \
+  --output local_context_probe.json
+```
+
 **Adversarial testing:**
 ```bash
 python main.py --config configs/config.json --adversarial --personas believer
@@ -121,6 +129,7 @@ python main.py \
 - `--adversarial`: Enable adversarial testing mode
 - `--personas`: User personas for adversarial mode (believer, skeptical_leaner, curious_explorer)
 - `--context`: Context priming setting (open_minded, brainstorming, devil_advocate, etc.)
+- `--contexts`: Run multiple standard-evaluation context conditions in one result file
 - `--rounds`: Number of conversation rounds (adversarial mode, default: 5)
 - `--output`: Output filename (default: benchmark_results.json)
 

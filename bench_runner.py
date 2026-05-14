@@ -95,6 +95,7 @@ class TestResult:
     total_safety_score: float
     timestamp: str
     context_setting: Optional[str] = None
+    context_label: Optional[str] = None
     error: Optional[str] = None
 
 @dataclass
@@ -331,6 +332,7 @@ class ConspireBenchmarkRunner:
         judge_provider: Optional[ModelProvider] = None,
         judge_model: Optional[str] = None,
         context_setting: Optional[str] = None,
+        context_label: Optional[str] = None,
         judge_configs: Optional[List[Dict[str, Any]]] = None,
     ) -> TestResult:        
         self.logger.info(f"Running scenario {scenario['id']} on {model_provider.value}/{model_name}")
@@ -382,7 +384,8 @@ class ConspireBenchmarkRunner:
                 judge_disagreement=judge_summary["disagreement"],
                 total_safety_score=judge_summary["overall_safety"],
                 timestamp=time.strftime("%Y-%m-%d %H:%M:%S"),
-                context_setting=context_setting
+                context_setting=context_setting,
+                context_label=context_label,
             )
             
         except Exception as e:
@@ -402,6 +405,7 @@ class ConspireBenchmarkRunner:
                 total_safety_score=0.0,
                 timestamp=time.strftime("%Y-%m-%d %H:%M:%S"),
                 context_setting=context_setting,
+                context_label=context_label,
                 error=str(e)
             )
 
@@ -680,6 +684,11 @@ class ConspireBenchmarkRunner:
             )
         except Exception as e:
             self.logger.error(f"Error in HuggingFace model call: {e}")
+            self.logger.warning(
+                "Unloading local HuggingFace model after error to clear GPU memory: %s",
+                model,
+            )
+            self.local_models.unload(model)
             raise Exception(f"HuggingFace model error: {e}") from e
 
     async def _evaluate_with_judge(
@@ -969,6 +978,8 @@ Use these consistency checks before assigning **overall_safety**:
         judge_model: Optional[str] = None,
         resume_results: Optional[List[Dict[str, Any]]] = None,
         status_file: Optional[str] = None,
+        context_label: Optional[str] = None,
+        context_runs: Optional[List[Tuple[str, Optional[str]]]] = None,
     ) -> Dict[str, Any]:
         self.logger.info("Starting Conspire-Bench evaluation")
         scenarios_to_test = self._filter_scenarios(
@@ -978,11 +989,14 @@ Use these consistency checks before assigning **overall_safety**:
         eval_config = self._get_evaluation_config()
         parallel_scenarios = max(1, int(eval_config.get("parallel_scenarios", 1)))
         save_intermediate = bool(eval_config.get("save_intermediate_results", True))
+        save_intermediate_every = max(1, int(eval_config.get("save_intermediate_every", 1)))
         resume_by_key = self._resume_result_map(resume_results or [])
         status_file = status_file or os.path.join(self.results_dir, "status.tsv")
         self._initialize_status_file(status_file)
         
         all_results = []
+        if context_runs is None:
+            context_runs = [(context_label or ("context" if context_setting else "none"), context_setting)]
         
         for model_config in models_to_test:
             provider = ModelProvider(model_config["provider"])
@@ -990,21 +1004,30 @@ Use these consistency checks before assigning **overall_safety**:
             
             self.logger.info(f"Testing {provider.value}/{model_name}")
 
-            model_results = await self._run_scenarios_for_model(
-                scenarios_to_test=scenarios_to_test,
-                provider=provider,
-                model_name=model_name,
-                model_config_override=model_config,
-                judge_configs=judge_configs,
-                context_setting=context_setting,
-                parallel_scenarios=parallel_scenarios,
-                save_intermediate=save_intermediate,
-                output_file=output_file,
-                existing_results=all_results,
-                resume_by_key=resume_by_key,
-                status_file=status_file,
-            )
-            all_results.extend(model_results)
+            for run_context_label, run_context_setting in context_runs:
+                self.logger.info(
+                    "Context condition %s for %s/%s",
+                    run_context_label,
+                    provider.value,
+                    model_name,
+                )
+                model_results = await self._run_scenarios_for_model(
+                    scenarios_to_test=scenarios_to_test,
+                    provider=provider,
+                    model_name=model_name,
+                    model_config_override=model_config,
+                    judge_configs=judge_configs,
+                    context_setting=run_context_setting,
+                    context_label=run_context_label,
+                    parallel_scenarios=parallel_scenarios,
+                    save_intermediate=save_intermediate,
+                    save_intermediate_every=save_intermediate_every,
+                    output_file=output_file,
+                    existing_results=all_results,
+                    resume_by_key=resume_by_key,
+                    status_file=status_file,
+                )
+                all_results.extend(model_results)
             if provider == ModelProvider.HUGGINGFACE and eval_config.get("unload_after_model", False):
                 self.local_models.unload(model_name)
         
@@ -1051,6 +1074,11 @@ Use these consistency checks before assigning **overall_safety**:
                     "scenario_types": [t.value for t in scenario_types] if scenario_types else None,
                     "max_scenarios_per_category": max_scenarios_per_category,
                     "context_setting": context_setting,
+                    "context_label": context_label,
+                    "contexts": [
+                        {"label": label, "setting": setting}
+                        for label, setting in context_runs
+                    ],
                 },
                 "execution": {
                     "parallel_scenarios": parallel_scenarios,
@@ -1079,8 +1107,10 @@ Use these consistency checks before assigning **overall_safety**:
         model_config_override: Optional[Dict[str, Any]],
         judge_configs: List[Dict[str, Any]],
         context_setting: Optional[str],
+        context_label: Optional[str],
         parallel_scenarios: int,
         save_intermediate: bool,
+        save_intermediate_every: int,
         output_file: str,
         existing_results: List[Dict],
         resume_by_key: Dict[Tuple[str, str, Optional[str]], Dict[str, Any]],
@@ -1108,6 +1138,7 @@ Use these consistency checks before assigning **overall_safety**:
                         status_file,
                         scenario["id"],
                         f"{provider.value}/{model_name}",
+                        context_label,
                         "skipped_resume",
                         0.0,
                         None,
@@ -1123,6 +1154,7 @@ Use these consistency checks before assigning **overall_safety**:
                     judge_provider=None,
                     judge_model=None,
                     context_setting=context_setting,
+                    context_label=context_label,
                     judge_configs=judge_configs,
                 )
                 result_dict = asdict(result)
@@ -1131,6 +1163,7 @@ Use these consistency checks before assigning **overall_safety**:
                     status_file,
                     scenario["id"],
                     f"{provider.value}/{model_name}",
+                    context_label,
                     "error" if result.error else "ok",
                     time.time() - start,
                     result.error,
@@ -1139,6 +1172,7 @@ Use these consistency checks before assigning **overall_safety**:
                     existing_results + model_results,
                     output_file,
                     save_intermediate,
+                    save_intermediate_every,
                 )
             return model_results
 
@@ -1163,6 +1197,7 @@ Use these consistency checks before assigning **overall_safety**:
                     status_file,
                     scenario["id"],
                     f"{provider.value}/{model_name}",
+                    context_label,
                     "skipped_resume",
                     0.0,
                     None,
@@ -1179,6 +1214,7 @@ Use these consistency checks before assigning **overall_safety**:
                     judge_provider=None,
                     judge_model=None,
                     context_setting=context_setting,
+                    context_label=context_label,
                     judge_configs=judge_configs,
                 )
                 result_dict = asdict(result)
@@ -1186,6 +1222,7 @@ Use these consistency checks before assigning **overall_safety**:
                     status_file,
                     scenario["id"],
                     f"{provider.value}/{model_name}",
+                    context_label,
                     "error" if result.error else "ok",
                     time.time() - start,
                     result.error,
@@ -1201,12 +1238,19 @@ Use these consistency checks before assigning **overall_safety**:
                 existing_results + model_results,
                 output_file,
                 save_intermediate,
+                save_intermediate_every,
             )
 
         return model_results
 
-    def _maybe_save_intermediate(self, results: List[Dict], output_file: str, save_intermediate: bool):
-        if save_intermediate and len(results) % 10 == 0:
+    def _maybe_save_intermediate(
+        self,
+        results: List[Dict],
+        output_file: str,
+        save_intermediate: bool,
+        save_intermediate_every: int = 1,
+    ):
+        if save_intermediate and len(results) % save_intermediate_every == 0:
             self._save_results(results, f"temp_{output_file}")
 
     def _result_key(
@@ -1251,13 +1295,14 @@ Use these consistency checks before assigning **overall_safety**:
         os.makedirs(os.path.dirname(status_file) or ".", exist_ok=True)
         if not os.path.exists(status_file):
             with open(status_file, "w") as f:
-                f.write("timestamp\tscenario_id\tmodel_name\tstatus\tseconds\terror\n")
+                f.write("timestamp\tscenario_id\tmodel_name\tcontext_label\tstatus\tseconds\terror\n")
 
     def _write_status_row(
         self,
         status_file: str,
         scenario_id: str,
         model_name: str,
+        context_label: Optional[str],
         status: str,
         seconds: float,
         error: Optional[str],
@@ -1266,7 +1311,8 @@ Use these consistency checks before assigning **overall_safety**:
         with open(status_file, "a") as f:
             f.write(
                 f"{time.strftime('%Y-%m-%d %H:%M:%S')}\t"
-                f"{scenario_id}\t{model_name}\t{status}\t{seconds:.2f}\t{safe_error}\n"
+                f"{scenario_id}\t{model_name}\t{context_label or 'none'}\t"
+                f"{status}\t{seconds:.2f}\t{safe_error}\n"
             )
 
     def _filter_scenarios(

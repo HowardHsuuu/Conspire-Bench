@@ -3,6 +3,7 @@ import logging
 import os
 import tempfile
 import unittest
+import asyncio
 from contextlib import redirect_stdout
 from io import StringIO
 from pathlib import Path
@@ -14,6 +15,7 @@ from local_models import LocalModelManager, load_local_model_config
 from main import (
     load_dataset,
     main,
+    _resolve_context_runs,
     _target_model_configs,
     _validate_judge_sections,
     _validate_target_model_sections,
@@ -109,6 +111,30 @@ class SmokeTests(unittest.TestCase):
         self.assertIn("Dry run complete", stdout.getvalue())
         self.assertIn("Target conversations to generate", stdout.getvalue())
 
+    def test_multi_context_dry_run_scales_plan_counts(self):
+        with redirect_stdout(StringIO()) as stdout:
+            exit_code = main([
+                "--config",
+                str(ROOT / "configs" / "local_5090_config.json"),
+                "--dry-run",
+                "--categories",
+                "aliens_ufo",
+                "--types",
+                "single_turn",
+                "--max-per-category",
+                "1",
+                "--contexts",
+                "none",
+                "brainstorming",
+                "devil_advocate",
+            ])
+
+        text = stdout.getvalue()
+        self.assertEqual(exit_code, 0)
+        self.assertIn("Contexts: none, brainstorming, devil_advocate", text)
+        self.assertIn("Target conversations to generate: 18", text)
+        self.assertIn("Judge calls: 36", text)
+
     def test_summary_tracks_successes_and_failures(self):
         runner = make_runner_without_init()
 
@@ -203,6 +229,36 @@ class SmokeTests(unittest.TestCase):
         self.assertIn("Safe reality testing", prompt)
         self.assertIn("epistemic needs", prompt)
 
+    def test_huggingface_error_unloads_model(self):
+        class FailingLocalModels:
+            def __init__(self):
+                self.unloaded = []
+
+            def available(self):
+                return True
+
+            async def generate(self, *args, **kwargs):
+                raise RuntimeError("CUDA out of memory")
+
+            def unload(self, model_id=None):
+                self.unloaded.append(model_id)
+
+        runner = make_runner_without_init()
+        runner.local_models = FailingLocalModels()
+
+        with self.assertRaises(Exception):
+            asyncio.run(
+                runner._call_huggingface(
+                    "Qwen/Qwen2.5-7B-Instruct",
+                    [{"role": "user", "content": "hello"}],
+                )
+            )
+
+        self.assertEqual(
+            runner.local_models.unloaded,
+            ["Qwen/Qwen2.5-7B-Instruct"],
+        )
+
     def test_resume_helpers_skip_successes_but_not_failures(self):
         runner = make_runner_without_init()
 
@@ -242,14 +298,15 @@ class SmokeTests(unittest.TestCase):
                 status_file,
                 "s1",
                 "huggingface/model-a",
+                "brainstorming",
                 "ok",
                 1.25,
                 None,
             )
 
             text = Path(status_file).read_text()
-            self.assertIn("timestamp\tscenario_id\tmodel_name\tstatus\tseconds\terror", text)
-            self.assertIn("s1\thuggingface/model-a\tok\t1.25", text)
+            self.assertIn("timestamp\tscenario_id\tmodel_name\tcontext_label\tstatus\tseconds\terror", text)
+            self.assertIn("s1\thuggingface/model-a\tbrainstorming\tok\t1.25", text)
 
     def test_env_api_key_resolution(self):
         os.environ.pop("CONSPIRE_TEST_GEMINI_KEY", None)

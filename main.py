@@ -113,6 +113,20 @@ def build_parser() -> argparse.ArgumentParser:
     )
 
     parser.add_argument(
+        "--contexts",
+        nargs="+",
+        choices=[
+            "none",
+            "open_minded",
+            "brainstorming",
+            "devil_advocate",
+            "research_discussion",
+            "thought_experiment",
+        ],
+        help="Run a standard sweep across multiple context labels, e.g. --contexts none brainstorming devil_advocate.",
+    )
+
+    parser.add_argument(
         "--custom-context",
         type=str,
         help="Custom context setting prompt (use with --context custom)",
@@ -320,6 +334,29 @@ def _load_resume_results(path: Optional[str]) -> list[dict]:
     raise ValueError(f"Unsupported resume result file format: {path}")
 
 
+def _resolve_context_runs(args) -> list[tuple[str, Optional[str]]]:
+    if args.contexts:
+        if args.context != "none" or args.custom_context:
+            raise ValueError("Use either --context/--custom-context or --contexts, not both.")
+        return [
+            (
+                label,
+                None if label == "none" else ConspireBenchmarkRunner.CONTEXT_SETTINGS[label],
+            )
+            for label in args.contexts
+        ]
+
+    if args.context == "none":
+        return [("none", None)]
+
+    if args.context == "custom":
+        if not args.custom_context:
+            raise ValueError("--custom-context required when using --context custom")
+        return [("custom", args.custom_context)]
+
+    return [(args.context, ConspireBenchmarkRunner.CONTEXT_SETTINGS[args.context])]
+
+
 def print_execution_plan(
     *,
     args,
@@ -327,7 +364,7 @@ def print_execution_plan(
     dataset: dict,
     model_configs: list[dict],
     scenario_types: Optional[List[ScenarioType]],
-    context_setting: Optional[str],
+    context_runs: list[tuple[str, Optional[str]]],
     personas: Optional[list[UserPersona]],
 ):
     scenarios = _filter_dataset_scenarios(
@@ -340,9 +377,9 @@ def print_execution_plan(
     mode = "adversarial" if args.adversarial else "standard"
     persona_count = len(personas) if personas else len(UserPersona)
     target_conversations = (
-        len(model_configs) * len(scenarios) * persona_count
+        len(model_configs) * len(scenarios) * persona_count * len(context_runs)
         if args.adversarial
-        else len(model_configs) * len(scenarios)
+        else len(model_configs) * len(scenarios) * len(context_runs)
     )
     judge_calls = target_conversations * len(judges)
 
@@ -364,7 +401,7 @@ def print_execution_plan(
     print(f"Judge calls: {judge_calls}")
     print(f"Categories: {args.categories or 'all'}")
     print(f"Types: {args.types or 'all'}")
-    print(f"Context: {'custom/non-empty' if context_setting else 'none'}")
+    print(f"Contexts: {', '.join(label for label, _ in context_runs)}")
     if args.resume_from:
         print(f"Resume from: {args.resume_from}")
     if args.status_file:
@@ -416,15 +453,14 @@ def main(argv: Optional[List[str]] = None) -> int:
         }
         scenario_types = [type_map[t] for t in args.types]
 
-    context_setting = None
-    if args.context != "none":
-        if args.context == "custom":
-            if not args.custom_context:
-                print("Error: --custom-context required when using --context custom")
-                return 1
-            context_setting = args.custom_context
-        else:
-            context_setting = ConspireBenchmarkRunner.CONTEXT_SETTINGS[args.context]
+    try:
+        context_runs = _resolve_context_runs(args)
+    except ValueError as e:
+        print(f"Error: {e}")
+        return 1
+    if args.adversarial and len(context_runs) > 1:
+        print("Error: --contexts is currently supported for standard runs only")
+        return 1
 
     personas = None
     if args.personas:
@@ -442,7 +478,7 @@ def main(argv: Optional[List[str]] = None) -> int:
             dataset=dataset,
             model_configs=model_configs,
             scenario_types=scenario_types,
-            context_setting=context_setting,
+            context_runs=context_runs,
             personas=personas,
         )
         if args.validate_only:
@@ -456,7 +492,7 @@ def main(argv: Optional[List[str]] = None) -> int:
             args,
             model_configs,
             scenario_types,
-            context_setting,
+            context_runs,
             personas,
             judge_provider,
             judge_model,
@@ -469,7 +505,7 @@ async def run_benchmark_async(
     args,
     model_configs,
     scenario_types,
-    context_setting,
+    context_runs,
     personas,
     judge_provider=None,
     judge_model=None,
@@ -513,7 +549,7 @@ async def run_benchmark_async(
             conversation_rounds=args.rounds,
             max_scenarios_per_category=args.max_per_category,
             output_file=args.output,
-            context_setting=context_setting,
+            context_setting=context_runs[0][1],
             user_agent_provider=user_agent_provider,
             user_agent_model=user_agent_model,
         )
@@ -535,7 +571,9 @@ async def run_benchmark_async(
             scenario_types=scenario_types,
             max_scenarios_per_category=args.max_per_category,
             output_file=args.output,
-            context_setting=context_setting,
+            context_setting=context_runs[0][1],
+            context_label=context_runs[0][0],
+            context_runs=context_runs,
             judge_provider=judge_provider_enum,
             judge_model=judge_model,
             resume_results=_load_resume_results(args.resume_from),
