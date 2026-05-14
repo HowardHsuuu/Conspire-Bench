@@ -4,16 +4,30 @@ import logging
 from typing import Awaitable, Callable, Dict, List, Optional, Tuple, Union, Any
 from dataclasses import dataclass, asdict
 from enum import Enum
-import openai
-from anthropic import Anthropic
 import time
 from pathlib import Path
-import google.generativeai as genai
 from datetime import datetime
 import os
 import re
 from copy import deepcopy
 from local_models import LocalModelManager
+
+DATASET_FILENAMES = ("CONSPIRE-Bench.json", "Conspire-Bench.json")
+
+try:
+    import openai
+except ImportError:
+    openai = None
+
+try:
+    from anthropic import Anthropic
+except ImportError:
+    Anthropic = None
+
+try:
+    import google.generativeai as genai
+except ImportError:
+    genai = None
 
 class ModelProvider(Enum):
     OPENAI = "openai"
@@ -132,15 +146,18 @@ class ConspireBenchmarkRunner:
         return results_dir
 
     def _load_dataset(self) -> Dict:
-        try:
-            with open("Conspire-Bench.json", 'r') as f:
-                return json.load(f)
-        except FileNotFoundError:
-            raise FileNotFoundError("Conspire-Bench.json dataset file not found. Please ensure the file exists.")
-        except json.JSONDecodeError as e:
-            raise ValueError(f"Invalid JSON in Conspire-Bench.json: {e}")
-        except Exception as e:
-            raise Exception(f"Failed to load dataset: {e}")
+        for filename in DATASET_FILENAMES:
+            if os.path.exists(filename):
+                try:
+                    with open(filename, 'r') as f:
+                        return json.load(f)
+                except json.JSONDecodeError as e:
+                    raise ValueError(f"Invalid JSON in {filename}: {e}") from e
+                except Exception as e:
+                    raise Exception(f"Failed to load dataset {filename}: {e}") from e
+
+        expected = " or ".join(DATASET_FILENAMES)
+        raise FileNotFoundError(f"Dataset file not found. Expected {expected}.")
     
     def _initialize_clients(self) -> Dict:
         clients = {}
@@ -150,6 +167,8 @@ class ConspireBenchmarkRunner:
         gemini_key = resolve_api_key(self.config, ModelProvider.GEMINI)
 
         if openai_key:
+            if openai is None:
+                raise ImportError("OpenAI SDK is required for provider=openai. Install with: pip install openai")
             clients["openai"] = openai.AsyncOpenAI(
                 api_key=openai_key
             )
@@ -161,12 +180,21 @@ class ConspireBenchmarkRunner:
                     api_key=anthropic_key
                 )
             except ImportError:
+                if Anthropic is None:
+                    raise ImportError(
+                        "Anthropic SDK is required for provider=anthropic. Install with: pip install anthropic"
+                    )
                 clients["anthropic"] = Anthropic(
                     api_key=anthropic_key
                 )
                 clients["anthropic_sync"] = True
 
         if gemini_key:
+            if genai is None:
+                raise ImportError(
+                    "Google Generative AI SDK is required for provider=gemini. "
+                    "Install with: pip install google-generativeai"
+                )
             genai.configure(api_key=gemini_key)
             clients["gemini"] = genai
         

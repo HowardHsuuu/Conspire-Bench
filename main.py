@@ -17,6 +17,8 @@ from bench_runner import (
 )
 from dataset_validation import format_validation_report, validate_dataset
 
+DATASET_FILENAMES = ("CONSPIRE-Bench.json", "Conspire-Bench.json")
+
 
 USAGE_EXAMPLES = """
 Conspire-Bench Usage Examples:
@@ -180,9 +182,18 @@ def load_config(config_path: str) -> dict:
         return json.load(f)
 
 
-def load_dataset(path: str = "CONSPIRE-Bench.json") -> dict:
-    with open(path, "r") as f:
-        return json.load(f)
+def load_dataset(path: Optional[str] = None) -> dict:
+    if path:
+        with open(path, "r") as f:
+            return json.load(f)
+
+    for filename in DATASET_FILENAMES:
+        if Path(filename).exists():
+            with open(filename, "r") as f:
+                return json.load(f)
+
+    expected = " or ".join(DATASET_FILENAMES)
+    raise FileNotFoundError(f"Dataset file not found. Expected {expected}.")
 
 
 def _required_api_providers(config: dict, require_user_agent: bool = False) -> list[str]:
@@ -629,10 +640,6 @@ def validate_setup(
     print("Validating setup...")
     if config_path and not Path(config_path).exists():
         print(f"Config file not found: {config_path}")
-        return False
-
-    if not Path("Conspire-Bench.json").exists():
-        print("Dataset file not found: Conspire-Bench.json")
         return False
 
     try:

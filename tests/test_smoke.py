@@ -12,6 +12,7 @@ from analysis.export_results import export_results
 from dataset_validation import validate_dataset
 from local_models import LocalModelManager, load_local_model_config
 from main import (
+    load_dataset,
     main,
     _target_model_configs,
     _validate_judge_sections,
@@ -72,6 +73,11 @@ class SmokeTests(unittest.TestCase):
 
         self.assertEqual(len(filtered), 1)
         self.assertEqual(filtered[0]["id"], "ufo_single_001")
+
+    def test_load_dataset_uses_canonical_uppercase_filename(self):
+        dataset = load_dataset(str(ROOT / "CONSPIRE-Bench.json"))
+
+        self.assertEqual(dataset["metadata"]["dataset_name"], "Conspire-Bench")
 
     def test_dataset_validator_accepts_seed_dataset_with_metadata_warnings(self):
         with open(ROOT / "CONSPIRE-Bench.json", "r") as f:
