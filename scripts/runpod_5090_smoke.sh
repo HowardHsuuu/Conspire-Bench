@@ -47,5 +47,25 @@ if [[ -z "$latest_result_dir" ]]; then
   exit 1
 fi
 
+python3 - "$latest_result_dir/local_calibration.json" <<'PY'
+import json
+import sys
+
+path = sys.argv[1]
+data = json.load(open(path))
+results = data.get("detailed_results", [])
+ok = [result for result in results if not result.get("error")]
+failed = [result for result in results if result.get("error")]
+print(f"Smoke result check: {len(ok)} ok, {len(failed)} failed")
+if not ok:
+    print("No successful model responses were produced. Treating smoke run as failed.", file=sys.stderr)
+    for result in failed[:5]:
+        print(
+            f"- {result.get('model_name')} / {result.get('scenario_id')}: {result.get('error')}",
+            file=sys.stderr,
+        )
+    raise SystemExit(1)
+PY
+
 python3 analysis/export_results.py "$latest_result_dir/local_calibration.json"
 echo "Calibration complete. Log: $log"

@@ -249,19 +249,7 @@ class LocalModelManager:
         tokenizer = self._load_tokenizer_or_processor(model_config, common_kwargs)
         self._ensure_padding_token(tokenizer)
 
-        model_kwargs = {
-            **common_kwargs,
-            "torch_dtype": _torch_dtype(model_config.get("dtype", "float16")),
-            "device_map": model_config.get("device_map", "auto"),
-        }
-        for key in (
-            "low_cpu_mem_usage",
-            "attn_implementation",
-            "load_in_8bit",
-            "load_in_4bit",
-        ):
-            if key in model_config:
-                model_kwargs[key] = model_config[key]
+        model_kwargs = self._model_load_kwargs(model_config, common_kwargs)
 
         if model_class in IMAGE_TEXT_MODEL_CLASSES:
             from transformers import AutoModelForImageTextToText
@@ -276,6 +264,43 @@ class LocalModelManager:
         self.loaded_models[cache_key] = model
         self.loaded_tokenizers[cache_key] = tokenizer
         return model, tokenizer
+
+    def _model_load_kwargs(self, model_config: Dict[str, Any], common_kwargs: Dict[str, Any]) -> Dict[str, Any]:
+        model_kwargs = {
+            **common_kwargs,
+            "torch_dtype": _torch_dtype(model_config.get("dtype", "float16")),
+            "device_map": model_config.get("device_map", "auto"),
+        }
+        for key in ("low_cpu_mem_usage", "attn_implementation"):
+            if model_config.get(key) is not None:
+                model_kwargs[key] = model_config[key]
+
+        quantization_config = self._quantization_config(model_config)
+        if quantization_config is not None:
+            model_kwargs["quantization_config"] = quantization_config
+
+        return model_kwargs
+
+    def _quantization_config(self, model_config: Dict[str, Any]):
+        load_in_8bit = bool(model_config.get("load_in_8bit", False))
+        load_in_4bit = bool(model_config.get("load_in_4bit", False))
+        if not load_in_8bit and not load_in_4bit:
+            return None
+
+        from transformers import BitsAndBytesConfig
+
+        if load_in_4bit:
+            dtype = _torch_dtype(model_config.get("dtype", "float16"))
+            kwargs = {
+                "load_in_4bit": True,
+                "bnb_4bit_quant_type": model_config.get("bnb_4bit_quant_type", "nf4"),
+                "bnb_4bit_use_double_quant": model_config.get("bnb_4bit_use_double_quant", True),
+            }
+            if dtype != "auto":
+                kwargs["bnb_4bit_compute_dtype"] = dtype
+            return BitsAndBytesConfig(**kwargs)
+
+        return BitsAndBytesConfig(load_in_8bit=True)
 
     def _load_tokenizer_or_processor(self, model_config: Dict[str, Any], common_kwargs: Dict[str, Any]):
         model_class = model_config.get("model_class", "causal_lm")

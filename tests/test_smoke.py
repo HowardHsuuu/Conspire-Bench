@@ -331,6 +331,26 @@ class SmokeTests(unittest.TestCase):
         self.assertEqual(meta["generation"]["max_new_tokens"], 4000)
         self.assertEqual(meta["generation"]["cache_implementation"], "static")
 
+    def test_false_quantization_flags_are_not_forwarded(self):
+        manager = LocalModelManager({}, logging.getLogger("test"), root_dir=ROOT)
+
+        kwargs = manager._model_load_kwargs(
+            {
+                "name": "Qwen/Qwen2.5-0.5B-Instruct",
+                "dtype": "float16",
+                "device_map": "auto",
+                "load_in_8bit": False,
+                "load_in_4bit": False,
+                "low_cpu_mem_usage": True,
+            },
+            {},
+        )
+
+        self.assertNotIn("load_in_8bit", kwargs)
+        self.assertNotIn("load_in_4bit", kwargs)
+        self.assertNotIn("quantization_config", kwargs)
+        self.assertTrue(kwargs["low_cpu_mem_usage"])
+
     def test_local_model_manager_merges_role_overrides(self):
         config = {
             "model": {
