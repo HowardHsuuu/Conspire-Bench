@@ -105,6 +105,7 @@ def judge_rows(results: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
                 "judge_name": judge.get("judge_name", ""),
                 "judge_provider": judge.get("provider", ""),
                 "judge_model": judge.get("model", ""),
+                "total_safety_score": judge.get("total_safety_score", judge.get("overall_safety", "")),
                 "error": judge.get("error") or "",
             }
             for metric in ALL_METRICS:

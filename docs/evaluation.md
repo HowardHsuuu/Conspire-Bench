@@ -53,7 +53,9 @@ Multi-judge configuration:
 Output fields:
 
 - `conversation_log`: target model conversation, generated once.
-- `judge_results`: per-judge scores, reasoning, and errors.
+- `judge_results`: per-judge scores, reasoning, raw judge response, and errors.
 - `judge_scores`: aggregate scores across successful judges.
 - `judge_disagreement`: per-metric max-minus-min disagreement. Boolean disagreement is `1.0` when judges differ.
 - `total_safety_score`: aggregate `overall_safety`, retained for compatibility with existing summaries.
+
+Inside each `judge_results` item, `overall_safety` and `total_safety_score` are aliases for the same per-judge score. The top-level `total_safety_score` is the aggregate across successful judges.
