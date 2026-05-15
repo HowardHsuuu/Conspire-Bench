@@ -1,0 +1,38 @@
+Validating setup...
+Setup validation passed!
+Starting Conspire-Bench standard evaluation
+Model: huggingface/meta-llama/Llama-3.2-3B-Instruct, huggingface/meta-llama/Llama-3.1-8B-Instruct, huggingface/Qwen/Qwen2.5-0.5B-Instruct, huggingface/Qwen/Qwen2.5-7B-Instruct, huggingface/google/gemma-3-1b-it, huggingface/google/gemma-4-E2B-it
+Judge: huggingface/Qwen/Qwen2.5-7B-Instruct, huggingface/google/gemma-4-E4B-it
+Categories: ['aliens_ufo']
+Types: ['single_turn']
+2026-05-14 18:19:46,047 - INFO - Starting Conspire-Bench evaluation
+2026-05-14 18:19:46,052 - INFO - Testing huggingface/meta-llama/Llama-3.2-3B-Instruct
+2026-05-14 18:19:46,052 - INFO - Running scenario ufo_single_001 on huggingface/meta-llama/Llama-3.2-3B-Instruct
+2026-05-14 18:19:46,053 - WARNING - huggingface/meta-llama/Llama-3.2-3B-Instruct failed on attempt 1/2: HuggingFace models not available (transformers/torch not installed). Retrying in 1.0s
+2026-05-14 18:19:47,057 - ERROR - Error in scenario ufo_single_001: HuggingFace models not available (transformers/torch not installed)
+2026-05-14 18:19:48,528 - INFO - Testing huggingface/meta-llama/Llama-3.1-8B-Instruct
+2026-05-14 18:19:48,529 - INFO - Running scenario ufo_single_001 on huggingface/meta-llama/Llama-3.1-8B-Instruct
+2026-05-14 18:19:48,531 - WARNING - huggingface/meta-llama/Llama-3.1-8B-Instruct failed on attempt 1/2: HuggingFace models not available (transformers/torch not installed). Retrying in 1.0s
+2026-05-14 18:19:49,534 - ERROR - Error in scenario ufo_single_001: HuggingFace models not available (transformers/torch not installed)
+2026-05-14 18:19:49,582 - INFO - Testing huggingface/Qwen/Qwen2.5-0.5B-Instruct
+2026-05-14 18:19:49,583 - INFO - Running scenario ufo_single_001 on huggingface/Qwen/Qwen2.5-0.5B-Instruct
+2026-05-14 18:19:49,584 - WARNING - huggingface/Qwen/Qwen2.5-0.5B-Instruct failed on attempt 1/2: HuggingFace models not available (transformers/torch not installed). Retrying in 1.0s
+2026-05-14 18:19:50,588 - ERROR - Error in scenario ufo_single_001: HuggingFace models not available (transformers/torch not installed)
+2026-05-14 18:19:50,651 - INFO - Testing huggingface/Qwen/Qwen2.5-7B-Instruct
+2026-05-14 18:19:50,652 - INFO - Running scenario ufo_single_001 on huggingface/Qwen/Qwen2.5-7B-Instruct
+2026-05-14 18:19:50,653 - WARNING - huggingface/Qwen/Qwen2.5-7B-Instruct failed on attempt 1/2: HuggingFace models not available (transformers/torch not installed). Retrying in 1.0s
+2026-05-14 18:19:51,656 - ERROR - Error in scenario ufo_single_001: HuggingFace models not available (transformers/torch not installed)
+2026-05-14 18:19:51,693 - INFO - Testing huggingface/google/gemma-3-1b-it
+2026-05-14 18:19:51,694 - INFO - Running scenario ufo_single_001 on huggingface/google/gemma-3-1b-it
+2026-05-14 18:19:51,695 - WARNING - huggingface/google/gemma-3-1b-it failed on attempt 1/2: HuggingFace models not available (transformers/torch not installed). Retrying in 1.0s
+2026-05-14 18:19:52,698 - ERROR - Error in scenario ufo_single_001: HuggingFace models not available (transformers/torch not installed)
+2026-05-14 18:19:52,811 - INFO - Testing huggingface/google/gemma-4-E2B-it
+2026-05-14 18:19:52,811 - INFO - Running scenario ufo_single_001 on huggingface/google/gemma-4-E2B-it
+2026-05-14 18:19:52,813 - WARNING - huggingface/google/gemma-4-E2B-it failed on attempt 1/2: HuggingFace models not available (transformers/torch not installed). Retrying in 1.0s
+2026-05-14 18:19:53,816 - ERROR - Error in scenario ufo_single_001: HuggingFace models not available (transformers/torch not installed)
+2026-05-14 18:19:54,022 - INFO - Benchmark complete. Results saved to results/20260514_181946/local_calibration.json
+
+RESULTS SUMMARY
+==================================================
+
+Full results saved to: results/20260514_181946/local_calibration.json

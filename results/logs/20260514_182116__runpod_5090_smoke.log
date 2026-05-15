@@ -1,0 +1,237 @@
+/root/miniconda3/envs/conspire/lib/python3.10/site-packages/google/api_core/_python_version_support.py:273: FutureWarning: You are using a Python version (3.10.20) which Google will stop supporting in new releases of google.api_core once it reaches its end of life (2026-10-04). Please upgrade to the latest Python version, or at least Python 3.11, to continue receiving updates for google.api_core past that date.
+  warnings.warn(message, FutureWarning)
+/workspace/new/Conspire-Bench/bench_runner.py:28: FutureWarning: 
+
+All support for the `google.generativeai` package has ended. It will no longer be receiving 
+updates or bug fixes. Please switch to the `google.genai` package as soon as possible.
+See README for more details:
+
+https://github.com/google-gemini/deprecated-generative-ai-python/blob/main/README.md
+
+  import google.generativeai as genai
+Validating setup...
+Setup validation passed!
+Starting Conspire-Bench standard evaluation
+Model: huggingface/meta-llama/Llama-3.2-3B-Instruct, huggingface/meta-llama/Llama-3.1-8B-Instruct, huggingface/Qwen/Qwen2.5-0.5B-Instruct, huggingface/Qwen/Qwen2.5-7B-Instruct, huggingface/google/gemma-3-1b-it, huggingface/google/gemma-4-E2B-it
+Judge: huggingface/Qwen/Qwen2.5-7B-Instruct, huggingface/google/gemma-4-E4B-it
+Categories: ['aliens_ufo']
+Types: ['single_turn']
+2026-05-14 18:21:21,125 - INFO - Starting Conspire-Bench evaluation
+2026-05-14 18:21:21,132 - INFO - Testing huggingface/meta-llama/Llama-3.2-3B-Instruct
+2026-05-14 18:21:21,132 - INFO - Running scenario ufo_single_001 on huggingface/meta-llama/Llama-3.2-3B-Instruct
+2026-05-14 18:21:23,478 - INFO - Loading local HuggingFace model: meta-llama/Llama-3.2-3B-Instruct
+2026-05-14 18:21:25,135 - INFO - HTTP Request: HEAD https://huggingface.co/meta-llama/Llama-3.2-3B-Instruct/resolve/main/config.json "HTTP/1.1 200 OK"
+2026-05-14 18:21:25,433 - INFO - HTTP Request: HEAD https://huggingface.co/meta-llama/Llama-3.2-3B-Instruct/resolve/main/tokenizer_config.json "HTTP/1.1 200 OK"
+2026-05-14 18:21:25,605 - INFO - HTTP Request: GET https://huggingface.co/api/models/meta-llama/Llama-3.2-3B-Instruct/tree/main/additional_chat_templates?recursive=false&expand=false "HTTP/1.1 404 Not Found"
+2026-05-14 18:21:25,763 - INFO - HTTP Request: GET https://huggingface.co/api/models/meta-llama/Llama-3.2-3B-Instruct/tree/main?recursive=true&expand=false "HTTP/1.1 200 OK"
+2026-05-14 18:21:26,927 - INFO - HTTP Request: GET https://huggingface.co/api/models/meta-llama/Llama-3.2-3B-Instruct "HTTP/1.1 200 OK"
+2026-05-14 18:21:27,119 - INFO - HTTP Request: HEAD https://huggingface.co/meta-llama/Llama-3.2-3B-Instruct/resolve/main/config.json "HTTP/1.1 200 OK"
+[transformers] `torch_dtype` is deprecated! Use `dtype` instead!
+2026-05-14 18:21:27,261 - ERROR - Error in HuggingFace model call: LlamaForCausalLM.__init__() got an unexpected keyword argument 'load_in_8bit'
+2026-05-14 18:21:27,262 - WARNING - huggingface/meta-llama/Llama-3.2-3B-Instruct failed on attempt 1/2: HuggingFace model error: LlamaForCausalLM.__init__() got an unexpected keyword argument 'load_in_8bit'. Retrying in 1.0s
+2026-05-14 18:21:28,276 - INFO - Loading local HuggingFace model: meta-llama/Llama-3.2-3B-Instruct
+2026-05-14 18:21:28,429 - INFO - HTTP Request: HEAD https://huggingface.co/meta-llama/Llama-3.2-3B-Instruct/resolve/main/config.json "HTTP/1.1 200 OK"
+2026-05-14 18:21:28,594 - INFO - HTTP Request: HEAD https://huggingface.co/meta-llama/Llama-3.2-3B-Instruct/resolve/main/tokenizer_config.json "HTTP/1.1 200 OK"
+2026-05-14 18:21:28,776 - INFO - HTTP Request: GET https://huggingface.co/api/models/meta-llama/Llama-3.2-3B-Instruct/tree/main/additional_chat_templates?recursive=false&expand=false "HTTP/1.1 404 Not Found"
+2026-05-14 18:21:28,936 - INFO - HTTP Request: GET https://huggingface.co/api/models/meta-llama/Llama-3.2-3B-Instruct/tree/main?recursive=true&expand=false "HTTP/1.1 200 OK"
+2026-05-14 18:21:30,026 - INFO - HTTP Request: GET https://huggingface.co/api/models/meta-llama/Llama-3.2-3B-Instruct "HTTP/1.1 200 OK"
+2026-05-14 18:21:30,242 - INFO - HTTP Request: HEAD https://huggingface.co/meta-llama/Llama-3.2-3B-Instruct/resolve/main/config.json "HTTP/1.1 200 OK"
+2026-05-14 18:21:30,286 - ERROR - Error in HuggingFace model call: LlamaForCausalLM.__init__() got an unexpected keyword argument 'load_in_8bit'
+2026-05-14 18:21:30,287 - ERROR - Error in scenario ufo_single_001: HuggingFace model error: LlamaForCausalLM.__init__() got an unexpected keyword argument 'load_in_8bit'
+2026-05-14 18:21:30,820 - INFO - Testing huggingface/meta-llama/Llama-3.1-8B-Instruct
+2026-05-14 18:21:30,821 - INFO - Running scenario ufo_single_001 on huggingface/meta-llama/Llama-3.1-8B-Instruct
+2026-05-14 18:21:30,836 - INFO - Loading local HuggingFace model: meta-llama/Llama-3.1-8B-Instruct
+2026-05-14 18:21:31,000 - INFO - HTTP Request: HEAD https://huggingface.co/meta-llama/Llama-3.1-8B-Instruct/resolve/main/config.json "HTTP/1.1 200 OK"
+2026-05-14 18:21:31,183 - INFO - HTTP Request: HEAD https://huggingface.co/meta-llama/Llama-3.1-8B-Instruct/resolve/main/tokenizer_config.json "HTTP/1.1 200 OK"
+2026-05-14 18:21:31,361 - INFO - HTTP Request: GET https://huggingface.co/api/models/meta-llama/Llama-3.1-8B-Instruct/tree/main/additional_chat_templates?recursive=false&expand=false "HTTP/1.1 404 Not Found"
+2026-05-14 18:21:31,515 - INFO - HTTP Request: GET https://huggingface.co/api/models/meta-llama/Llama-3.1-8B-Instruct/tree/main?recursive=true&expand=false "HTTP/1.1 200 OK"
+2026-05-14 18:21:32,474 - INFO - HTTP Request: GET https://huggingface.co/api/models/meta-llama/Llama-3.1-8B-Instruct "HTTP/1.1 200 OK"
+2026-05-14 18:21:32,649 - INFO - HTTP Request: HEAD https://huggingface.co/meta-llama/Llama-3.1-8B-Instruct/resolve/main/config.json "HTTP/1.1 200 OK"
+2026-05-14 18:21:32,702 - ERROR - Error in HuggingFace model call: LlamaForCausalLM.__init__() got an unexpected keyword argument 'load_in_8bit'
+2026-05-14 18:21:32,702 - WARNING - huggingface/meta-llama/Llama-3.1-8B-Instruct failed on attempt 1/2: HuggingFace model error: LlamaForCausalLM.__init__() got an unexpected keyword argument 'load_in_8bit'. Retrying in 1.0s
+2026-05-14 18:21:33,721 - INFO - Loading local HuggingFace model: meta-llama/Llama-3.1-8B-Instruct
+2026-05-14 18:21:33,874 - INFO - HTTP Request: HEAD https://huggingface.co/meta-llama/Llama-3.1-8B-Instruct/resolve/main/config.json "HTTP/1.1 200 OK"
+2026-05-14 18:21:34,049 - INFO - HTTP Request: HEAD https://huggingface.co/meta-llama/Llama-3.1-8B-Instruct/resolve/main/tokenizer_config.json "HTTP/1.1 200 OK"
+2026-05-14 18:21:34,226 - INFO - HTTP Request: GET https://huggingface.co/api/models/meta-llama/Llama-3.1-8B-Instruct/tree/main/additional_chat_templates?recursive=false&expand=false "HTTP/1.1 404 Not Found"
+2026-05-14 18:21:34,396 - INFO - HTTP Request: GET https://huggingface.co/api/models/meta-llama/Llama-3.1-8B-Instruct/tree/main?recursive=true&expand=false "HTTP/1.1 200 OK"
+2026-05-14 18:21:35,327 - INFO - HTTP Request: GET https://huggingface.co/api/models/meta-llama/Llama-3.1-8B-Instruct "HTTP/1.1 200 OK"
+2026-05-14 18:21:35,510 - INFO - HTTP Request: HEAD https://huggingface.co/meta-llama/Llama-3.1-8B-Instruct/resolve/main/config.json "HTTP/1.1 200 OK"
+2026-05-14 18:21:35,557 - ERROR - Error in HuggingFace model call: LlamaForCausalLM.__init__() got an unexpected keyword argument 'load_in_8bit'
+2026-05-14 18:21:35,558 - ERROR - Error in scenario ufo_single_001: HuggingFace model error: LlamaForCausalLM.__init__() got an unexpected keyword argument 'load_in_8bit'
+2026-05-14 18:21:35,792 - INFO - Testing huggingface/Qwen/Qwen2.5-0.5B-Instruct
+2026-05-14 18:21:35,793 - INFO - Running scenario ufo_single_001 on huggingface/Qwen/Qwen2.5-0.5B-Instruct
+2026-05-14 18:21:35,810 - INFO - Loading local HuggingFace model: Qwen/Qwen2.5-0.5B-Instruct
+2026-05-14 18:21:35,961 - INFO - HTTP Request: HEAD https://huggingface.co/Qwen/Qwen2.5-0.5B-Instruct/resolve/main/config.json "HTTP/1.1 307 Temporary Redirect"
+2026-05-14 18:21:35,980 - INFO - HTTP Request: HEAD https://huggingface.co/api/resolve-cache/models/Qwen/Qwen2.5-0.5B-Instruct/7ae557604adf67be50417f59c2c2f167def9a775/config.json "HTTP/1.1 200 OK"
+2026-05-14 18:21:36,155 - INFO - HTTP Request: HEAD https://huggingface.co/Qwen/Qwen2.5-0.5B-Instruct/resolve/main/tokenizer_config.json "HTTP/1.1 307 Temporary Redirect"
+2026-05-14 18:21:36,302 - INFO - HTTP Request: HEAD https://huggingface.co/api/resolve-cache/models/Qwen/Qwen2.5-0.5B-Instruct/7ae557604adf67be50417f59c2c2f167def9a775/tokenizer_config.json "HTTP/1.1 200 OK"
+2026-05-14 18:21:36,478 - INFO - HTTP Request: GET https://huggingface.co/api/models/Qwen/Qwen2.5-0.5B-Instruct/tree/main/additional_chat_templates?recursive=false&expand=false "HTTP/1.1 404 Not Found"
+2026-05-14 18:21:36,632 - INFO - HTTP Request: GET https://huggingface.co/api/models/Qwen/Qwen2.5-0.5B-Instruct/tree/main?recursive=true&expand=false "HTTP/1.1 200 OK"
+2026-05-14 18:21:37,095 - INFO - HTTP Request: GET https://huggingface.co/api/models/Qwen/Qwen2.5-0.5B-Instruct "HTTP/1.1 200 OK"
+2026-05-14 18:21:37,243 - INFO - HTTP Request: HEAD https://huggingface.co/Qwen/Qwen2.5-0.5B-Instruct/resolve/main/config.json "HTTP/1.1 307 Temporary Redirect"
+2026-05-14 18:21:37,264 - INFO - HTTP Request: HEAD https://huggingface.co/api/resolve-cache/models/Qwen/Qwen2.5-0.5B-Instruct/7ae557604adf67be50417f59c2c2f167def9a775/config.json "HTTP/1.1 200 OK"
+2026-05-14 18:21:37,314 - ERROR - Error in HuggingFace model call: Qwen2ForCausalLM.__init__() got an unexpected keyword argument 'load_in_8bit'
+2026-05-14 18:21:37,315 - WARNING - huggingface/Qwen/Qwen2.5-0.5B-Instruct failed on attempt 1/2: HuggingFace model error: Qwen2ForCausalLM.__init__() got an unexpected keyword argument 'load_in_8bit'. Retrying in 1.0s
+2026-05-14 18:21:38,332 - INFO - Loading local HuggingFace model: Qwen/Qwen2.5-0.5B-Instruct
+2026-05-14 18:21:38,484 - INFO - HTTP Request: HEAD https://huggingface.co/Qwen/Qwen2.5-0.5B-Instruct/resolve/main/config.json "HTTP/1.1 307 Temporary Redirect"
+2026-05-14 18:21:38,506 - INFO - HTTP Request: HEAD https://huggingface.co/api/resolve-cache/models/Qwen/Qwen2.5-0.5B-Instruct/7ae557604adf67be50417f59c2c2f167def9a775/config.json "HTTP/1.1 200 OK"
+2026-05-14 18:21:38,668 - INFO - HTTP Request: HEAD https://huggingface.co/Qwen/Qwen2.5-0.5B-Instruct/resolve/main/tokenizer_config.json "HTTP/1.1 307 Temporary Redirect"
+2026-05-14 18:21:38,707 - INFO - HTTP Request: HEAD https://huggingface.co/api/resolve-cache/models/Qwen/Qwen2.5-0.5B-Instruct/7ae557604adf67be50417f59c2c2f167def9a775/tokenizer_config.json "HTTP/1.1 200 OK"
+2026-05-14 18:21:38,877 - INFO - HTTP Request: GET https://huggingface.co/api/models/Qwen/Qwen2.5-0.5B-Instruct/tree/main/additional_chat_templates?recursive=false&expand=false "HTTP/1.1 404 Not Found"
+2026-05-14 18:21:39,034 - INFO - HTTP Request: GET https://huggingface.co/api/models/Qwen/Qwen2.5-0.5B-Instruct/tree/main?recursive=true&expand=false "HTTP/1.1 200 OK"
+2026-05-14 18:21:39,484 - INFO - HTTP Request: GET https://huggingface.co/api/models/Qwen/Qwen2.5-0.5B-Instruct "HTTP/1.1 200 OK"
+2026-05-14 18:21:39,633 - INFO - HTTP Request: HEAD https://huggingface.co/Qwen/Qwen2.5-0.5B-Instruct/resolve/main/config.json "HTTP/1.1 307 Temporary Redirect"
+2026-05-14 18:21:39,653 - INFO - HTTP Request: HEAD https://huggingface.co/api/resolve-cache/models/Qwen/Qwen2.5-0.5B-Instruct/7ae557604adf67be50417f59c2c2f167def9a775/config.json "HTTP/1.1 200 OK"
+2026-05-14 18:21:39,681 - ERROR - Error in HuggingFace model call: Qwen2ForCausalLM.__init__() got an unexpected keyword argument 'load_in_8bit'
+2026-05-14 18:21:39,681 - ERROR - Error in scenario ufo_single_001: HuggingFace model error: Qwen2ForCausalLM.__init__() got an unexpected keyword argument 'load_in_8bit'
+2026-05-14 18:21:39,961 - INFO - Testing huggingface/Qwen/Qwen2.5-7B-Instruct
+2026-05-14 18:21:39,962 - INFO - Running scenario ufo_single_001 on huggingface/Qwen/Qwen2.5-7B-Instruct
+2026-05-14 18:21:39,976 - INFO - Loading local HuggingFace model: Qwen/Qwen2.5-7B-Instruct
+2026-05-14 18:21:40,126 - INFO - HTTP Request: HEAD https://huggingface.co/Qwen/Qwen2.5-7B-Instruct/resolve/main/config.json "HTTP/1.1 307 Temporary Redirect"
+2026-05-14 18:21:40,147 - INFO - HTTP Request: HEAD https://huggingface.co/api/resolve-cache/models/Qwen/Qwen2.5-7B-Instruct/a09a35458c702b33eeacc393d103063234e8bc28/config.json "HTTP/1.1 200 OK"
+2026-05-14 18:21:40,312 - INFO - HTTP Request: HEAD https://huggingface.co/Qwen/Qwen2.5-7B-Instruct/resolve/main/tokenizer_config.json "HTTP/1.1 307 Temporary Redirect"
+2026-05-14 18:21:40,478 - INFO - HTTP Request: HEAD https://huggingface.co/api/resolve-cache/models/Qwen/Qwen2.5-7B-Instruct/a09a35458c702b33eeacc393d103063234e8bc28/tokenizer_config.json "HTTP/1.1 200 OK"
+2026-05-14 18:21:40,656 - INFO - HTTP Request: GET https://huggingface.co/api/models/Qwen/Qwen2.5-7B-Instruct/tree/main/additional_chat_templates?recursive=false&expand=false "HTTP/1.1 404 Not Found"
+2026-05-14 18:21:40,811 - INFO - HTTP Request: GET https://huggingface.co/api/models/Qwen/Qwen2.5-7B-Instruct/tree/main?recursive=true&expand=false "HTTP/1.1 200 OK"
+2026-05-14 18:21:41,287 - INFO - HTTP Request: GET https://huggingface.co/api/models/Qwen/Qwen2.5-7B-Instruct "HTTP/1.1 200 OK"
+2026-05-14 18:21:41,439 - INFO - HTTP Request: HEAD https://huggingface.co/Qwen/Qwen2.5-7B-Instruct/resolve/main/config.json "HTTP/1.1 307 Temporary Redirect"
+2026-05-14 18:21:41,460 - INFO - HTTP Request: HEAD https://huggingface.co/api/resolve-cache/models/Qwen/Qwen2.5-7B-Instruct/a09a35458c702b33eeacc393d103063234e8bc28/config.json "HTTP/1.1 200 OK"
+2026-05-14 18:21:41,514 - ERROR - Error in HuggingFace model call: Qwen2ForCausalLM.__init__() got an unexpected keyword argument 'load_in_8bit'
+2026-05-14 18:21:41,515 - WARNING - huggingface/Qwen/Qwen2.5-7B-Instruct failed on attempt 1/2: HuggingFace model error: Qwen2ForCausalLM.__init__() got an unexpected keyword argument 'load_in_8bit'. Retrying in 1.0s
+2026-05-14 18:21:42,533 - INFO - Loading local HuggingFace model: Qwen/Qwen2.5-7B-Instruct
+2026-05-14 18:21:42,699 - INFO - HTTP Request: HEAD https://huggingface.co/Qwen/Qwen2.5-7B-Instruct/resolve/main/config.json "HTTP/1.1 307 Temporary Redirect"
+2026-05-14 18:21:42,718 - INFO - HTTP Request: HEAD https://huggingface.co/api/resolve-cache/models/Qwen/Qwen2.5-7B-Instruct/a09a35458c702b33eeacc393d103063234e8bc28/config.json "HTTP/1.1 200 OK"
+2026-05-14 18:21:42,895 - INFO - HTTP Request: HEAD https://huggingface.co/Qwen/Qwen2.5-7B-Instruct/resolve/main/tokenizer_config.json "HTTP/1.1 307 Temporary Redirect"
+2026-05-14 18:21:42,942 - INFO - HTTP Request: HEAD https://huggingface.co/api/resolve-cache/models/Qwen/Qwen2.5-7B-Instruct/a09a35458c702b33eeacc393d103063234e8bc28/tokenizer_config.json "HTTP/1.1 200 OK"
+2026-05-14 18:21:43,116 - INFO - HTTP Request: GET https://huggingface.co/api/models/Qwen/Qwen2.5-7B-Instruct/tree/main/additional_chat_templates?recursive=false&expand=false "HTTP/1.1 404 Not Found"
+2026-05-14 18:21:43,270 - INFO - HTTP Request: GET https://huggingface.co/api/models/Qwen/Qwen2.5-7B-Instruct/tree/main?recursive=true&expand=false "HTTP/1.1 200 OK"
+2026-05-14 18:21:43,714 - INFO - HTTP Request: GET https://huggingface.co/api/models/Qwen/Qwen2.5-7B-Instruct "HTTP/1.1 200 OK"
+2026-05-14 18:21:43,862 - INFO - HTTP Request: HEAD https://huggingface.co/Qwen/Qwen2.5-7B-Instruct/resolve/main/config.json "HTTP/1.1 307 Temporary Redirect"
+2026-05-14 18:21:43,885 - INFO - HTTP Request: HEAD https://huggingface.co/api/resolve-cache/models/Qwen/Qwen2.5-7B-Instruct/a09a35458c702b33eeacc393d103063234e8bc28/config.json "HTTP/1.1 200 OK"
+2026-05-14 18:21:43,937 - ERROR - Error in HuggingFace model call: Qwen2ForCausalLM.__init__() got an unexpected keyword argument 'load_in_8bit'
+2026-05-14 18:21:43,938 - ERROR - Error in scenario ufo_single_001: HuggingFace model error: Qwen2ForCausalLM.__init__() got an unexpected keyword argument 'load_in_8bit'
+2026-05-14 18:21:44,173 - INFO - Testing huggingface/google/gemma-3-1b-it
+2026-05-14 18:21:44,174 - INFO - Running scenario ufo_single_001 on huggingface/google/gemma-3-1b-it
+2026-05-14 18:21:44,187 - INFO - Loading local HuggingFace model: google/gemma-3-1b-it
+2026-05-14 18:21:44,349 - INFO - HTTP Request: HEAD https://huggingface.co/google/gemma-3-1b-it/resolve/main/config.json "HTTP/1.1 200 OK"
+2026-05-14 18:21:44,540 - INFO - HTTP Request: HEAD https://huggingface.co/google/gemma-3-1b-it/resolve/main/tokenizer_config.json "HTTP/1.1 200 OK"
+2026-05-14 18:21:44,743 - INFO - HTTP Request: GET https://huggingface.co/api/models/google/gemma-3-1b-it/tree/main/additional_chat_templates?recursive=false&expand=false "HTTP/1.1 404 Not Found"
+2026-05-14 18:21:44,900 - INFO - HTTP Request: GET https://huggingface.co/api/models/google/gemma-3-1b-it/tree/main?recursive=true&expand=false "HTTP/1.1 200 OK"
+2026-05-14 18:21:47,030 - INFO - HTTP Request: GET https://huggingface.co/api/models/google/gemma-3-1b-it "HTTP/1.1 200 OK"
+2026-05-14 18:21:47,186 - INFO - HTTP Request: HEAD https://huggingface.co/google/gemma-3-1b-it/resolve/main/config.json "HTTP/1.1 200 OK"
+2026-05-14 18:21:47,241 - ERROR - Error in HuggingFace model call: Gemma3ForCausalLM.__init__() got an unexpected keyword argument 'load_in_8bit'
+2026-05-14 18:21:47,242 - WARNING - huggingface/google/gemma-3-1b-it failed on attempt 1/2: HuggingFace model error: Gemma3ForCausalLM.__init__() got an unexpected keyword argument 'load_in_8bit'. Retrying in 1.0s
+2026-05-14 18:21:48,287 - INFO - Loading local HuggingFace model: google/gemma-3-1b-it
+2026-05-14 18:21:48,473 - INFO - HTTP Request: HEAD https://huggingface.co/google/gemma-3-1b-it/resolve/main/config.json "HTTP/1.1 200 OK"
+2026-05-14 18:21:48,726 - INFO - HTTP Request: HEAD https://huggingface.co/google/gemma-3-1b-it/resolve/main/tokenizer_config.json "HTTP/1.1 200 OK"
+2026-05-14 18:21:48,965 - INFO - HTTP Request: GET https://huggingface.co/api/models/google/gemma-3-1b-it/tree/main/additional_chat_templates?recursive=false&expand=false "HTTP/1.1 404 Not Found"
+2026-05-14 18:21:49,157 - INFO - HTTP Request: GET https://huggingface.co/api/models/google/gemma-3-1b-it/tree/main?recursive=true&expand=false "HTTP/1.1 200 OK"
+2026-05-14 18:21:51,176 - INFO - HTTP Request: GET https://huggingface.co/api/models/google/gemma-3-1b-it "HTTP/1.1 200 OK"
+2026-05-14 18:21:51,350 - INFO - HTTP Request: HEAD https://huggingface.co/google/gemma-3-1b-it/resolve/main/config.json "HTTP/1.1 200 OK"
+2026-05-14 18:21:51,412 - ERROR - Error in HuggingFace model call: Gemma3ForCausalLM.__init__() got an unexpected keyword argument 'load_in_8bit'
+2026-05-14 18:21:51,413 - ERROR - Error in scenario ufo_single_001: HuggingFace model error: Gemma3ForCausalLM.__init__() got an unexpected keyword argument 'load_in_8bit'
+2026-05-14 18:21:51,690 - INFO - Testing huggingface/google/gemma-4-E2B-it
+2026-05-14 18:21:51,691 - INFO - Running scenario ufo_single_001 on huggingface/google/gemma-4-E2B-it
+2026-05-14 18:21:51,727 - INFO - Loading local HuggingFace model: google/gemma-4-E2B-it
+2026-05-14 18:21:51,881 - INFO - HTTP Request: HEAD https://huggingface.co/google/gemma-4-E2B-it/resolve/main/processor_config.json "HTTP/1.1 307 Temporary Redirect"
+2026-05-14 18:21:52,044 - INFO - HTTP Request: HEAD https://huggingface.co/api/resolve-cache/models/google/gemma-4-E2B-it/b324173c7d5721c2baba7f3b17b3b9b3d34ab1e9/processor_config.json "HTTP/1.1 200 OK"
+2026-05-14 18:21:52,222 - INFO - HTTP Request: GET https://huggingface.co/api/resolve-cache/models/google/gemma-4-E2B-it/b324173c7d5721c2baba7f3b17b3b9b3d34ab1e9/processor_config.json "HTTP/1.1 200 OK"
+2026-05-14 18:21:52,444 - INFO - HTTP Request: GET https://huggingface.co/api/models/google/gemma-4-E2B-it/tree/main/additional_chat_templates?recursive=false&expand=false "HTTP/1.1 404 Not Found"
+2026-05-14 18:21:52,610 - INFO - HTTP Request: HEAD https://huggingface.co/google/gemma-4-E2B-it/resolve/main/processor_config.json "HTTP/1.1 307 Temporary Redirect"
+2026-05-14 18:21:52,654 - INFO - HTTP Request: HEAD https://huggingface.co/api/resolve-cache/models/google/gemma-4-E2B-it/b324173c7d5721c2baba7f3b17b3b9b3d34ab1e9/processor_config.json "HTTP/1.1 200 OK"
+2026-05-14 18:21:52,835 - INFO - HTTP Request: HEAD https://huggingface.co/google/gemma-4-E2B-it/resolve/main/chat_template.json "HTTP/1.1 404 Not Found"
+2026-05-14 18:21:53,088 - INFO - HTTP Request: HEAD https://huggingface.co/google/gemma-4-E2B-it/resolve/main/chat_template.jinja "HTTP/1.1 307 Temporary Redirect"
+2026-05-14 18:21:53,258 - INFO - HTTP Request: HEAD https://huggingface.co/api/resolve-cache/models/google/gemma-4-E2B-it/b324173c7d5721c2baba7f3b17b3b9b3d34ab1e9/chat_template.jinja "HTTP/1.1 200 OK"
+2026-05-14 18:21:53,483 - INFO - HTTP Request: HEAD https://huggingface.co/google/gemma-4-E2B-it/resolve/main/audio_tokenizer_config.json "HTTP/1.1 404 Not Found"
+2026-05-14 18:21:53,743 - INFO - HTTP Request: GET https://huggingface.co/api/models/google/gemma-4-E2B-it/tree/main/additional_chat_templates?recursive=false&expand=false "HTTP/1.1 404 Not Found"
+2026-05-14 18:21:53,934 - INFO - HTTP Request: HEAD https://huggingface.co/google/gemma-4-E2B-it/resolve/main/processor_config.json "HTTP/1.1 307 Temporary Redirect"
+2026-05-14 18:21:53,969 - INFO - HTTP Request: HEAD https://huggingface.co/api/resolve-cache/models/google/gemma-4-E2B-it/b324173c7d5721c2baba7f3b17b3b9b3d34ab1e9/processor_config.json "HTTP/1.1 200 OK"
+2026-05-14 18:21:54,157 - INFO - HTTP Request: HEAD https://huggingface.co/google/gemma-4-E2B-it/resolve/main/chat_template.json "HTTP/1.1 404 Not Found"
+2026-05-14 18:21:54,348 - INFO - HTTP Request: HEAD https://huggingface.co/google/gemma-4-E2B-it/resolve/main/chat_template.jinja "HTTP/1.1 307 Temporary Redirect"
+2026-05-14 18:21:54,409 - INFO - HTTP Request: HEAD https://huggingface.co/api/resolve-cache/models/google/gemma-4-E2B-it/b324173c7d5721c2baba7f3b17b3b9b3d34ab1e9/chat_template.jinja "HTTP/1.1 200 OK"
+2026-05-14 18:21:54,612 - INFO - HTTP Request: HEAD https://huggingface.co/google/gemma-4-E2B-it/resolve/main/audio_tokenizer_config.json "HTTP/1.1 404 Not Found"
+2026-05-14 18:21:54,821 - INFO - HTTP Request: HEAD https://huggingface.co/google/gemma-4-E2B-it/resolve/main/processor_config.json "HTTP/1.1 307 Temporary Redirect"
+2026-05-14 18:21:54,847 - INFO - HTTP Request: HEAD https://huggingface.co/api/resolve-cache/models/google/gemma-4-E2B-it/b324173c7d5721c2baba7f3b17b3b9b3d34ab1e9/processor_config.json "HTTP/1.1 200 OK"
+2026-05-14 18:21:55,557 - INFO - HTTP Request: HEAD https://huggingface.co/google/gemma-4-E2B-it/resolve/main/preprocessor_config.json "HTTP/1.1 404 Not Found"
+2026-05-14 18:21:56,021 - INFO - HTTP Request: HEAD https://huggingface.co/google/gemma-4-E2B-it/resolve/main/processor_config.json "HTTP/1.1 307 Temporary Redirect"
+2026-05-14 18:21:56,045 - INFO - HTTP Request: HEAD https://huggingface.co/api/resolve-cache/models/google/gemma-4-E2B-it/b324173c7d5721c2baba7f3b17b3b9b3d34ab1e9/processor_config.json "HTTP/1.1 200 OK"
+2026-05-14 18:21:56,218 - INFO - HTTP Request: HEAD https://huggingface.co/google/gemma-4-E2B-it/resolve/main/preprocessor_config.json "HTTP/1.1 404 Not Found"
+2026-05-14 18:21:56,401 - INFO - HTTP Request: HEAD https://huggingface.co/google/gemma-4-E2B-it/resolve/main/processor_config.json "HTTP/1.1 307 Temporary Redirect"
+2026-05-14 18:21:56,426 - INFO - HTTP Request: HEAD https://huggingface.co/api/resolve-cache/models/google/gemma-4-E2B-it/b324173c7d5721c2baba7f3b17b3b9b3d34ab1e9/processor_config.json "HTTP/1.1 200 OK"
+2026-05-14 18:21:56,608 - INFO - HTTP Request: HEAD https://huggingface.co/google/gemma-4-E2B-it/resolve/main/preprocessor_config.json "HTTP/1.1 404 Not Found"
+2026-05-14 18:21:56,798 - INFO - HTTP Request: HEAD https://huggingface.co/google/gemma-4-E2B-it/resolve/main/processor_config.json "HTTP/1.1 307 Temporary Redirect"
+2026-05-14 18:21:56,871 - INFO - HTTP Request: HEAD https://huggingface.co/api/resolve-cache/models/google/gemma-4-E2B-it/b324173c7d5721c2baba7f3b17b3b9b3d34ab1e9/processor_config.json "HTTP/1.1 200 OK"
+2026-05-14 18:21:57,064 - INFO - HTTP Request: HEAD https://huggingface.co/google/gemma-4-E2B-it/resolve/main/preprocessor_config.json "HTTP/1.1 404 Not Found"
+2026-05-14 18:21:57,254 - INFO - HTTP Request: HEAD https://huggingface.co/google/gemma-4-E2B-it/resolve/main/config.json "HTTP/1.1 307 Temporary Redirect"
+2026-05-14 18:21:57,405 - INFO - HTTP Request: HEAD https://huggingface.co/api/resolve-cache/models/google/gemma-4-E2B-it/b324173c7d5721c2baba7f3b17b3b9b3d34ab1e9/config.json "HTTP/1.1 200 OK"
+2026-05-14 18:21:57,612 - INFO - HTTP Request: HEAD https://huggingface.co/google/gemma-4-E2B-it/resolve/main/tokenizer_config.json "HTTP/1.1 307 Temporary Redirect"
+2026-05-14 18:21:57,773 - INFO - HTTP Request: HEAD https://huggingface.co/api/resolve-cache/models/google/gemma-4-E2B-it/b324173c7d5721c2baba7f3b17b3b9b3d34ab1e9/tokenizer_config.json "HTTP/1.1 200 OK"
+2026-05-14 18:21:57,992 - INFO - HTTP Request: GET https://huggingface.co/api/models/google/gemma-4-E2B-it/tree/main/additional_chat_templates?recursive=false&expand=false "HTTP/1.1 404 Not Found"
+2026-05-14 18:21:58,148 - INFO - HTTP Request: GET https://huggingface.co/api/models/google/gemma-4-E2B-it/tree/main?recursive=true&expand=false "HTTP/1.1 200 OK"
+2026-05-14 18:22:01,390 - INFO - HTTP Request: GET https://huggingface.co/api/models/google/gemma-4-E2B-it "HTTP/1.1 200 OK"
+2026-05-14 18:22:01,640 - INFO - HTTP Request: HEAD https://huggingface.co/google/gemma-4-E2B-it/resolve/main/processor_config.json "HTTP/1.1 307 Temporary Redirect"
+2026-05-14 18:22:01,660 - INFO - HTTP Request: HEAD https://huggingface.co/api/resolve-cache/models/google/gemma-4-E2B-it/b324173c7d5721c2baba7f3b17b3b9b3d34ab1e9/processor_config.json "HTTP/1.1 200 OK"
+2026-05-14 18:22:01,847 - INFO - HTTP Request: HEAD https://huggingface.co/google/gemma-4-E2B-it/resolve/main/video_preprocessor_config.json "HTTP/1.1 404 Not Found"
+2026-05-14 18:22:02,021 - INFO - HTTP Request: HEAD https://huggingface.co/google/gemma-4-E2B-it/resolve/main/preprocessor_config.json "HTTP/1.1 404 Not Found"
+2026-05-14 18:22:02,429 - INFO - HTTP Request: HEAD https://huggingface.co/google/gemma-4-E2B-it/resolve/main/processor_config.json "HTTP/1.1 307 Temporary Redirect"
+2026-05-14 18:22:02,692 - INFO - HTTP Request: HEAD https://huggingface.co/api/resolve-cache/models/google/gemma-4-E2B-it/b324173c7d5721c2baba7f3b17b3b9b3d34ab1e9/processor_config.json "HTTP/1.1 200 OK"
+2026-05-14 18:22:02,863 - INFO - HTTP Request: HEAD https://huggingface.co/google/gemma-4-E2B-it/resolve/main/video_preprocessor_config.json "HTTP/1.1 404 Not Found"
+2026-05-14 18:22:03,024 - INFO - HTTP Request: HEAD https://huggingface.co/google/gemma-4-E2B-it/resolve/main/preprocessor_config.json "HTTP/1.1 404 Not Found"
+2026-05-14 18:22:03,203 - INFO - HTTP Request: HEAD https://huggingface.co/google/gemma-4-E2B-it/resolve/main/config.json "HTTP/1.1 307 Temporary Redirect"
+2026-05-14 18:22:03,244 - INFO - HTTP Request: HEAD https://huggingface.co/api/resolve-cache/models/google/gemma-4-E2B-it/b324173c7d5721c2baba7f3b17b3b9b3d34ab1e9/config.json "HTTP/1.1 200 OK"
+2026-05-14 18:22:03,288 - ERROR - Error in HuggingFace model call: Gemma4ForConditionalGeneration.__init__() got an unexpected keyword argument 'load_in_8bit'
+2026-05-14 18:22:03,288 - WARNING - huggingface/google/gemma-4-E2B-it failed on attempt 1/2: HuggingFace model error: Gemma4ForConditionalGeneration.__init__() got an unexpected keyword argument 'load_in_8bit'. Retrying in 1.0s
+2026-05-14 18:22:04,313 - INFO - Loading local HuggingFace model: google/gemma-4-E2B-it
+2026-05-14 18:22:04,489 - INFO - HTTP Request: HEAD https://huggingface.co/google/gemma-4-E2B-it/resolve/main/processor_config.json "HTTP/1.1 307 Temporary Redirect"
+2026-05-14 18:22:04,741 - INFO - HTTP Request: HEAD https://huggingface.co/api/resolve-cache/models/google/gemma-4-E2B-it/b324173c7d5721c2baba7f3b17b3b9b3d34ab1e9/processor_config.json "HTTP/1.1 200 OK"
+2026-05-14 18:22:04,900 - INFO - HTTP Request: GET https://huggingface.co/api/models/google/gemma-4-E2B-it/tree/main/additional_chat_templates?recursive=false&expand=false "HTTP/1.1 404 Not Found"
+2026-05-14 18:22:05,055 - INFO - HTTP Request: HEAD https://huggingface.co/google/gemma-4-E2B-it/resolve/main/processor_config.json "HTTP/1.1 307 Temporary Redirect"
+2026-05-14 18:22:05,074 - INFO - HTTP Request: HEAD https://huggingface.co/api/resolve-cache/models/google/gemma-4-E2B-it/b324173c7d5721c2baba7f3b17b3b9b3d34ab1e9/processor_config.json "HTTP/1.1 200 OK"
+2026-05-14 18:22:05,253 - INFO - HTTP Request: HEAD https://huggingface.co/google/gemma-4-E2B-it/resolve/main/chat_template.json "HTTP/1.1 404 Not Found"
+2026-05-14 18:22:05,418 - INFO - HTTP Request: HEAD https://huggingface.co/google/gemma-4-E2B-it/resolve/main/chat_template.jinja "HTTP/1.1 307 Temporary Redirect"
+2026-05-14 18:22:05,678 - INFO - HTTP Request: HEAD https://huggingface.co/api/resolve-cache/models/google/gemma-4-E2B-it/b324173c7d5721c2baba7f3b17b3b9b3d34ab1e9/chat_template.jinja "HTTP/1.1 200 OK"
+2026-05-14 18:22:05,837 - INFO - HTTP Request: HEAD https://huggingface.co/google/gemma-4-E2B-it/resolve/main/audio_tokenizer_config.json "HTTP/1.1 404 Not Found"
+2026-05-14 18:22:06,007 - INFO - HTTP Request: GET https://huggingface.co/api/models/google/gemma-4-E2B-it/tree/main/additional_chat_templates?recursive=false&expand=false "HTTP/1.1 404 Not Found"
+2026-05-14 18:22:06,157 - INFO - HTTP Request: HEAD https://huggingface.co/google/gemma-4-E2B-it/resolve/main/processor_config.json "HTTP/1.1 307 Temporary Redirect"
+2026-05-14 18:22:06,175 - INFO - HTTP Request: HEAD https://huggingface.co/api/resolve-cache/models/google/gemma-4-E2B-it/b324173c7d5721c2baba7f3b17b3b9b3d34ab1e9/processor_config.json "HTTP/1.1 200 OK"
+2026-05-14 18:22:06,339 - INFO - HTTP Request: HEAD https://huggingface.co/google/gemma-4-E2B-it/resolve/main/chat_template.json "HTTP/1.1 404 Not Found"
+2026-05-14 18:22:06,514 - INFO - HTTP Request: HEAD https://huggingface.co/google/gemma-4-E2B-it/resolve/main/chat_template.jinja "HTTP/1.1 307 Temporary Redirect"
+2026-05-14 18:22:06,545 - INFO - HTTP Request: HEAD https://huggingface.co/api/resolve-cache/models/google/gemma-4-E2B-it/b324173c7d5721c2baba7f3b17b3b9b3d34ab1e9/chat_template.jinja "HTTP/1.1 200 OK"
+2026-05-14 18:22:06,705 - INFO - HTTP Request: HEAD https://huggingface.co/google/gemma-4-E2B-it/resolve/main/audio_tokenizer_config.json "HTTP/1.1 404 Not Found"
+2026-05-14 18:22:06,906 - INFO - HTTP Request: HEAD https://huggingface.co/google/gemma-4-E2B-it/resolve/main/processor_config.json "HTTP/1.1 307 Temporary Redirect"
+2026-05-14 18:22:06,930 - INFO - HTTP Request: HEAD https://huggingface.co/api/resolve-cache/models/google/gemma-4-E2B-it/b324173c7d5721c2baba7f3b17b3b9b3d34ab1e9/processor_config.json "HTTP/1.1 200 OK"
+2026-05-14 18:22:07,095 - INFO - HTTP Request: HEAD https://huggingface.co/google/gemma-4-E2B-it/resolve/main/preprocessor_config.json "HTTP/1.1 404 Not Found"
+2026-05-14 18:22:07,298 - INFO - HTTP Request: HEAD https://huggingface.co/google/gemma-4-E2B-it/resolve/main/processor_config.json "HTTP/1.1 307 Temporary Redirect"
+2026-05-14 18:22:07,322 - INFO - HTTP Request: HEAD https://huggingface.co/api/resolve-cache/models/google/gemma-4-E2B-it/b324173c7d5721c2baba7f3b17b3b9b3d34ab1e9/processor_config.json "HTTP/1.1 200 OK"
+2026-05-14 18:22:07,496 - INFO - HTTP Request: HEAD https://huggingface.co/google/gemma-4-E2B-it/resolve/main/preprocessor_config.json "HTTP/1.1 404 Not Found"
+2026-05-14 18:22:07,671 - INFO - HTTP Request: HEAD https://huggingface.co/google/gemma-4-E2B-it/resolve/main/processor_config.json "HTTP/1.1 307 Temporary Redirect"
+2026-05-14 18:22:07,690 - INFO - HTTP Request: HEAD https://huggingface.co/api/resolve-cache/models/google/gemma-4-E2B-it/b324173c7d5721c2baba7f3b17b3b9b3d34ab1e9/processor_config.json "HTTP/1.1 200 OK"
+2026-05-14 18:22:07,861 - INFO - HTTP Request: HEAD https://huggingface.co/google/gemma-4-E2B-it/resolve/main/preprocessor_config.json "HTTP/1.1 404 Not Found"
+2026-05-14 18:22:08,031 - INFO - HTTP Request: HEAD https://huggingface.co/google/gemma-4-E2B-it/resolve/main/processor_config.json "HTTP/1.1 307 Temporary Redirect"
+2026-05-14 18:22:08,051 - INFO - HTTP Request: HEAD https://huggingface.co/api/resolve-cache/models/google/gemma-4-E2B-it/b324173c7d5721c2baba7f3b17b3b9b3d34ab1e9/processor_config.json "HTTP/1.1 200 OK"
+2026-05-14 18:22:08,230 - INFO - HTTP Request: HEAD https://huggingface.co/google/gemma-4-E2B-it/resolve/main/preprocessor_config.json "HTTP/1.1 404 Not Found"
+2026-05-14 18:22:08,397 - INFO - HTTP Request: HEAD https://huggingface.co/google/gemma-4-E2B-it/resolve/main/config.json "HTTP/1.1 307 Temporary Redirect"
+2026-05-14 18:22:08,420 - INFO - HTTP Request: HEAD https://huggingface.co/api/resolve-cache/models/google/gemma-4-E2B-it/b324173c7d5721c2baba7f3b17b3b9b3d34ab1e9/config.json "HTTP/1.1 200 OK"
+2026-05-14 18:22:08,598 - INFO - HTTP Request: HEAD https://huggingface.co/google/gemma-4-E2B-it/resolve/main/tokenizer_config.json "HTTP/1.1 307 Temporary Redirect"
+2026-05-14 18:22:08,644 - INFO - HTTP Request: HEAD https://huggingface.co/api/resolve-cache/models/google/gemma-4-E2B-it/b324173c7d5721c2baba7f3b17b3b9b3d34ab1e9/tokenizer_config.json "HTTP/1.1 200 OK"
+2026-05-14 18:22:08,812 - INFO - HTTP Request: GET https://huggingface.co/api/models/google/gemma-4-E2B-it/tree/main/additional_chat_templates?recursive=false&expand=false "HTTP/1.1 404 Not Found"
+2026-05-14 18:22:08,986 - INFO - HTTP Request: GET https://huggingface.co/api/models/google/gemma-4-E2B-it/tree/main?recursive=true&expand=false "HTTP/1.1 200 OK"
+2026-05-14 18:22:12,091 - INFO - HTTP Request: GET https://huggingface.co/api/models/google/gemma-4-E2B-it "HTTP/1.1 200 OK"
+2026-05-14 18:22:12,312 - INFO - HTTP Request: HEAD https://huggingface.co/google/gemma-4-E2B-it/resolve/main/processor_config.json "HTTP/1.1 307 Temporary Redirect"
+2026-05-14 18:22:12,333 - INFO - HTTP Request: HEAD https://huggingface.co/api/resolve-cache/models/google/gemma-4-E2B-it/b324173c7d5721c2baba7f3b17b3b9b3d34ab1e9/processor_config.json "HTTP/1.1 200 OK"
+2026-05-14 18:22:12,498 - INFO - HTTP Request: HEAD https://huggingface.co/google/gemma-4-E2B-it/resolve/main/video_preprocessor_config.json "HTTP/1.1 404 Not Found"
+2026-05-14 18:22:12,901 - INFO - HTTP Request: HEAD https://huggingface.co/google/gemma-4-E2B-it/resolve/main/preprocessor_config.json "HTTP/1.1 404 Not Found"
+2026-05-14 18:22:13,075 - INFO - HTTP Request: HEAD https://huggingface.co/google/gemma-4-E2B-it/resolve/main/processor_config.json "HTTP/1.1 307 Temporary Redirect"
+2026-05-14 18:22:13,093 - INFO - HTTP Request: HEAD https://huggingface.co/api/resolve-cache/models/google/gemma-4-E2B-it/b324173c7d5721c2baba7f3b17b3b9b3d34ab1e9/processor_config.json "HTTP/1.1 200 OK"
+2026-05-14 18:22:13,270 - INFO - HTTP Request: HEAD https://huggingface.co/google/gemma-4-E2B-it/resolve/main/video_preprocessor_config.json "HTTP/1.1 404 Not Found"
+2026-05-14 18:22:13,435 - INFO - HTTP Request: HEAD https://huggingface.co/google/gemma-4-E2B-it/resolve/main/preprocessor_config.json "HTTP/1.1 404 Not Found"
+2026-05-14 18:22:13,605 - INFO - HTTP Request: HEAD https://huggingface.co/google/gemma-4-E2B-it/resolve/main/config.json "HTTP/1.1 307 Temporary Redirect"
+2026-05-14 18:22:13,625 - INFO - HTTP Request: HEAD https://huggingface.co/api/resolve-cache/models/google/gemma-4-E2B-it/b324173c7d5721c2baba7f3b17b3b9b3d34ab1e9/config.json "HTTP/1.1 200 OK"
+2026-05-14 18:22:13,658 - ERROR - Error in HuggingFace model call: Gemma4ForConditionalGeneration.__init__() got an unexpected keyword argument 'load_in_8bit'
+2026-05-14 18:22:13,659 - ERROR - Error in scenario ufo_single_001: HuggingFace model error: Gemma4ForConditionalGeneration.__init__() got an unexpected keyword argument 'load_in_8bit'
+2026-05-14 18:22:14,063 - INFO - Benchmark complete. Results saved to results/20260514_182121/local_calibration.json
+
+RESULTS SUMMARY
+==================================================
+
+Full results saved to: results/20260514_182121/local_calibration.json

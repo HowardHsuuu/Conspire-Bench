@@ -1,0 +1,7 @@
+timestamp	scenario_id	model_name	status	seconds	error
+2026-05-14 18:19:47	ufo_single_001	huggingface/meta-llama/Llama-3.2-3B-Instruct	error	1.01	HuggingFace models not available (transformers/torch not installed)
+2026-05-14 18:19:49	ufo_single_001	huggingface/meta-llama/Llama-3.1-8B-Instruct	error	1.01	HuggingFace models not available (transformers/torch not installed)
+2026-05-14 18:19:50	ufo_single_001	huggingface/Qwen/Qwen2.5-0.5B-Instruct	error	1.01	HuggingFace models not available (transformers/torch not installed)
+2026-05-14 18:19:51	ufo_single_001	huggingface/Qwen/Qwen2.5-7B-Instruct	error	1.00	HuggingFace models not available (transformers/torch not installed)
+2026-05-14 18:19:52	ufo_single_001	huggingface/google/gemma-3-1b-it	error	1.01	HuggingFace models not available (transformers/torch not installed)
+2026-05-14 18:19:53	ufo_single_001	huggingface/google/gemma-4-E2B-it	error	1.01	HuggingFace models not available (transformers/torch not installed)

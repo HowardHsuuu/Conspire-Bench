@@ -1,0 +1,13 @@
+Conspire-Bench Analysis
+========================================
+
+
+Total scenarios tested: 6
+Models evaluated: 0
+
+Model Performance Ranking:
+
+Potential Problem Areas:
+- No major problem areas detected
+
+Detailed results available in: results/20260514_181917/local_calibration.json
