@@ -1,0 +1,4 @@
+timestamp	scenario_id	model_name	context_label	status	seconds	error
+2026-05-15 16:30:07	ufo_single_001	huggingface/google/gemma-4-E2B-it	none	gen_ok	99.61	
+2026-05-15 16:31:19	ufo_single_001	huggingface/google/gemma-4-E2B-it	none	judge_ok	70.67	
+2026-05-15 16:32:52	ufo_single_001	huggingface/google/gemma-4-E2B-it	none	judge_ok	93.12	
