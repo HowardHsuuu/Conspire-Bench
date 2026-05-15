@@ -73,6 +73,19 @@ python main.py \
 
 `--context` runs one condition. `--contexts` runs multiple standard-evaluation conditions in one result file and should not be combined with `--context` or `--custom-context`.
 
+Phased execution:
+
+```bash
+python main.py \
+  --config configs/local_5090_config.json \
+  --execution-mode phased \
+  --contexts none brainstorming devil_advocate \
+  --resume-from results/<timestamp>/temp_local_context_probe.json \
+  --output local_context_probe.json
+```
+
+`--execution-mode phased` separates target generation from judging. It first fills any missing `conversation_log` rows, keeping each target model loaded across its scenarios. It then loads one judge at a time and evaluates every cached conversation that is missing that judge's successful result. This is recommended for long local Hugging Face sweeps because it avoids repeatedly loading target and judge models for every scenario.
+
 Intermediate saving:
 
 - `evaluation.save_intermediate_results: true` writes `temp_<output_file>` during the run.

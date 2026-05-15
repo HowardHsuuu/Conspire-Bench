@@ -1099,6 +1099,278 @@ Use these consistency checks before assigning **overall_safety**:
         self.logger.info(f"Benchmark complete. Results saved to {results_path}")
         return final_output
 
+    async def run_benchmark_phased(
+        self,
+        models_to_test: List[Dict[str, str]],
+        categories: Optional[List[str]] = None,
+        scenario_types: Optional[List[ScenarioType]] = None,
+        max_scenarios_per_category: Optional[int] = None,
+        output_file: str = "benchmark_results.json",
+        context_setting: Optional[str] = None,
+        judge_provider: Optional[ModelProvider] = None,
+        judge_model: Optional[str] = None,
+        resume_results: Optional[List[Dict[str, Any]]] = None,
+        status_file: Optional[str] = None,
+        context_label: Optional[str] = None,
+        context_runs: Optional[List[Tuple[str, Optional[str]]]] = None,
+    ) -> Dict[str, Any]:
+        """Run generation first, then evaluate cached conversations judge-by-judge.
+
+        This mode minimizes local model load/unload churn. Resume is granular:
+        cached conversations are reused, and already successful judge results are
+        skipped per judge.
+        """
+
+        self.logger.info("Starting Conspire-Bench phased evaluation")
+        scenarios_to_test = self._filter_scenarios(
+            categories, scenario_types, max_scenarios_per_category
+        )
+        judge_configs = self._get_judge_configs(judge_provider, judge_model)
+        eval_config = self._get_evaluation_config()
+        save_intermediate = bool(eval_config.get("save_intermediate_results", True))
+        save_intermediate_every = max(1, int(eval_config.get("save_intermediate_every", 1)))
+        resume_by_key = self._resume_result_map(resume_results or [])
+        status_file = status_file or os.path.join(self.results_dir, "status.tsv")
+        self._initialize_status_file(status_file)
+
+        if context_runs is None:
+            context_runs = [(context_label or ("context" if context_setting else "none"), context_setting)]
+
+        all_results: List[Dict[str, Any]] = []
+
+        self.logger.info("Phase 1/2: generating target conversations")
+        for model_config in models_to_test:
+            provider = ModelProvider(model_config["provider"])
+            model_name = model_config["model"]
+            self.logger.info("Generating conversations for %s/%s", provider.value, model_name)
+
+            for run_context_label, run_context_setting in context_runs:
+                self.logger.info(
+                    "Context condition %s for %s/%s",
+                    run_context_label,
+                    provider.value,
+                    model_name,
+                )
+                for scenario in scenarios_to_test:
+                    resume_key = self._result_key(
+                        scenario["id"],
+                        provider,
+                        model_name,
+                        run_context_setting,
+                    )
+                    resumed = self._resumed_conversation(resume_by_key, resume_key)
+                    if resumed:
+                        self.logger.info(
+                            "Skipping generated conversation for %s on %s/%s",
+                            scenario["id"],
+                            provider.value,
+                            model_name,
+                        )
+                        all_results.append(resumed)
+                        self._write_status_row(
+                            status_file,
+                            scenario["id"],
+                            f"{provider.value}/{model_name}",
+                            run_context_label,
+                            "gen_skipped_resume",
+                            0.0,
+                            None,
+                        )
+                        continue
+
+                    start = time.time()
+                    result = await self.run_conversation_only_scenario(
+                        scenario,
+                        provider,
+                        model_name,
+                        model_config_override=model_config,
+                        context_setting=run_context_setting,
+                        context_label=run_context_label,
+                    )
+                    all_results.append(result)
+                    self._write_status_row(
+                        status_file,
+                        scenario["id"],
+                        f"{provider.value}/{model_name}",
+                        run_context_label,
+                        "gen_error" if result.get("error") else "gen_ok",
+                        time.time() - start,
+                        result.get("error"),
+                    )
+                    if save_intermediate:
+                        self._save_results(all_results, f"temp_{output_file}")
+
+            if provider == ModelProvider.HUGGINGFACE:
+                self.local_models.unload(model_name)
+
+        if any(ModelProvider(model["provider"]) == ModelProvider.HUGGINGFACE for model in models_to_test):
+            self.local_models.unload()
+
+        self.logger.info("Phase 2/2: evaluating cached conversations")
+        for judge_config in judge_configs:
+            judge_provider_value = ModelProvider(judge_config["provider"])
+            judge_name = self._judge_name(judge_config)
+            self.logger.info("Evaluating conversations with judge %s", judge_name)
+
+            for result in all_results:
+                scenario = self._scenario_by_id(result.get("scenario_id"))
+                model_name_for_status = result.get("model_name") or result.get("target_model") or ""
+
+                if not result.get("conversation_log"):
+                    self._write_status_row(
+                        status_file,
+                        result.get("scenario_id", ""),
+                        model_name_for_status,
+                        result.get("context_label"),
+                        "judge_skipped_no_conversation",
+                        0.0,
+                        result.get("error") or "missing conversation_log",
+                    )
+                    continue
+
+                if self._successful_judge_result(result, judge_name):
+                    self.logger.info(
+                        "Skipping completed judge %s for %s on %s",
+                        judge_name,
+                        result.get("scenario_id"),
+                        model_name_for_status,
+                    )
+                    self._write_status_row(
+                        status_file,
+                        result.get("scenario_id", ""),
+                        model_name_for_status,
+                        result.get("context_label"),
+                        "judge_skipped_resume",
+                        0.0,
+                        None,
+                    )
+                    continue
+
+                start = time.time()
+                judge_result = await self._evaluate_with_judge_config(
+                    scenario,
+                    result["conversation_log"],
+                    judge_config,
+                )
+                self._merge_judge_result(result, judge_result)
+                self._write_status_row(
+                    status_file,
+                    result.get("scenario_id", ""),
+                    model_name_for_status,
+                    result.get("context_label"),
+                    "judge_error" if judge_result.get("error") else "judge_ok",
+                    time.time() - start,
+                    judge_result.get("error"),
+                )
+                if save_intermediate:
+                    self._save_results(all_results, f"temp_{output_file}")
+
+            if judge_provider_value == ModelProvider.HUGGINGFACE:
+                self.local_models.unload(judge_config["model"])
+
+        for result in all_results:
+            self._finalize_phased_result_error(result)
+
+        final_output = self._build_final_output(
+            all_results=all_results,
+            models_to_test=models_to_test,
+            judge_configs=judge_configs,
+            scenarios_to_test=scenarios_to_test,
+            categories=categories,
+            scenario_types=scenario_types,
+            max_scenarios_per_category=max_scenarios_per_category,
+            context_setting=context_setting,
+            context_label=context_label,
+            context_runs=context_runs,
+            parallel_scenarios=1,
+            eval_config=eval_config,
+            status_file=status_file,
+            resume_results=resume_results,
+            execution_mode="phased",
+        )
+
+        self._save_results(final_output, output_file)
+
+        results_path = os.path.join(self.results_dir, output_file)
+        self.logger.info(f"Benchmark complete. Results saved to {results_path}")
+        return final_output
+
+    async def run_conversation_only_scenario(
+        self,
+        scenario: Dict,
+        model_provider: ModelProvider,
+        model_name: str,
+        model_config_override: Optional[Dict[str, Any]] = None,
+        context_setting: Optional[str] = None,
+        context_label: Optional[str] = None,
+    ) -> Dict[str, Any]:
+        self.logger.info(
+            "Generating conversation for scenario %s on %s/%s",
+            scenario["id"],
+            model_provider.value,
+            model_name,
+        )
+        try:
+            if scenario["type"] == ScenarioType.SINGLE_TURN.value:
+                conversation_log = await self._run_single_turn(
+                    scenario,
+                    model_provider,
+                    model_name,
+                    context_setting,
+                    role_config_override=model_config_override,
+                )
+            else:
+                conversation_log = await self._run_multi_turn(
+                    scenario,
+                    model_provider,
+                    model_name,
+                    context_setting,
+                    role_config_override=model_config_override,
+                )
+
+            return {
+                "scenario_id": scenario["id"],
+                "model_name": f"{model_provider.value}/{model_name}",
+                "judge_name": "",
+                "scenario_type": scenario["type"],
+                "category": scenario["category"],
+                "scenario_subcategory": scenario.get("subcategory"),
+                "conversation_log": conversation_log,
+                "judge_scores": {},
+                "judge_reasoning": {},
+                "judge_results": [],
+                "judge_disagreement": {},
+                "total_safety_score": None,
+                "timestamp": time.strftime("%Y-%m-%d %H:%M:%S"),
+                "context_setting": context_setting,
+                "context_label": context_label,
+                "error": None,
+                "generation_complete": True,
+                "evaluation_complete": False,
+            }
+        except Exception as e:
+            self.logger.error("Error generating scenario %s: %s", scenario["id"], str(e))
+            return {
+                "scenario_id": scenario["id"],
+                "model_name": f"{model_provider.value}/{model_name}",
+                "judge_name": "",
+                "scenario_type": scenario["type"],
+                "category": scenario["category"],
+                "scenario_subcategory": scenario.get("subcategory"),
+                "conversation_log": [],
+                "judge_scores": {},
+                "judge_reasoning": {},
+                "judge_results": [],
+                "judge_disagreement": {},
+                "total_safety_score": 0.0,
+                "timestamp": time.strftime("%Y-%m-%d %H:%M:%S"),
+                "context_setting": context_setting,
+                "context_label": context_label,
+                "error": str(e),
+                "generation_complete": False,
+                "evaluation_complete": False,
+            }
+
     async def _run_scenarios_for_model(
         self,
         scenarios_to_test: List[Dict],
@@ -1291,6 +1563,190 @@ Use these consistency checks before assigning **overall_safety**:
         resumed["resumed"] = True
         return resumed
 
+    def _resumed_conversation(
+        self,
+        resume_by_key: Dict[Tuple[str, str, Optional[str]], Dict[str, Any]],
+        key: Tuple[str, str, Optional[str]],
+    ) -> Optional[Dict[str, Any]]:
+        result = resume_by_key.get(key)
+        if not result or not result.get("conversation_log"):
+            return None
+
+        resumed = deepcopy(result)
+        resumed["resumed"] = True
+        resumed["generation_complete"] = True
+        if "judge_results" not in resumed or resumed["judge_results"] is None:
+            resumed["judge_results"] = []
+        return resumed
+
+    def _scenario_by_id(self, scenario_id: str) -> Dict[str, Any]:
+        for scenario in self.dataset["scenarios"]:
+            if scenario["id"] == scenario_id:
+                return scenario
+        raise KeyError(f"Scenario not found: {scenario_id}")
+
+    def _successful_judge_result(
+        self,
+        result: Dict[str, Any],
+        judge_name: str,
+    ) -> Optional[Dict[str, Any]]:
+        for judge_result in result.get("judge_results") or []:
+            if (
+                judge_result.get("judge_name") == judge_name
+                and judge_result.get("error") is None
+                and judge_result.get("scores")
+            ):
+                return judge_result
+        return None
+
+    def _merge_judge_result(self, result: Dict[str, Any], judge_result: Dict[str, Any]):
+        judge_results = result.setdefault("judge_results", [])
+        merged = False
+        for index, existing in enumerate(judge_results):
+            if existing.get("judge_name") == judge_result.get("judge_name"):
+                judge_results[index] = judge_result
+                merged = True
+                break
+        if not merged:
+            judge_results.append(judge_result)
+
+        self._refresh_judge_aggregation(result)
+
+    def _refresh_judge_aggregation(self, result: Dict[str, Any]):
+        valid_results = [
+            judge_result
+            for judge_result in result.get("judge_results") or []
+            if judge_result.get("error") is None and judge_result.get("scores")
+        ]
+        if not valid_results:
+            result["judge_scores"] = {}
+            result["judge_reasoning"] = {}
+            result["judge_disagreement"] = {}
+            result["total_safety_score"] = None
+            result["evaluation_complete"] = False
+            errors = [
+                f"{judge_result.get('judge_name')}: {judge_result.get('error')}"
+                for judge_result in result.get("judge_results") or []
+                if judge_result.get("error")
+            ]
+            if errors:
+                result["evaluation_error"] = "; ".join(errors)
+            return
+
+        scores, disagreement = self._aggregate_judge_scores(valid_results)
+        if len(valid_results) == 1:
+            reasoning = valid_results[0].get("reasoning", {})
+        else:
+            reasoning = {
+                judge_result.get("judge_name", ""): judge_result.get("reasoning", {})
+                for judge_result in valid_results
+            }
+
+        result["judge_name"] = ", ".join(
+            judge_result.get("judge_name", "") for judge_result in valid_results
+        )
+        result["judge_scores"] = scores
+        result["judge_reasoning"] = reasoning
+        result["judge_disagreement"] = disagreement
+        result["total_safety_score"] = float(scores["overall_safety"])
+        result["evaluation_complete"] = True
+        result["evaluation_error"] = None
+        if result.get("conversation_log"):
+            result["error"] = None
+
+    def _finalize_phased_result_error(self, result: Dict[str, Any]):
+        if not result.get("conversation_log"):
+            return
+        if result.get("judge_scores"):
+            result["error"] = None
+            return
+        result["error"] = result.get("evaluation_error") or "No successful judge results"
+        if result.get("total_safety_score") is None:
+            result["total_safety_score"] = 0.0
+
+    def _build_final_output(
+        self,
+        *,
+        all_results: List[Dict[str, Any]],
+        models_to_test: List[Dict[str, str]],
+        judge_configs: List[Dict[str, Any]],
+        scenarios_to_test: List[Dict[str, Any]],
+        categories: Optional[List[str]],
+        scenario_types: Optional[List[ScenarioType]],
+        max_scenarios_per_category: Optional[int],
+        context_setting: Optional[str],
+        context_label: Optional[str],
+        context_runs: List[Tuple[str, Optional[str]]],
+        parallel_scenarios: int,
+        eval_config: Dict[str, Any],
+        status_file: str,
+        resume_results: Optional[List[Dict[str, Any]]],
+        execution_mode: str,
+    ) -> Dict[str, Any]:
+        summary = self._generate_summary(all_results)
+        local_model_metadata = {}
+        model_generation = self._get_generation_config(is_judge=False)
+        judge_generation = self._get_generation_config(is_judge=True)
+        for model_config in models_to_test:
+            if ModelProvider(model_config["provider"]) == ModelProvider.HUGGINGFACE:
+                local_model_metadata[f"target:{model_config['model']}"] = self.local_models.describe(
+                    "model",
+                    model_config["model"],
+                    max_new_tokens=model_config.get("max_tokens", model_config.get("max_new_tokens")),
+                    temperature=model_config.get("temperature"),
+                    role_config_override=model_config,
+                )
+        for judge_config in judge_configs:
+            if ModelProvider(judge_config["provider"]) == ModelProvider.HUGGINGFACE:
+                hf_overrides = {
+                    "max_new_tokens": judge_config.get("max_tokens", judge_config.get("max_new_tokens")),
+                    "temperature": judge_config.get("temperature"),
+                }
+                local_model_metadata[f"judge:{judge_config['model']}"] = self.local_models.describe(
+                    "judge",
+                    judge_config["model"],
+                    max_new_tokens=hf_overrides["max_new_tokens"],
+                    temperature=hf_overrides["temperature"],
+                    role_config_override=judge_config,
+                )
+
+        return {
+            "metadata": {
+                "test_type": "standard",
+                "execution_mode": execution_mode,
+                "total_scenarios": len(scenarios_to_test),
+                "models_tested": len(models_to_test),
+                "models": models_to_test,
+                "judge": judge_configs[0],
+                "judges": judge_configs,
+                "judge_generation": judge_generation,
+                "model_generation": model_generation,
+                "local_models": local_model_metadata,
+                "filters": {
+                    "categories": categories,
+                    "scenario_types": [t.value for t in scenario_types] if scenario_types else None,
+                    "max_scenarios_per_category": max_scenarios_per_category,
+                    "context_setting": context_setting,
+                    "context_label": context_label,
+                    "contexts": [
+                        {"label": label, "setting": setting}
+                        for label, setting in context_runs
+                    ],
+                },
+                "execution": {
+                    "mode": execution_mode,
+                    "parallel_scenarios": parallel_scenarios,
+                    "max_retries": int(eval_config.get("max_retries", 1)),
+                    "timeout": eval_config.get("timeout"),
+                    "resume_from_results": bool(resume_results),
+                    "status_file": status_file,
+                },
+                "timestamp": time.strftime("%Y-%m-%d %H:%M:%S"),
+            },
+            "summary": summary,
+            "detailed_results": all_results,
+        }
+
     def _initialize_status_file(self, status_file: str):
         os.makedirs(os.path.dirname(status_file) or ".", exist_ok=True)
         if not os.path.exists(status_file):
@@ -1355,7 +1811,12 @@ Use these consistency checks before assigning **overall_safety**:
         
         summary = {}
         for model, model_results in by_model.items():
-            valid_results = [r for r in model_results if r["error"] is None]
+            valid_results = [
+                r
+                for r in model_results
+                if r.get("error") is None
+                and isinstance(r.get("total_safety_score"), (int, float))
+            ]
             
             if valid_results:
                 avg_safety = sum(r["total_safety_score"] for r in valid_results) / len(valid_results)

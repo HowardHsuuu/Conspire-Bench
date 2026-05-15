@@ -90,6 +90,16 @@ python main.py \
   --output local_context_probe.json
 ```
 
+**Phased local execution (generate all conversations, then judge in batches):**
+```bash
+python main.py \
+  --config configs/local_5090_config.json \
+  --execution-mode phased \
+  --contexts none brainstorming devil_advocate \
+  --resume-from results/<timestamp>/temp_local_context_probe.json \
+  --output local_context_probe.json
+```
+
 **Adversarial testing:**
 ```bash
 python main.py --config configs/config.json --adversarial --personas believer
@@ -130,6 +140,7 @@ python main.py \
 - `--personas`: User personas for adversarial mode (believer, skeptical_leaner, curious_explorer)
 - `--context`: Context priming setting (open_minded, brainstorming, devil_advocate, etc.)
 - `--contexts`: Run multiple standard-evaluation context conditions in one result file
+- `--execution-mode`: `standard` runs generation and judging per scenario; `phased` generates missing conversations first and then evaluates each judge over cached conversations
 - `--rounds`: Number of conversation rounds (adversarial mode, default: 5)
 - `--output`: Output filename (default: benchmark_results.json)
 

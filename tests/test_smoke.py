@@ -135,6 +135,25 @@ class SmokeTests(unittest.TestCase):
         self.assertIn("Target conversations to generate: 18", text)
         self.assertIn("Judge calls: 36", text)
 
+    def test_phased_dry_run_reports_execution_mode(self):
+        with redirect_stdout(StringIO()) as stdout:
+            exit_code = main([
+                "--config",
+                str(ROOT / "configs" / "local_5090_config.json"),
+                "--dry-run",
+                "--execution-mode",
+                "phased",
+                "--categories",
+                "aliens_ufo",
+                "--types",
+                "single_turn",
+                "--max-per-category",
+                "1",
+            ])
+
+        self.assertEqual(exit_code, 0)
+        self.assertIn("Mode: phased", stdout.getvalue())
+
     def test_summary_tracks_successes_and_failures(self):
         runner = make_runner_without_init()
 
@@ -289,6 +308,68 @@ class SmokeTests(unittest.TestCase):
             )
         )
 
+    def test_phased_resume_and_judge_merge_are_granular(self):
+        runner = make_runner_without_init()
+        existing = {
+            "scenario_id": "s1",
+            "model_name": "huggingface/model-a",
+            "context_setting": None,
+            "conversation_log": [{"role": "assistant", "content": "hello"}],
+            "judge_results": [
+                {
+                    "judge_name": "judge-a",
+                    "scores": {
+                        "conspiracy_amplification": 2,
+                        "reality_grounding": 4,
+                        "appropriate_uncertainty": 4,
+                        "overall_safety": 4,
+                        "harmful_elaboration": False,
+                    },
+                    "reasoning": {"overall_safety": "ok"},
+                    "error": None,
+                },
+                {
+                    "judge_name": "judge-b",
+                    "scores": {},
+                    "reasoning": {},
+                    "error": "format failed",
+                },
+            ],
+            "error": "All judges failed before retry",
+        }
+        resume_map = runner._resume_result_map([existing])
+
+        resumed = runner._resumed_conversation(
+            resume_map,
+            ("s1", "huggingface/model-a", None),
+        )
+
+        self.assertIsNotNone(resumed)
+        self.assertTrue(resumed["generation_complete"])
+        self.assertIsNotNone(runner._successful_judge_result(resumed, "judge-a"))
+        self.assertIsNone(runner._successful_judge_result(resumed, "judge-b"))
+
+        runner._merge_judge_result(
+            resumed,
+            {
+                "judge_name": "judge-b",
+                "scores": {
+                    "conspiracy_amplification": 4,
+                    "reality_grounding": 2,
+                    "appropriate_uncertainty": 3,
+                    "overall_safety": 2,
+                    "harmful_elaboration": True,
+                },
+                "reasoning": {"overall_safety": "risky"},
+                "error": None,
+            },
+        )
+
+        self.assertIsNone(resumed["error"])
+        self.assertEqual(len(resumed["judge_results"]), 2)
+        self.assertEqual(resumed["total_safety_score"], 3.0)
+        self.assertEqual(resumed["judge_disagreement"]["overall_safety"], 2.0)
+
     def test_status_file_writer(self):
         runner = make_runner_without_init()
         with tempfile.TemporaryDirectory() as tmp:
@@ -406,9 +487,28 @@ class SmokeTests(unittest.TestCase):
         )
 
         self.assertEqual(meta["model_class"], "image_text_to_text")
+        self.assertEqual(meta["max_seq_length"], 32768)
         self.assertFalse(meta["generation"]["do_sample"])
         self.assertEqual(meta["generation"]["max_new_tokens"], 4000)
         self.assertEqual(meta["generation"]["cache_implementation"], "static")
+
+    def test_local_qwen_judge_uses_long_context(self):
+        with open(ROOT / "configs" / "local_5090_config.json", "r") as f:
+            config = json.load(f)
+        manager = LocalModelManager(config, logging.getLogger("test"), root_dir=ROOT)
+        judge_config = config["judges"][0]
+
+        meta = manager.describe(
+            "judge",
+            judge_config["model"],
+            max_new_tokens=judge_config["max_tokens"],
+            temperature=judge_config["temperature"],
+            role_config_override=judge_config,
+        )
+
+        self.assertEqual(meta["name"], "Qwen/Qwen2.5-7B-Instruct")
+        self.assertEqual(meta["max_seq_length"], 32768)
+        self.assertFalse(meta["generation"]["do_sample"])
 
     def test_false_quantization_flags_are_not_forwarded(self):
         manager = LocalModelManager({}, logging.getLogger("test"), root_dir=ROOT)

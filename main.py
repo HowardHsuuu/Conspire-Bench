@@ -28,6 +28,7 @@ Basic usage:
   python main.py --config configs/local_5090_config.json --types single_turn --max-per-category 1
   python main.py --config configs/local_5090_config.json --dry-run --types single_turn
   python main.py --config configs/local_5090_config.json --validate-only
+  python main.py --config configs/local_5090_config.json --execution-mode phased --contexts none brainstorming devil_advocate
 
 With context setting:
   python main.py --config configs/config.json --context open_minded
@@ -186,6 +187,13 @@ def build_parser() -> argparse.ArgumentParser:
         "--status-file",
         type=str,
         help="Write per-scenario run status TSV to this path. Default: <results_dir>/status.tsv.",
+    )
+
+    parser.add_argument(
+        "--execution-mode",
+        choices=["standard", "phased"],
+        default="standard",
+        help="standard runs generation+judging per scenario; phased generates all conversations first, then runs each judge over cached conversations.",
     )
 
     return parser
@@ -374,7 +382,7 @@ def print_execution_plan(
         args.max_per_category,
     )
     judges = _judge_configs_for_plan(config)
-    mode = "adversarial" if args.adversarial else "standard"
+    mode = "adversarial" if args.adversarial else args.execution_mode
     persona_count = len(personas) if personas else len(UserPersona)
     target_conversations = (
         len(model_configs) * len(scenarios) * persona_count * len(context_runs)
@@ -417,6 +425,9 @@ def main(argv: Optional[List[str]] = None) -> int:
         return 1
     if args.adversarial and args.resume_from:
         print("Error: --resume-from is currently supported for standard runs only")
+        return 1
+    if args.adversarial and args.execution_mode != "standard":
+        print("Error: --execution-mode phased is supported for standard runs only")
         return 1
 
     config = load_config(args.config)
@@ -557,7 +568,7 @@ async def run_benchmark_async(
         results_dir = base_runner.results_dir
 
     else:
-        print("Starting Conspire-Bench standard evaluation")
+        print(f"Starting Conspire-Bench standard evaluation ({args.execution_mode} execution)")
         print(f"Model: {model_str}")
         print(f"Judge: {judge_str}")
         print(f"Categories: {args.categories or 'all'}")
@@ -565,20 +576,24 @@ async def run_benchmark_async(
 
         runner = ConspireBenchmarkRunner(config_path=args.config)
         judge_provider_enum = ModelProvider(judge_provider) if judge_provider else None
-        results = await runner.run_benchmark(
-            models_to_test=model_configs,
-            categories=args.categories,
-            scenario_types=scenario_types,
-            max_scenarios_per_category=args.max_per_category,
-            output_file=args.output,
-            context_setting=context_runs[0][1],
-            context_label=context_runs[0][0],
-            context_runs=context_runs,
-            judge_provider=judge_provider_enum,
-            judge_model=judge_model,
-            resume_results=_load_resume_results(args.resume_from),
-            status_file=args.status_file,
-        )
+        run_kwargs = {
+            "models_to_test": model_configs,
+            "categories": args.categories,
+            "scenario_types": scenario_types,
+            "max_scenarios_per_category": args.max_per_category,
+            "output_file": args.output,
+            "context_setting": context_runs[0][1],
+            "context_label": context_runs[0][0],
+            "context_runs": context_runs,
+            "judge_provider": judge_provider_enum,
+            "judge_model": judge_model,
+            "resume_results": _load_resume_results(args.resume_from),
+            "status_file": args.status_file,
+        }
+        if args.execution_mode == "phased":
+            results = await runner.run_benchmark_phased(**run_kwargs)
+        else:
+            results = await runner.run_benchmark(**run_kwargs)
 
         results_dir = runner.results_dir
 
