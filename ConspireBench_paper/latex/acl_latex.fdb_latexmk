@@ -1,13 +1,13 @@
 # Fdb version 4
-["bibtex acl_latex"] 1778965705.8226 "acl_latex.aux" "acl_latex.bbl" "acl_latex" 1778965707.58219 0
+["bibtex acl_latex"] 1778972747.44123 "acl_latex.aux" "acl_latex.bbl" "acl_latex" 1778972749.22634 0
   "./acl_natbib.bst" 1778917537.82934 45186 3d1af46d62cc9172ef6e42b56c1cd613 ""
   "./custom.bib" 1778920088.07889 7472 4c2fad15b469bea22cff3f482a2e97f1 ""
-  "acl_latex.aux" 1778965707.21189 21423 9f1dabfedad9b37d3a5ffb7eddad205c "pdflatex"
+  "acl_latex.aux" 1778972748.85814 23436 18dfab50ea5c3840e673d20ba7a90ad7 "pdflatex"
   (generated)
   "acl_latex.bbl"
   "acl_latex.blg"
   (rewritten before read)
-["pdflatex"] 1778965705.97598 "acl_latex.tex" "acl_latex.pdf" "acl_latex" 1778965707.58242 0
+["pdflatex"] 1778972747.59057 "acl_latex.tex" "acl_latex.pdf" "acl_latex" 1778972749.22658 0
   "/usr/local/texlive/2024/texmf-dist/fonts/enc/dvips/base/8r.enc" 1165713224 4850 80dc9bab7f31fb78a000ccfed0e27cab ""
   "/usr/local/texlive/2024/texmf-dist/fonts/enc/dvips/inconsolata/i4-t1-0.enc" 1558214095 7631 5169ff1acd97ff1c4ab83563c99f96f4 ""
   "/usr/local/texlive/2024/texmf-dist/fonts/enc/dvips/inconsolata/i4-ts1.enc" 1455745497 9446 fe5580ca6042a44427f18d450942e7d0 ""
@@ -96,6 +96,7 @@
   "/usr/local/texlive/2024/texmf-dist/tex/latex/epstopdf-pkg/epstopdf-base.sty" 1579991033 13886 d1306dcf79a944f6988e688c1785f9ce ""
   "/usr/local/texlive/2024/texmf-dist/tex/latex/etoolbox/etoolbox.sty" 1601931149 46845 3b58f70c6e861a13d927bff09d35ecbc ""
   "/usr/local/texlive/2024/texmf-dist/tex/latex/fancyvrb/fancyvrb.sty" 1705955721 43712 c3d93734f3bc56e03c21b3dc69268d3c ""
+  "/usr/local/texlive/2024/texmf-dist/tex/latex/float/float.sty" 1137110151 6749 16d2656a1984957e674b149555f1ea1d ""
   "/usr/local/texlive/2024/texmf-dist/tex/latex/fvextra/fvextra.sty" 1701293077 98306 0bfae48bd7029fbf4d543787f8fc90cc ""
   "/usr/local/texlive/2024/texmf-dist/tex/latex/geometry/geometry.sty" 1578002852 41601 9cf6c5257b1bc7af01a58859749dd37a ""
   "/usr/local/texlive/2024/texmf-dist/tex/latex/graphics-cfg/color.cfg" 1459978653 1213 620bba36b25224fa9b7e1ccb4ecb76fd ""
@@ -142,13 +143,13 @@
   "/usr/local/texlive/2024/texmf-var/web2c/pdftex/pdflatex.fmt" 1735682414 8221453 a8f62076e5f22e86caf73ee839e07290 ""
   "/usr/local/texlive/2024/texmf.cnf" 1710266656 577 e590dabc9e28c5b61546e15f63eebcdf ""
   "acl.sty" 1778917537.82821 11615 e2c027f483aa40e577ed34264c8b0655 ""
-  "acl_latex.aux" 1778965707.21189 21423 9f1dabfedad9b37d3a5ffb7eddad205c "pdflatex"
-  "acl_latex.bbl" 1778965705.97258 7693 da98513deeee7079a8f8047c2235442c "bibtex acl_latex"
-  "acl_latex.out" 1778965707.21372 4999 5f59ca053349e0a75c82a8456f5887fd "pdflatex"
-  "acl_latex.tex" 1778965699.20518 36534 668b72fef436360c9bbf1b53962ca915 ""
+  "acl_latex.aux" 1778972748.85814 23436 18dfab50ea5c3840e673d20ba7a90ad7 "pdflatex"
+  "acl_latex.bbl" 1778972747.58727 7693 da98513deeee7079a8f8047c2235442c "bibtex acl_latex"
+  "acl_latex.out" 1778972748.85975 5475 36920e9f36a24b55a7efad0567448c9a "pdflatex"
+  "acl_latex.tex" 1778972739.64484 42111 d0891faeea98ccedeec02c091b2f694a ""
   "figures/figA1_structure_heatmap.pdf" 1778965461.64878 25156 ad6c7c9a4280a76ff94b4f2302566344 ""
   "figures/figA2_model_trajectories.pdf" 1778965461.91142 23367 c16dc301b53de0a3b6926260d28ce4d5 ""
-  "figures/figure1_pipeline.png" 1778959574.95366 1355541 3e702db45f765c772786b623e5488b30 ""
+  "figures/figure1_pipeline.png" 1778966110.22727 1195919 365644023847bcecf49cfc71966a4492 ""
   "judge_prompt_template.tex" 1778953521.69107 6231 94fac612f6d4022e777427f67c32aeff ""
   "judge_specific_tables.tex" 1778963735.62152 4461 0d924d9358651ba4ed3bb9e7a0a10605 ""
   (generated)

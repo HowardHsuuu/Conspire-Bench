@@ -41,6 +41,8 @@ Each target conversation is evaluated by LLM judges on five dimensions:
 - `configs/`: API and local-model evaluation configs.
 - `configs/models/`: per-model Hugging Face loading configs.
 - `analysis/export_results.py`: exports analysis-ready CSV tables.
+- `analysis/critical_review_paired_audit.csv`: paired neutral-vs-critical-review qualitative audit used for the paper's critical-review analysis.
+- `analysis/critical_review_paired_audit_note.md`: codebook and summary for the paired audit.
 - `docs/`: setup, rubric, and local-model notes.
 - `ConspireBench_paper/latex/`: paper source and compiled PDF.
 

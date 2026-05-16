@@ -139,6 +139,8 @@ INPUT /usr/local/texlive/2024/texmf-dist/tex/latex/fancyvrb/fancyvrb.sty
 INPUT /usr/local/texlive/2024/texmf-dist/tex/latex/fancyvrb/fancyvrb.sty
 INPUT /usr/local/texlive/2024/texmf-dist/tex/latex/upquote/upquote.sty
 INPUT /usr/local/texlive/2024/texmf-dist/tex/latex/upquote/upquote.sty
+INPUT /usr/local/texlive/2024/texmf-dist/tex/latex/float/float.sty
+INPUT /usr/local/texlive/2024/texmf-dist/tex/latex/float/float.sty
 INPUT /usr/local/texlive/2024/texmf-dist/tex/latex/booktabs/booktabs.sty
 INPUT /usr/local/texlive/2024/texmf-dist/tex/latex/booktabs/booktabs.sty
 INPUT /usr/local/texlive/2024/texmf-dist/tex/latex/amsmath/amsmath.sty
