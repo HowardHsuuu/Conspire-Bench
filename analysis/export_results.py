@@ -211,14 +211,14 @@ def export_results(input_path: Path, out_dir: Path) -> List[Path]:
 
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(
-        description="Export Conspire-Bench result JSON into paper-friendly CSV tables."
+        description="Export Conspire-Bench result JSON into analysis-ready CSV tables."
     )
     parser.add_argument("input", type=Path, help="Path to benchmark_results.json")
     parser.add_argument(
         "--out-dir",
         type=Path,
         default=None,
-        help="Directory for CSV outputs. Default: <result-dir>/paper_tables",
+        help="Directory for CSV outputs. Default: <result-dir>/analysis_tables",
     )
     return parser
 
@@ -226,7 +226,7 @@ def build_parser() -> argparse.ArgumentParser:
 def main() -> int:
     parser = build_parser()
     args = parser.parse_args()
-    out_dir = args.out_dir or args.input.parent / "paper_tables"
+    out_dir = args.out_dir or args.input.parent / "analysis_tables"
     written = export_results(args.input, out_dir)
     for path in written:
         print(path)

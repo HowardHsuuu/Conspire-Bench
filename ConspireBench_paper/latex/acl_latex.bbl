@@ -1,0 +1,152 @@
+\begin{thebibliography}{19}
+\providecommand{\natexlab}[1]{#1}
+
+\bibitem[{Arora et~al.(2025)Arora, Wei, Soskin~Hicks, Bowman,
+  Quinonero-Candela, Tsimpourlas, Sharman, Shah, Vallone, Beutel, Heidecke, and
+  Singhal}]{arora2025healthbench}
+Rahul~K. Arora, Jason Wei, Rebecca Soskin~Hicks, Preston Bowman, Joaquin
+  Quinonero-Candela, Foivos Tsimpourlas, Michael Sharman, Meghan Shah, Andrea
+  Vallone, Alex Beutel, Johannes Heidecke, and Karan Singhal. 2025.
+\newblock \href {https://arxiv.org/abs/2505.08775} {Healthbench: Evaluating
+  large language models towards improved human health}.
+\newblock \emph{Preprint}, arXiv:2505.08775.
+
+\bibitem[{Bates et~al.(2025)Bates, Glockner, Nakov, and
+  Gurevych}]{bates2025conspired}
+Luke Bates, Max Glockner, Preslav Nakov, and Iryna Gurevych. 2025.
+\newblock \href {https://arxiv.org/abs/2508.20468} {Conspired: A dataset for
+  cognitive traits of conspiracy theories and large language model safety}.
+\newblock \emph{Preprint}, arXiv:2508.20468.
+
+\bibitem[{Beck et~al.(2009)Beck, Rector, Stolar, and
+  Grant}]{beck2009schizophrenia}
+Aaron~T. Beck, Neil~A. Rector, Neal Stolar, and Paul Grant. 2009.
+\newblock \emph{Schizophrenia: Cognitive Theory, Research, and Therapy}.
+\newblock Guilford Press.
+
+\bibitem[{Dalmiere(2026)}]{dalmiere2026susceptibility}
+Antony Dalmiere. 2026.
+\newblock \href {https://doi.org/10.5210/fm.v31i1.14491} {Measuring
+  susceptibility: A benchmark for conspiracy theory adherence in large language
+  models}.
+\newblock \emph{First Monday}, 31(1).
+
+\bibitem[{Douglas et~al.(2017)Douglas, Sutton, and
+  Cichocka}]{douglas2017psychology}
+Karen~M. Douglas, Robbie~M. Sutton, and Aleksandra Cichocka. 2017.
+\newblock \href {https://doi.org/10.1177/0963721417718261} {The psychology of
+  conspiracy theories}.
+\newblock \emph{Current Directions in Psychological Science}, 26(6):538--542.
+
+\bibitem[{Dudley et~al.(2016)Dudley, Taylor, Wickham, and
+  Hutton}]{dudley2016psychosis}
+Robert Dudley, Paul Taylor, Sophie Wickham, and Paul Hutton. 2016.
+\newblock \href {https://doi.org/10.1093/schbul/sbv150} {Psychosis, delusions
+  and the ``jumping to conclusions'' reasoning bias: A systematic review and
+  meta-analysis}.
+\newblock \emph{Schizophrenia Bulletin}, 42(3):652--665.
+
+\bibitem[{Freeman et~al.(2002)Freeman, Garety, Kuipers, Fowler, and
+  Bebbington}]{freeman2002cognitive}
+Daniel Freeman, Philippa~A. Garety, Elizabeth Kuipers, David Fowler, and
+  Paul~E. Bebbington. 2002.
+\newblock \href {https://doi.org/10.1348/014466502760387461} {A cognitive model
+  of persecutory delusions}.
+\newblock \emph{British Journal of Clinical Psychology}, 41(4):331--347.
+
+\bibitem[{Garety and Freeman(1999)}]{garety1999cognitive}
+Philippa~A. Garety and Daniel Freeman. 1999.
+\newblock \href {https://doi.org/10.1348/014466599162700} {Cognitive approaches
+  to delusions: A critical review of theories and evidence}.
+\newblock \emph{British Journal of Clinical Psychology}, 38(2):113--154.
+
+\bibitem[{Le~Jeune et~al.(2025)Le~Jeune, Malezieux, Xiao, and
+  Dora}]{lejeune2025phare}
+Pierre Le~Jeune, Benoit Malezieux, Weixuan Xiao, and Matteo Dora. 2025.
+\newblock \href {https://arxiv.org/abs/2505.11365} {Phare: A safety probe for
+  large language models}.
+\newblock \emph{Preprint}, arXiv:2505.11365.
+
+\bibitem[{Lin et~al.(2022)Lin, Hilton, and Evans}]{lin2022truthfulqa}
+Stephanie Lin, Jacob Hilton, and Owain Evans. 2022.
+\newblock Truthfulqa: Measuring how models mimic human falsehoods.
+\newblock In \emph{Proceedings of the 60th Annual Meeting of the Association
+  for Computational Linguistics}, pages 3214--3252.
+
+\bibitem[{Liu et~al.(2023)Liu, Iter, Xu, Wang, Xu, and Zhu}]{liu2023geval}
+Yang Liu, Dan Iter, Yichong Xu, Shuohang Wang, Ruochen Xu, and Chenguang Zhu.
+  2023.
+\newblock {G-Eval}: {NLG} evaluation using {GPT}-4 with better human alignment.
+\newblock In \emph{Proceedings of the 2023 Conference on Empirical Methods in
+  Natural Language Processing}, pages 2511--2522.
+
+\bibitem[{Liu et~al.(2024)Liu, Liu, Thompson, Yang, and
+  Ananiadou}]{liu2024conspemollm}
+Zhiwei Liu, Boyang Liu, Paul Thompson, Kailai Yang, and Sophia Ananiadou. 2024.
+\newblock \href {https://arxiv.org/abs/2403.06765} {Conspemollm: Conspiracy
+  theory detection using an emotion-based large language model}.
+\newblock \emph{Preprint}, arXiv:2403.06765.
+
+\bibitem[{Mazeika et~al.(2024)Mazeika, Phan, Yin, Zou, Wang, Mu, Sakhaee, Li,
+  Basart, Li, Forsyth, and Hendrycks}]{mazeika2024harmbench}
+Mantas Mazeika, Long Phan, Xuwang Yin, Andy Zou, Zifan Wang, Norman Mu, Elham
+  Sakhaee, Nathaniel Li, Steven Basart, Bo~Li, David Forsyth, and Dan
+  Hendrycks. 2024.
+\newblock Harmbench: A standardized evaluation framework for automated red
+  teaming and robust refusal.
+\newblock In \emph{Proceedings of the 41st International Conference on Machine
+  Learning}, pages 35181--35224.
+
+\bibitem[{{National Institute for Health and Care
+  Excellence}(2014)}]{nice2014psychosis}
+{National Institute for Health and Care Excellence}. 2014.
+\newblock \href {https://www.nice.org.uk/guidance/cg178} {Psychosis and
+  schizophrenia in adults: Prevention and management}.
+\newblock NICE Clinical Guideline CG178.
+
+\bibitem[{Sharma et~al.(2023)Sharma, Tong, Korbak, Duvenaud, Askell, Bowman,
+  Cheng, Durmus, Hatfield-Dodds, Johnston, Kravec, Maxwell, McCandlish,
+  Ndousse, Rausch, Schiefer, Yan, Zhang, and Perez}]{sharma2023sycophancy}
+Mrinank Sharma, Meg Tong, Tomasz Korbak, David Duvenaud, Amanda Askell,
+  Samuel~R. Bowman, Newton Cheng, Esin Durmus, Zac Hatfield-Dodds, Scott~R.
+  Johnston, Shauna Kravec, Timothy Maxwell, Sam McCandlish, Kamal Ndousse,
+  Oliver Rausch, Nicholas Schiefer, Da~Yan, Miranda Zhang, and Ethan Perez.
+  2023.
+\newblock \href {https://arxiv.org/abs/2310.13548} {Towards understanding
+  sycophancy in language models}.
+\newblock \emph{Preprint}, arXiv:2310.13548.
+
+\bibitem[{van Prooijen and van Vugt(2018)}]{vanprooijen2018conspiracy}
+Jan-Willem van Prooijen and Mark van Vugt. 2018.
+\newblock \href {https://doi.org/10.1177/1745691618774270} {Conspiracy
+  theories: Evolved functions and psychological mechanisms}.
+\newblock \emph{Perspectives on Psychological Science}, 13(6):770--788.
+
+\bibitem[{Wang et~al.(2023)Wang, Chen, Pei, Xie, Kang, Zhang, Xu, Xiong, Dutta,
+  Schaeffer, Truong, Arora, Mazeika, Hendrycks, Lin, Cheng, Koyejo, Song, and
+  Li}]{wang2023decodingtrust}
+Boxin Wang, Weixin Chen, Hengzhi Pei, Chulin Xie, Mintong Kang, Chenhui Zhang,
+  Chejian Xu, Zidi Xiong, Ritik Dutta, Rylan Schaeffer, Sang~T. Truong, Simran
+  Arora, Mantas Mazeika, Dan Hendrycks, Zinan Lin, Yu~Cheng, Sanmi Koyejo, Dawn
+  Song, and Bo~Li. 2023.
+\newblock Decodingtrust: A comprehensive assessment of trustworthiness in {GPT}
+  models.
+\newblock In \emph{Advances in Neural Information Processing Systems}.
+
+\bibitem[{Zhang et~al.(2024)Zhang, Lei, Wu, Sun, Huang, Long, Liu, Lei, Tang,
+  and Huang}]{zhang2024safetybench}
+Zhexin Zhang, Leqi Lei, Lindong Wu, Rui Sun, Yongkang Huang, Chong Long, Xiao
+  Liu, Xuanyu Lei, Jie Tang, and Minlie Huang. 2024.
+\newblock Safetybench: Evaluating the safety of large language models.
+\newblock In \emph{Proceedings of the 62nd Annual Meeting of the Association
+  for Computational Linguistics}.
+
+\bibitem[{Zheng et~al.(2023)Zheng, Chiang, Sheng, Zhuang, Wu, Zhuang, Lin, Li,
+  Li, Xing, Zhang, Gonzalez, and Stoica}]{zheng2023judging}
+Lianmin Zheng, Wei-Lin Chiang, Ying Sheng, Siyuan Zhuang, Zhanghao Wu, Yonghao
+  Zhuang, Zi~Lin, Zhuohan Li, Dacheng Li, Eric~P. Xing, Hao Zhang, Joseph~E.
+  Gonzalez, and Ion Stoica. 2023.
+\newblock Judging {LLM}-as-a-judge with {MT-Bench} and chatbot arena.
+\newblock In \emph{Advances in Neural Information Processing Systems}.
+
+\end{thebibliography}

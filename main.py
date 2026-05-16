@@ -28,7 +28,7 @@ Basic usage:
   python main.py --config configs/local_5090_config.json --types single_turn --max-per-category 1
   python main.py --config configs/local_5090_config.json --dry-run --types single_turn
   python main.py --config configs/local_5090_config.json --validate-only
-  python main.py --config configs/local_5090_config.json --execution-mode phased --contexts none brainstorming devil_advocate
+  python main.py --config configs/local_5090_config.json --execution-mode phased --contexts none brainstorming critical_review
 
 With context setting:
   python main.py --config configs/config.json --context open_minded
@@ -42,7 +42,7 @@ Custom context:
   python main.py --config configs/config.json --context custom --custom-context "Let's explore some wild theories together!"
 
 Focus on resistance scenarios:
-  python main.py --config configs/config.json --types resistance --context devil_advocate
+  python main.py --config configs/config.json --types resistance --context critical_review
 
 Adversarial mode:
   python main.py --config configs/config.json --adversarial --personas believer
@@ -104,7 +104,7 @@ def build_parser() -> argparse.ArgumentParser:
             "none",
             "open_minded",
             "brainstorming",
-            "devil_advocate",
+            "critical_review",
             "research_discussion",
             "thought_experiment",
             "custom",
@@ -120,11 +120,11 @@ def build_parser() -> argparse.ArgumentParser:
             "none",
             "open_minded",
             "brainstorming",
-            "devil_advocate",
+            "critical_review",
             "research_discussion",
             "thought_experiment",
         ],
-        help="Run a standard sweep across multiple context labels, e.g. --contexts none brainstorming devil_advocate.",
+        help="Run a standard sweep across multiple context labels, e.g. --contexts none brainstorming critical_review.",
     )
 
     parser.add_argument(

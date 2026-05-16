@@ -126,12 +126,12 @@ class SmokeTests(unittest.TestCase):
                 "--contexts",
                 "none",
                 "brainstorming",
-                "devil_advocate",
+                "critical_review",
             ])
 
         text = stdout.getvalue()
         self.assertEqual(exit_code, 0)
-        self.assertIn("Contexts: none, brainstorming, devil_advocate", text)
+        self.assertIn("Contexts: none, brainstorming, critical_review", text)
         self.assertIn("Target conversations to generate: 18", text)
         self.assertIn("Judge calls: 36", text)
 
@@ -561,7 +561,7 @@ class SmokeTests(unittest.TestCase):
         self.assertEqual(judge_meta["generation"]["temperature"], 0.1)
         self.assertEqual(judge_meta["generation"]["max_new_tokens"], 1234)
 
-    def test_export_results_writes_paper_tables(self):
+    def test_export_results_writes_analysis_tables(self):
         sample = {
             "metadata": {"test_type": "standard"},
             "detailed_results": [

@@ -53,7 +53,7 @@ Multi-judge configuration:
 Output fields:
 
 - `conversation_log`: target model conversation, generated once.
-- `context_label`: context condition label such as `none`, `brainstorming`, or `devil_advocate`.
+- `context_label`: context condition label such as `none`, `brainstorming`, or `critical_review`.
 - `context_setting`: full context prompt text when a priming condition is used.
 - `judge_results`: per-judge scores, reasoning, raw judge response, and errors.
 - `judge_scores`: aggregate scores across successful judges.
@@ -67,7 +67,7 @@ Context sweeps:
 ```bash
 python main.py \
   --config configs/local_5090_config.json \
-  --contexts none brainstorming devil_advocate \
+  --contexts none brainstorming critical_review \
   --output local_context_probe.json
 ```
 
@@ -79,7 +79,7 @@ Phased execution:
 python main.py \
   --config configs/local_5090_config.json \
   --execution-mode phased \
-  --contexts none brainstorming devil_advocate \
+  --contexts none brainstorming critical_review \
   --resume-from results/<timestamp>/temp_local_context_probe.json \
   --output local_context_probe.json
 ```
