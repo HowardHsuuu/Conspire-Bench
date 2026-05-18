@@ -1,0 +1,13 @@
+frame,model_name,model_short,model_family,params_b,overall_delta,harm_delta
+brainstorming,huggingface/Qwen/Qwen2.5-0.5B-Instruct,Qwen2.5-0.5B-Instruct,Qwen,0.5,-0.14583333333333334,0.2916666666666667
+brainstorming,huggingface/Qwen/Qwen2.5-7B-Instruct,Qwen2.5-7B-Instruct,Qwen,7.0,-0.3541666666666667,0.2916666666666667
+brainstorming,huggingface/google/gemma-3-1b-it,gemma-3-1b-it,Gemma,1.0,-0.3958333333333333,0.5
+brainstorming,huggingface/google/gemma-4-E2B-it,gemma-4-E2B-it,Gemma,2.0,-0.375,0.375
+brainstorming,huggingface/meta-llama/Llama-3.1-8B-Instruct,Llama-3.1-8B-Instruct,Llama,8.0,-0.3541666666666667,0.2916666666666667
+brainstorming,huggingface/meta-llama/Llama-3.2-3B-Instruct,Llama-3.2-3B-Instruct,Llama,3.0,-0.5,0.25
+critical_review,huggingface/Qwen/Qwen2.5-0.5B-Instruct,Qwen2.5-0.5B-Instruct,Qwen,0.5,-0.020833333333333332,-0.125
+critical_review,huggingface/Qwen/Qwen2.5-7B-Instruct,Qwen2.5-7B-Instruct,Qwen,7.0,-0.22916666666666666,0.16666666666666666
+critical_review,huggingface/google/gemma-3-1b-it,gemma-3-1b-it,Gemma,1.0,-0.08333333333333333,0.16666666666666666
+critical_review,huggingface/google/gemma-4-E2B-it,gemma-4-E2B-it,Gemma,2.0,0.3125,0.0
+critical_review,huggingface/meta-llama/Llama-3.1-8B-Instruct,Llama-3.1-8B-Instruct,Llama,8.0,0.041666666666666664,0.08333333333333333
+critical_review,huggingface/meta-llama/Llama-3.2-3B-Instruct,Llama-3.2-3B-Instruct,Llama,3.0,0.0,-0.041666666666666664

@@ -1,13 +1,13 @@
 # Fdb version 4
-["bibtex acl_latex"] 1778972747.44123 "acl_latex.aux" "acl_latex.bbl" "acl_latex" 1778972749.22634 0
+["bibtex acl_latex"] 1779126474.98258 "acl_latex.aux" "acl_latex.bbl" "acl_latex" 1779126476.82453 0
   "./acl_natbib.bst" 1778917537.82934 45186 3d1af46d62cc9172ef6e42b56c1cd613 ""
-  "./custom.bib" 1778920088.07889 7472 4c2fad15b469bea22cff3f482a2e97f1 ""
-  "acl_latex.aux" 1778972748.85814 23436 18dfab50ea5c3840e673d20ba7a90ad7 "pdflatex"
+  "./custom.bib" 1779124318.93037 10237 2b3f587540c9d8b17b4f30c989960abf ""
+  "acl_latex.aux" 1779126476.42834 27714 a63a32da74030f6a1b39fa5c1f4d41d9 "pdflatex"
   (generated)
   "acl_latex.bbl"
   "acl_latex.blg"
   (rewritten before read)
-["pdflatex"] 1778972747.59057 "acl_latex.tex" "acl_latex.pdf" "acl_latex" 1778972749.22658 0
+["pdflatex"] 1779126475.13321 "acl_latex.tex" "acl_latex.pdf" "acl_latex" 1779126476.82477 0
   "/usr/local/texlive/2024/texmf-dist/fonts/enc/dvips/base/8r.enc" 1165713224 4850 80dc9bab7f31fb78a000ccfed0e27cab ""
   "/usr/local/texlive/2024/texmf-dist/fonts/enc/dvips/inconsolata/i4-t1-0.enc" 1558214095 7631 5169ff1acd97ff1c4ab83563c99f96f4 ""
   "/usr/local/texlive/2024/texmf-dist/fonts/enc/dvips/inconsolata/i4-ts1.enc" 1455745497 9446 fe5580ca6042a44427f18d450942e7d0 ""
@@ -46,9 +46,18 @@
   "/usr/local/texlive/2024/texmf-dist/fonts/tfm/public/latex-fonts/lasy7.tfm" 1136768653 520 a74c6ed8cb48679fdc3ea874d9d34a7e ""
   "/usr/local/texlive/2024/texmf-dist/fonts/tfm/public/latex-fonts/lasy8.tfm" 1136768653 520 7bb3abb160b19e0ed6ac404bb59052b7 ""
   "/usr/local/texlive/2024/texmf-dist/fonts/tfm/public/latex-fonts/lasy9.tfm" 1136768653 520 1cc7cc05f4d7bae5c23bf7516f88fa52 ""
+  "/usr/local/texlive/2024/texmf-dist/fonts/type1/public/amsfonts/cm/cmmi10.pfb" 1248133631 36299 5f9df58c2139e7edcf37c8fca4bd384d ""
   "/usr/local/texlive/2024/texmf-dist/fonts/type1/public/amsfonts/cm/cmmi6.pfb" 1248133631 37166 8ab3487cbe3ab49ebce74c29ea2418db ""
+  "/usr/local/texlive/2024/texmf-dist/fonts/type1/public/amsfonts/cm/cmmi7.pfb" 1248133631 36281 c355509802a035cadc5f15869451dcee ""
+  "/usr/local/texlive/2024/texmf-dist/fonts/type1/public/amsfonts/cm/cmr10.pfb" 1248133631 35752 024fb6c41858982481f6968b5fc26508 ""
+  "/usr/local/texlive/2024/texmf-dist/fonts/type1/public/amsfonts/cm/cmr5.pfb" 1248133631 31809 8670ca339bf94e56da1fc21c80635e2a ""
+  "/usr/local/texlive/2024/texmf-dist/fonts/type1/public/amsfonts/cm/cmr7.pfb" 1248133631 32762 224316ccc9ad3ca0423a14971cfa7fc1 ""
+  "/usr/local/texlive/2024/texmf-dist/fonts/type1/public/amsfonts/cm/cmr8.pfb" 1248133631 32726 0a1aea6fcd6468ee2cf64d891f5c43c8 ""
+  "/usr/local/texlive/2024/texmf-dist/fonts/type1/public/amsfonts/cm/cmsy10.pfb" 1248133631 32569 5e5ddc8df908dea60932f3c484a54c0d ""
+  "/usr/local/texlive/2024/texmf-dist/fonts/type1/public/amsfonts/cm/cmsy5.pfb" 1248133631 32915 7bf7720c61a5b3a7ff25b0964421c9b6 ""
   "/usr/local/texlive/2024/texmf-dist/fonts/type1/public/amsfonts/cm/cmsy6.pfb" 1248133631 32587 1788b0c1c5b39540c96f5e42ccd6dae8 ""
   "/usr/local/texlive/2024/texmf-dist/fonts/type1/public/amsfonts/cm/cmsy7.pfb" 1248133631 32716 08e384dc442464e7285e891af9f45947 ""
+  "/usr/local/texlive/2024/texmf-dist/fonts/type1/public/amsfonts/cm/cmsy8.pfb" 1248133631 32626 4f5c1b83753b1dd3a97d1b399a005b4b ""
   "/usr/local/texlive/2024/texmf-dist/fonts/type1/public/inconsolata/Inconsolata-zi4r.pfb" 1558214095 55526 184de5d68af8c544d6d1653244a2b006 ""
   "/usr/local/texlive/2024/texmf-dist/fonts/type1/urw/helvetic/uhvb8a.pfb" 1136849748 35941 f27169cc74234d5bd5e4cca5abafaabb ""
   "/usr/local/texlive/2024/texmf-dist/fonts/type1/urw/times/utmb8a.pfb" 1136849748 44729 811d6c62865936705a31c797a1d5dada ""
@@ -143,10 +152,10 @@
   "/usr/local/texlive/2024/texmf-var/web2c/pdftex/pdflatex.fmt" 1735682414 8221453 a8f62076e5f22e86caf73ee839e07290 ""
   "/usr/local/texlive/2024/texmf.cnf" 1710266656 577 e590dabc9e28c5b61546e15f63eebcdf ""
   "acl.sty" 1778917537.82821 11615 e2c027f483aa40e577ed34264c8b0655 ""
-  "acl_latex.aux" 1778972748.85814 23436 18dfab50ea5c3840e673d20ba7a90ad7 "pdflatex"
-  "acl_latex.bbl" 1778972747.58727 7693 da98513deeee7079a8f8047c2235442c "bibtex acl_latex"
-  "acl_latex.out" 1778972748.85975 5475 36920e9f36a24b55a7efad0567448c9a "pdflatex"
-  "acl_latex.tex" 1778972739.64484 42111 d0891faeea98ccedeec02c091b2f694a ""
+  "acl_latex.aux" 1779126476.42834 27714 a63a32da74030f6a1b39fa5c1f4d41d9 "pdflatex"
+  "acl_latex.bbl" 1779126475.1295 10636 66ebc3c647c45fde303a42c02ceb9778 "bibtex acl_latex"
+  "acl_latex.out" 1779126476.43152 5906 01f14bb375b65ef2361f29f79cf56624 "pdflatex"
+  "acl_latex.tex" 1779126459.99174 51210 a516dffa4d012b2073d2b152c7f51a8f ""
   "figures/figA1_structure_heatmap.pdf" 1778965461.64878 25156 ad6c7c9a4280a76ff94b4f2302566344 ""
   "figures/figA2_model_trajectories.pdf" 1778965461.91142 23367 c16dc301b53de0a3b6926260d28ce4d5 ""
   "figures/figure1_pipeline.png" 1778966110.22727 1195919 365644023847bcecf49cfc71966a4492 ""
