@@ -1,6 +1,6 @@
 """Moderator analysis for Conspire-Bench frame effects.
 
-The main paper uses paired frame-effect tests. This script asks whether those
+The primary analysis uses paired frame-effect tests. This script asks whether those
 paired frame effects vary by conversation structure, model, model family,
 parameter count, or topic domain. Parameter-count tests should be interpreted
 descriptively because the benchmark has only six target models and one scenario

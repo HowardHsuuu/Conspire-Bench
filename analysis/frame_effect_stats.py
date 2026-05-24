@@ -1,7 +1,7 @@
 """Paired frame-effect statistics for Conspire-Bench results.
 
 This script reproduces the paired bootstrap, sign-test, and McNemar summaries
-reported in the paper appendix. It uses only the merged JSON results file.
+used in the benchmark analysis. It uses only the merged JSON results file.
 """
 
 from __future__ import annotations

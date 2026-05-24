@@ -200,7 +200,7 @@ def main() -> None:
     parser.add_argument(
         "--outdir",
         type=Path,
-        default=Path("ConspireBench_paper/latex/figures"),
+        default=Path("analysis/figures"),
     )
     args = parser.parse_args()
     rows = load_rows(args.results)

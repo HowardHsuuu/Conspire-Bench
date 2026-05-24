@@ -41,10 +41,9 @@ Each target conversation is evaluated by LLM judges on five dimensions:
 - `configs/`: API and local-model evaluation configs.
 - `configs/models/`: per-model Hugging Face loading configs.
 - `analysis/export_results.py`: exports analysis-ready CSV tables.
-- `analysis/critical_review_paired_audit.csv`: paired neutral-vs-critical-review qualitative audit used for the paper's critical-review analysis.
+- `analysis/critical_review_paired_audit.csv`: paired neutral-vs-critical-review qualitative audit used for the critical-review analysis.
 - `analysis/critical_review_paired_audit_note.md`: codebook and summary for the paired audit.
 - `docs/`: setup, rubric, and local-model notes.
-- `ConspireBench_paper/latex/`: paper source and compiled PDF.
 
 ## Setup
 
@@ -146,17 +145,6 @@ Each run writes to `results/<timestamp>/`. Typical files include:
 - `analysis_tables/` or exported CSVs: summary tables for analysis.
 
 Rows may contain partial judge failures when one judge returns unparseable output. The runner aggregates over valid judge outputs and records the failed judge in the row.
-
-## Paper
-
-The paper source is in [ConspireBench_paper/latex](ConspireBench_paper/latex). To compile:
-
-```bash
-cd ConspireBench_paper/latex
-latexmk -pdf -interaction=nonstopmode acl_latex.tex
-```
-
-The current compiled draft is [ConspireBench_paper/latex/acl_latex.pdf](ConspireBench_paper/latex/acl_latex.pdf).
 
 ## Scope and Safety
 
