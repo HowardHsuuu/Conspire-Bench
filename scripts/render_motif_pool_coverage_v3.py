@@ -13,7 +13,7 @@ DEFAULT_MANIFEST = ROOT / "configs" / "primary_motif_manifest_v3.json"
 DEFAULT_QUALITY = ROOT / "configs" / "motif_quality_review_v3.json"
 DEFAULT_RECOMMENDATION = ROOT / "configs" / "motif_selection_recommendation_v3.json"
 DEFAULT_CONTEXTS = ROOT / "configs" / "context_variants.json"
-DEFAULT_OUTPUT = ROOT / "docs" / "motif_pool_coverage_v3.md"
+DEFAULT_OUTPUT = ROOT / "results" / "audits" / "motif_pool_coverage_v3.md"
 
 
 def _read_json(path: Path) -> dict:
@@ -194,6 +194,7 @@ def main() -> int:
         _read_json(args.contexts),
     )
     if args.write:
+        args.output.parent.mkdir(parents=True, exist_ok=True)
         args.output.write_text(rendered, encoding="utf-8")
         print(json.dumps({"ok": True, "wrote": str(args.output)}, indent=2))
         return 0

@@ -1,0 +1,6 @@
+-r requirements.txt
+
+transformers>=4.57.0
+torch
+accelerate
+bitsandbytes

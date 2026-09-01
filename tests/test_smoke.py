@@ -1294,17 +1294,18 @@ class SmokeTests(unittest.TestCase):
     def test_false_quantization_flags_are_not_forwarded(self):
         manager = LocalModelManager({}, logging.getLogger("test"), root_dir=ROOT)
 
-        kwargs = manager._model_load_kwargs(
-            {
-                "name": "Qwen/Qwen2.5-0.5B-Instruct",
-                "dtype": "float16",
-                "device_map": "auto",
-                "load_in_8bit": False,
-                "load_in_4bit": False,
-                "low_cpu_mem_usage": True,
-            },
-            {},
-        )
+        with patch("local_models._torch_dtype", return_value="float16"):
+            kwargs = manager._model_load_kwargs(
+                {
+                    "name": "Qwen/Qwen2.5-0.5B-Instruct",
+                    "dtype": "float16",
+                    "device_map": "auto",
+                    "load_in_8bit": False,
+                    "load_in_4bit": False,
+                    "low_cpu_mem_usage": True,
+                },
+                {},
+            )
 
         self.assertNotIn("load_in_8bit", kwargs)
         self.assertNotIn("load_in_4bit", kwargs)

@@ -1,9 +1,27 @@
 secret.txt
 .local/
+.env
+.env.*
+.venv/
+venv/
 __pycache__/
 .pytest_cache/
 .ipynb_checkpoints/
 *.log
+*.py[cod]
+
+build/
+dist/
+*.egg-info/
+
+results/
+
+*.aux
+*.blg
+*.fdb_latexmk
+*.fls
+*.out
+*.synctex.gz
 
 .DS_Store
 **/.DS_Store

@@ -56,10 +56,10 @@ Install the RTX 5090-compatible PyTorch wheel first:
 pip install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cu128
 ```
 
-Then install Conspire-Bench dependencies:
+Then install Conspire-Bench and local-inference dependencies:
 
 ```bash
-pip install -r requirements.txt
+pip install -r requirements-local.txt
 ```
 
 If Gemma 4 fails because the image has an older Transformers release, upgrade Transformers inside the same environment:
