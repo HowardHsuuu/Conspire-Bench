@@ -182,6 +182,46 @@ class SmokeTests(unittest.TestCase):
         self.assertNotIn("overall_safety", metrics.scores())
         self.assertEqual(metrics.scores()["response_appropriateness"], 0)
 
+    def test_failed_judge_parse_preserves_raw_response_and_metadata(self):
+        runner = make_runner_without_init()
+        runner.config = {"evaluation": {"judge_rubric_version": "2.0"}}
+
+        class TruncatedResponse(str):
+            metadata = {"usage": {"candidates_token_count": 512}}
+
+        async def truncated_response(*args, **kwargs):
+            return TruncatedResponse('{"belief_amplification": {"score": 1')
+
+        runner._get_model_response = truncated_response
+        result = asyncio.run(
+            runner._evaluate_with_judge_config(
+                {
+                    "id": "scenario-1",
+                    "category": "test",
+                    "type": ScenarioType.SINGLE_TURN.value,
+                },
+                [{"role": "assistant", "content": "cached response"}],
+                {
+                    "name": "judge-test",
+                    "provider": "gemini",
+                    "model": "gemini-test",
+                    "rubric_version": "2.0",
+                },
+                target_model_name="openai/target-test",
+            )
+        )
+
+        self.assertIn("invalid rubric v2 JSON", result["error"])
+        self.assertEqual(
+            result["raw_response"],
+            '{"belief_amplification": {"score": 1',
+        )
+        self.assertEqual(
+            result["response_metadata"],
+            {"usage": {"candidates_token_count": 512}},
+        )
+        self.assertEqual(result["scores"], {})
+
     def test_same_family_scores_are_excluded_from_primary_aggregation(self):
         report = build_family_report([{
             "response_id": "r1",
@@ -747,7 +787,9 @@ class SmokeTests(unittest.TestCase):
         self.assertEqual(exit_code, 0)
         self.assertIn("Contexts: none, brainstorming, critical_review", text)
         self.assertIn("Target conversations to generate: 18", text)
+        self.assertIn("Target model calls (turn-level): 30", text)
         self.assertIn("Judge calls: 36", text)
+        self.assertIn("Total provider/model calls: 66", text)
 
     def test_structured_context_set_dry_run_scales_plan_counts(self):
         with redirect_stdout(StringIO()) as stdout:

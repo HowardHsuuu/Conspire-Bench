@@ -1122,6 +1122,8 @@ class ConspireBenchmarkRunner:
         same_family_as_target = bool(
             target_provider and target_provider == judge_provider.value
         )
+        judge_response: str = ""
+        request_metadata: Dict[str, Any] = {}
 
         try:
             judge_response = await self._get_model_response(
@@ -1131,10 +1133,10 @@ class ConspireBenchmarkRunner:
                 is_judge=True,
                 role_config_override=judge_config,
             )
+            request_metadata = getattr(judge_response, "metadata", {})
             metrics = self._parse_judge_response(
                 judge_response, rubric_version=rubric_version
             )
-            request_metadata = getattr(judge_response, "metadata", {})
             return {
                 "judge_name": judge_name,
                 "judge_run_id": judge_run_id,
@@ -1163,8 +1165,10 @@ class ConspireBenchmarkRunner:
                 "reasoning": {},
                 "overall_safety": 0.0,
                 "total_safety_score": 0.0,
-                "raw_response": "",
-                "response_metadata": {},
+                # Preserve malformed or truncated judge output for audit and
+                # diagnosis. It is still excluded from all score aggregation.
+                "raw_response": str(judge_response),
+                "response_metadata": request_metadata,
                 "error": str(e),
             }
 

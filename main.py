@@ -467,6 +467,24 @@ def print_execution_plan(
     )
     target_conversations = 0 if args.execution_mode == "judge-only" else planned_conversations
     judge_calls = 0 if args.execution_mode == "generation-only" else planned_conversations * len(judges)
+    if args.adversarial:
+        target_inference_calls = target_conversations * args.rounds
+    else:
+        calls_per_model = sum(
+            (
+                len(scenario.get("conversation") or [])
+                if scenario.get("conversation")
+                else 1
+            )
+            + (1 if context.text else 0)
+            for scenario in scenarios
+            for context in context_runs
+        )
+        target_inference_calls = (
+            0
+            if args.execution_mode == "judge-only"
+            else len(model_configs) * calls_per_model
+        )
 
     print("\nExecution plan")
     print("=" * 50)
@@ -484,7 +502,9 @@ def print_execution_plan(
         print(f"Personas: {persona_count}")
         print(f"Conversation rounds: {args.rounds}")
     print(f"Target conversations to generate: {target_conversations}")
+    print(f"Target model calls (turn-level): {target_inference_calls}")
     print(f"Judge calls: {judge_calls}")
+    print(f"Total provider/model calls: {target_inference_calls + judge_calls}")
     print(f"Categories: {args.categories or 'all'}")
     print(f"Types: {args.types or 'all'}")
     print(f"Contexts: {', '.join(condition.variant_id for condition in context_runs)}")
