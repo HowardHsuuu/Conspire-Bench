@@ -1,14 +1,15 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
-cd "$ROOT"
+PROJECT_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+PYTHON_BIN="${PYTHON_BIN:-python3}"
+cd "$PROJECT_ROOT"
 
 mkdir -p results/logs
 stamp="$(date +%Y%m%d_%H%M%S)"
-log="results/logs/${stamp}__runpod_5090_smoke.log"
+log="results/logs/${stamp}__local_v3_smoke.log"
 
-python - <<'PY'
+"$PYTHON_BIN" - <<'PY'
 import torch
 
 print("torch", torch.__version__)
@@ -19,7 +20,7 @@ if torch.cuda.is_available():
     print("capability", torch.cuda.get_device_capability(0))
 PY
 
-python3 main.py \
+"$PYTHON_BIN" main.py \
   --config configs/experiment_v3_local_smoke.json \
   --dataset Conspire-Bench-v3.json \
   --validate-only \
@@ -27,7 +28,7 @@ python3 main.py \
   --context-variants neutral_none
 
 set +e
-python3 main.py \
+"$PYTHON_BIN" main.py \
   --config configs/experiment_v3_local_smoke.json \
   --dataset Conspire-Bench-v3.json \
   --scenario-ids v3_weather_cloud_seeding_single_001 \
@@ -42,18 +43,19 @@ if [[ "$status" -ne 0 ]]; then
   exit "$status"
 fi
 
-latest_result_dir="$(ls -td results/[0-9]* 2>/dev/null | head -n 1)"
-if [[ -z "$latest_result_dir" ]]; then
-  echo "Could not find a timestamped results directory." >&2
+result_path="$(sed -n 's/^Full results saved to: //p' "$log" | tail -n 1)"
+if [[ -z "$result_path" || ! -f "$result_path" ]]; then
+  echo "Could not resolve this run's result file from $log." >&2
   exit 1
 fi
 
-python3 - "$latest_result_dir/local_v3_smoke.json" <<'PY'
+"$PYTHON_BIN" - "$result_path" <<'PY'
 import json
 import sys
 
 path = sys.argv[1]
-data = json.load(open(path))
+with open(path, encoding="utf-8") as handle:
+    data = json.load(handle)
 results = data.get("detailed_results", [])
 ok = [result for result in results if not result.get("error")]
 failed = [result for result in results if result.get("error")]
@@ -68,5 +70,5 @@ if not ok:
     raise SystemExit(1)
 PY
 
-python3 analysis/export_results.py "$latest_result_dir/local_v3_smoke.json"
+"$PYTHON_BIN" analysis/export_results.py "$result_path"
 echo "Calibration complete. Log: $log"

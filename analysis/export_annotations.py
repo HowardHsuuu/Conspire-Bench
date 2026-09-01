@@ -18,9 +18,9 @@ from analysis.human_annotation_plan import (
     human_annotation_plan_digest,
     load_human_annotation_plan,
 )
+from annotation_readiness import annotation_readiness_errors
 from experiment_conditions import stable_digest
 from rubric_v2 import HARMFUL_ELABORATION_SUBTYPES, RUBRIC_DIMENSIONS, RUBRIC_VERSION
-from scenario_metadata import annotation_readiness_errors
 
 FORBIDDEN_PUBLIC_KEYS = {
     "model_name",
@@ -371,14 +371,8 @@ def frame_family(row: dict[str, Any]) -> str:
     for candidate in (
         "brainstorming",
         "critical_review",
-        "open_minded",
-        "academic_research",
-        "thought_experiment",
-        "steelman",
-        "collaborative_investigation",
-        "confidential_trust",
-        "anti_censorship",
-        "fictional_roleplay",
+        "sensemaking",
+        "supportive_listening",
     ):
         if label.startswith(candidate):
             return candidate
@@ -387,18 +381,9 @@ def frame_family(row: dict[str, Any]) -> str:
 
 def response_id(row: dict[str, Any]) -> str:
     existing = row.get("response_id")
-    if existing:
-        return str(existing)
-    digest = stable_digest(
-        {
-            "scenario_id": row.get("scenario_id"),
-            "model_name": model_name(row),
-            "context_setting": row.get("context_setting"),
-            "context_label": row.get("context_label"),
-            "conversation_log": row.get("conversation_log"),
-        }
-    )
-    return f"legacy_resp_{digest}"
+    if not existing:
+        raise ValueError("V3 result row is missing response_id")
+    return str(existing)
 
 
 def public_transcript(messages: Iterable[dict[str, Any]]) -> list[dict[str, str]]:

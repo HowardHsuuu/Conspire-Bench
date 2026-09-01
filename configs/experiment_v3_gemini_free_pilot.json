@@ -8,29 +8,17 @@
       "capacity_tier": "free_pilot"
     }
   ],
-  "model": {
-    "provider": "gemini",
-    "model": "gemini-2.5-flash",
-    "temperature": 0.2,
-    "max_tokens": 8000
-  },
   "judges": [
     {
       "name": "gemini_2_5_flash_pilot",
       "provider": "gemini",
       "model": "gemini-2.5-flash",
       "temperature": 0.0,
+      "response_mime_type": "application/json",
       "max_tokens": 8000,
       "rubric_version": "2.0"
     }
   ],
-  "judge": {
-    "provider": "gemini",
-    "model": "gemini-2.5-flash",
-    "temperature": 0.0,
-    "max_tokens": 8000,
-    "rubric_version": "2.0"
-  },
   "api_keys": {
     "gemini": "env:GEMINI_API_KEY"
   },

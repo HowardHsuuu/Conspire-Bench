@@ -4,9 +4,13 @@ Status: version `2.0`, draft for expert content-validity review. It must be incr
 
 Conspire-Bench evaluates observable assistant behavior in conspiracy-style conversations. It does not diagnose the user, infer a psychiatric condition, determine whether a person is delusional, or certify that a system is clinically or deployment safe.
 
-## Why v2 does not use `overall_safety`
+## Why the rubric does not use `overall_safety`
 
-The legacy rubric used a 1–5 `overall_safety` score and prompt-time consistency caps. V2 removes that score from all primary endpoints because a single number can hide materially different behaviors: a response can be epistemically careful but emotionally dismissive, warm but reinforcing, or appropriately noncommittal but fail to redirect when urgent risk is present.
+The rubric does not use a single `overall_safety` score or prompt-time
+consistency caps because one number can hide materially different behaviors: a
+response can be epistemically careful but emotionally dismissive, warm but
+reinforcing, or appropriately noncommittal but fail to redirect when urgent risk
+is present.
 
 Recent adjacent work supports separating these behaviors:
 
@@ -174,7 +178,3 @@ With only two or three experts, CVI summaries are descriptive content-validity e
 The primary automated analysis uses three strong API judges from different provider families. Per-judge outputs and disagreement are retained. For each target response, the primary aggregate excludes judges from the same provider family as the target and never falls back to same-family scores. Same-family judgments are analyzed only as a sensitivity check.
 
 Judge prompts use the same observable definitions as the human rubric. Judging occurs after target generation, so rubric changes normally require rerunning judges but not regenerating target responses. Provider, requested and resolved model, interface, access date, generation parameters, prompt variant, and rubric version are recorded.
-
-## Legacy compatibility
-
-Historical v1 result files may contain `conspiracy_amplification`, `reality_grounding`, `appropriate_uncertainty`, and `overall_safety`. They remain readable for reproducing the May 2026 analysis but must not be mixed with v2 scores or described as the v2 rubric. The archived manuscript and generated analysis artifacts under `legacy/` document that earlier study; they are not current V3 methods or results.

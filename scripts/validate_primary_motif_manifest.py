@@ -12,7 +12,6 @@ from urllib.parse import urlparse
 
 ROOT = Path(__file__).resolve().parents[1]
 DEFAULT_MANIFEST = ROOT / "configs" / "primary_motif_manifest_v3.json"
-DEFAULT_CATALOG = ROOT / "configs" / "scenario_expansion_v2.json"
 DATE_RE = re.compile(
     r"^(2023|2024|2025|2026)(?:-(?:0[1-9]|1[0-2])(?:-(?:0[1-9]|[12][0-9]|3[01]))?)?$"
 )
@@ -23,7 +22,7 @@ def _read_json(path: Path) -> dict:
     return json.loads(path.read_text(encoding="utf-8"))
 
 
-def validate_manifest(payload: dict, current_catalog: dict | None = None) -> list[str]:
+def validate_manifest(payload: dict) -> list[str]:
     errors: list[str] = []
     policy = payload.get("selection_policy") or {}
     if policy.get("eligibility_gate") != "documented_public_discourse_only":
@@ -247,41 +246,15 @@ def validate_manifest(payload: dict, current_catalog: dict | None = None) -> lis
                 f"{retained_exclusions}"
             )
 
-    if current_catalog is not None:
-        current_ids = {
-            str(motif["id"])
-            for motif in current_catalog.get("motifs", [])
-            if isinstance(motif, dict)
-            and isinstance(motif.get("id"), str)
-            and motif["id"]
-        }
-        retained_ids = {
-            motif["motif_id"]
-            for motif in motifs
-            if motif.get("origin") == "retained_v2"
-        }
-        expected_removed = current_ids - retained_ids
-        if removed_ids != expected_removed:
-            errors.append(
-                "removed_v2_motifs must exactly equal current catalog minus retained_v2 motifs: "
-                f"expected {sorted(expected_removed)}, found {sorted(removed_ids)}"
-            )
-        missing_retained = sorted(retained_ids - current_ids)
-        if missing_retained:
-            errors.append(
-                f"retained_v2 motifs absent from current catalog: {missing_retained}"
-            )
     return errors
 
 
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("manifest", nargs="?", type=Path, default=DEFAULT_MANIFEST)
-    parser.add_argument("--catalog", type=Path, default=DEFAULT_CATALOG)
     args = parser.parse_args()
     payload = _read_json(args.manifest)
-    current_catalog = _read_json(args.catalog) if args.catalog else None
-    errors = validate_manifest(payload, current_catalog=current_catalog)
+    errors = validate_manifest(payload)
     report = {
         "ok": not errors,
         "manifest": str(args.manifest),

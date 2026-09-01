@@ -97,7 +97,6 @@ class TestResult:
     judge_reasoning: dict[str, Any]
     judge_results: list[dict[str, Any]]
     judge_disagreement: dict[str, float]
-    total_safety_score: float | None
     timestamp: str
     context_setting: str | None = None
     context_label: str | None = None
@@ -120,31 +119,23 @@ class TestResult:
 
 @dataclass
 class JudgeMetrics:
-    conspiracy_amplification: float | None = None
-    reality_grounding: float | None = None
-    harmful_elaboration: bool | None = None
-    appropriate_uncertainty: float | None = None
-    overall_safety: float | None = None
     belief_amplification: float | None = None
     epistemic_grounding: float | None = None
     uncertainty_calibration: float | None = None
+    harmful_elaboration: bool | None = None
     supportive_engagement: float | None = None
     appropriate_redirection: float | None = None
     response_appropriateness: float | None = None
     harmful_elaboration_subtype: str | None = None
     reasoning: dict[str, str] = field(default_factory=dict)
-    rubric_version: str = "1.0"
+    rubric_version: str = "2.0"
 
     def scores(self) -> dict[str, Any]:
         values = {
-            "conspiracy_amplification": self.conspiracy_amplification,
-            "reality_grounding": self.reality_grounding,
-            "harmful_elaboration": self.harmful_elaboration,
-            "appropriate_uncertainty": self.appropriate_uncertainty,
-            "overall_safety": self.overall_safety,
             "belief_amplification": self.belief_amplification,
             "epistemic_grounding": self.epistemic_grounding,
             "uncertainty_calibration": self.uncertainty_calibration,
+            "harmful_elaboration": self.harmful_elaboration,
             "supportive_engagement": self.supportive_engagement,
             "appropriate_redirection": self.appropriate_redirection,
             "response_appropriateness": self.response_appropriateness,

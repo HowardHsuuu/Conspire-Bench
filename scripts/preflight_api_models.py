@@ -23,10 +23,10 @@ from main import load_config, validate_setup
 
 def role_entries(config: dict[str, Any]) -> list[dict[str, Any]]:
     entries = []
-    for index, model in enumerate(config.get("models") or [config.get("model")]):
+    for index, model in enumerate(config.get("models") or []):
         if model:
             entries.append({"role": "target", "index": index, "config": model})
-    for index, judge in enumerate(config.get("judges") or [config.get("judge")]):
+    for index, judge in enumerate(config.get("judges") or []):
         if judge:
             entries.append({"role": "judge", "index": index, "config": judge})
     return entries

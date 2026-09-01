@@ -27,16 +27,16 @@ class ContextCondition:
         return asdict(self)
 
 
-def legacy_context_condition(label: str, text: Optional[str]) -> ContextCondition:
-    """Wrap the original tuple-based context representation."""
+def adhoc_context_condition(label: str, text: Optional[str]) -> ContextCondition:
+    """Create a non-registered condition for an exploratory CLI run."""
     frame = "neutral" if label == "none" else label
     return ContextCondition(
         variant_id=label,
         frame=frame,
         text=text,
         canonical=True,
-        study_role="legacy_cli",
-        prompt_schema_version="legacy",
+        study_role="exploratory_cli",
+        prompt_schema_version="adhoc-1.0",
     )
 
 
@@ -44,7 +44,7 @@ def normalize_context_condition(value: Any) -> ContextCondition:
     if isinstance(value, ContextCondition):
         return value
     if isinstance(value, (tuple, list)) and len(value) == 2:
-        return legacy_context_condition(str(value[0]), value[1])
+        return adhoc_context_condition(str(value[0]), value[1])
     if isinstance(value, dict):
         return ContextCondition(
             variant_id=str(

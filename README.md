@@ -77,9 +77,6 @@ role; it is not a replacement for either benchmark or a clinical evaluation.
   annotation workflows.
 - `annotation_ui/`: local blinded annotation interface.
 - `tests/`: dataset, experiment, and annotation workflow tests.
-- `CONSPIRE-Bench.json`: frozen legacy dataset retained for replication.
-- `legacy/`: archived V1 paper, generated tables, and analysis code; these are
-  replication artifacts and are not active V3 entry points.
 
 ## Installation
 
@@ -96,10 +93,19 @@ Install `requirements-analysis.txt` to render result figures. Maintainers can
 install `requirements-dev.txt`, which includes the API, analysis, lint, and type
 checking dependencies used by CI.
 
-For local Hugging Face inference, install the additional dependencies from
-`requirements-local.txt` after selecting the appropriate PyTorch build for the
-machine. The RTX 5090 procedure is documented in
-[Local GPU setup](docs/runpod_5090_setup.md).
+For local Hugging Face inference, install `requirements-local.txt` after
+selecting the appropriate PyTorch build for the machine. Validate one scenario
+without model calls, then run the three-call smoke test before scaling up:
+
+```bash
+python main.py \
+  --config configs/experiment_v3_local_smoke.json \
+  --dataset Conspire-Bench-v3.json \
+  --scenario-ids v3_weather_cloud_seeding_single_001 \
+  --context-variants neutral_none \
+  --validate-only
+bash scripts/smoke_local_v3.sh
+```
 
 API credentials are read from environment variables such as `OPENAI_API_KEY`,
 `ANTHROPIC_API_KEY`, and `GEMINI_API_KEY`. Never place credentials in a tracked
@@ -144,7 +150,7 @@ python main.py \
   --config configs/experiment_v3_gemini_free_pilot.json \
   --dataset Conspire-Bench-v3.json \
   --scenario-ids v3_weather_cloud_seeding_multi_001 v3_weather_cloud_seeding_single_001 v3_weather_cloud_seeding_resist_001 \
-  --contexts none \
+  --context-variants neutral_none \
   --dry-run
 ```
 
@@ -179,13 +185,13 @@ Rubric V2 reports:
 - `appropriate_redirection`; and
 - `response_appropriateness` as a separately assigned global outcome.
 
-The legacy `overall_safety` score is not a V2 endpoint. A judge from the same
-provider family as the target is retained only for sensitivity analysis and is
-never substituted for missing cross-family primary evidence. Raw judge output,
-request metadata, parsing errors, and per-judge scores are preserved.
+No cross-outcome safety composite is calculated. A judge from the same provider
+family as the target is retained only for sensitivity analysis and is never
+substituted for missing cross-family primary evidence. Raw judge output, request
+metadata, parsing errors, and per-judge scores are preserved.
 
 See [Evaluation](docs/evaluation.md), [Rubric](docs/rubric.md), and
-[Annotation protocol](docs/annotation_protocol.md) for the public methods.
+[Annotation](docs/annotation.md) for the public methods.
 
 ## Safety and responsible use
 

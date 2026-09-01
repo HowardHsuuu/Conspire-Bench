@@ -13,7 +13,6 @@ ROOT = Path(__file__).resolve().parents[1]
 DEFAULT_CONFIG = ROOT / "configs" / "context_variants.json"
 MAIN_SET = "main_v3"
 FULL_SET = "full_v3"
-ROBUSTNESS_SET = "reviewer_robustness_v3"
 FRAME_FAMILIES = (
     "neutral",
     "brainstorming",
@@ -52,20 +51,15 @@ def validate_context_variants(payload: dict) -> list[str]:
 
     main_ids = sets.get(MAIN_SET)
     full_ids = sets.get(FULL_SET)
-    robustness_ids = sets.get(ROBUSTNESS_SET)
     if not isinstance(main_ids, list):
         errors.append(f"{MAIN_SET} must be a list")
         main_ids = []
-    if not isinstance(robustness_ids, list):
-        errors.append(f"{ROBUSTNESS_SET} must be a list")
-        robustness_ids = []
     if not isinstance(full_ids, list):
         errors.append(f"{FULL_SET} must be a list")
         full_ids = []
     for set_name, set_ids in (
         (MAIN_SET, main_ids),
         (FULL_SET, full_ids),
-        (ROBUSTNESS_SET, robustness_ids),
     ):
         missing = sorted(set(set_ids) - set(by_id))
         if missing:
@@ -84,21 +78,19 @@ def validate_context_variants(payload: dict) -> list[str]:
         if variant.get("canonical") is not True:
             errors.append(f"{MAIN_SET}.{variant_id} must be canonical")
 
-    expected_robustness_ids = {"neutral_none"}
+    expected_full_ids = {"neutral_none"}
     for frame in NON_NEUTRAL_FAMILIES:
-        expected_robustness_ids.update(f"{frame}_v{index}" for index in range(1, 5))
-    if set(robustness_ids) != expected_robustness_ids or len(robustness_ids) != 17:
+        expected_full_ids.update(f"{frame}_v{index}" for index in range(1, 5))
+    if set(full_ids) != expected_full_ids or len(full_ids) != 17:
         errors.append(
-            f"{ROBUSTNESS_SET} must contain neutral plus four variants nested in each "
+            f"{FULL_SET} must contain neutral plus four variants nested in each "
             "non-neutral family"
         )
-    if full_ids != robustness_ids:
-        errors.append(f"{FULL_SET} must be the ordered v3 alias of {ROBUSTNESS_SET}")
 
     for frame in NON_NEUTRAL_FAMILIES:
         canonical_id = f"{frame}_v1"
         family_ids = [
-            item for item in robustness_ids if by_id.get(item, {}).get("frame") == frame
+            item for item in full_ids if by_id.get(item, {}).get("frame") == frame
         ]
         if len(family_ids) != 4:
             errors.append(f"{frame} must have exactly four robustness variants")
@@ -132,11 +124,8 @@ def validate_context_variants(payload: dict) -> list[str]:
             f"only neutral_none may have null text; found {sorted(null_text_ids)}"
         )
 
-    exploratory_ids = set(sets.get("exploratory_elicitation_v1") or [])
-    if exploratory_ids & set(main_ids):
-        errors.append("exploratory conditions must not enter the v3 main set")
-    if exploratory_ids & set(robustness_ids):
-        errors.append("exploratory conditions must not enter the v3 robustness set")
+    if set(sets) != {MAIN_SET, FULL_SET}:
+        errors.append(f"context registry must contain only {MAIN_SET} and {FULL_SET}")
     return errors
 
 

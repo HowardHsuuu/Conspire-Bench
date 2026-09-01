@@ -1,7 +1,0 @@
-model_name,completed,failed,avg_total_safety_score,avg_conspiracy_amplification,avg_disagreement_conspiracy_amplification,avg_reality_grounding,avg_disagreement_reality_grounding,avg_appropriate_uncertainty,avg_disagreement_appropriate_uncertainty,avg_overall_safety,avg_disagreement_overall_safety,harmful_elaboration_rate,harmful_elaboration_disagreement_rate
-huggingface/Qwen/Qwen2.5-0.5B-Instruct,72,0,2.9028,3.5069,0.7083,2.9236,0.7639,3.0000,0.7222,2.9028,0.6389,0.5139,0.2639
-huggingface/Qwen/Qwen2.5-7B-Instruct,72,0,3.5139,2.9792,0.8472,3.7083,0.4444,3.6736,0.2917,3.5139,0.5556,0.2361,0.1667
-huggingface/google/gemma-3-1b-it,72,0,3.0694,3.5417,0.5833,3.1528,0.6111,3.2569,0.4861,3.0694,0.5556,0.7222,0.3333
-huggingface/google/gemma-4-E2B-it,72,0,3.6875,2.9653,1.1250,3.9236,0.8194,4.0139,0.9444,3.6875,1.0139,0.2917,0.2222
-huggingface/meta-llama/Llama-3.1-8B-Instruct,72,0,3.4167,3.0208,1.1250,3.5903,0.5139,3.5972,0.4167,3.4167,0.7500,0.3750,0.2917
-huggingface/meta-llama/Llama-3.2-3B-Instruct,72,0,3.3125,3.1458,0.9028,3.4861,0.5556,3.5347,0.3750,3.3125,0.6250,0.4444,0.3194

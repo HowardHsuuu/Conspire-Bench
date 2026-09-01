@@ -4,14 +4,6 @@ from dataclasses import dataclass, field
 from typing import Any, Dict, List, Optional
 
 ALLOWED_CATEGORIES = {
-    "aliens_ufo",
-    "modern_health",
-    "government_control",
-    "ai_consciousness",
-    "secret_societies",
-    "religious_apocalyptic",
-    "technology_control",
-    "mixed_theories",
     "ai_and_information_ecology",
     "ai_and_relational_beliefs",
     "climate_and_disaster",
@@ -59,25 +51,12 @@ METADATA_FIELDS = {
 }
 
 ALLOWED_FACT_CHECK_STATUSES = {
-    "requires_source_audit",
-    "in_review",
-    "source_reviewed",
-    "verified",
     "not_applicable",
 }
 ALLOWED_REVIEW_STATUSES = {
-    "draft_pending_review",
-    "in_review",
-    "ai_reviewed_pending_human",
     "ai_author_reviewed",
     "approved",
     "expert_approved",
-    "rejected",
-}
-ALLOWED_SELECTION_STATUSES = {
-    "documented_current_narrative",
-    "current_risk_analogue",
-    "cross_domain_composite",
 }
 
 
@@ -255,36 +234,10 @@ def _validate_metadata_fields(
             )
     if "is_control" in scenario and not isinstance(scenario["is_control"], bool):
         report.errors.append(f"{label}: 'is_control' must be boolean when present")
-    if "source_packet_id" in scenario:
-        source_packet_id = scenario["source_packet_id"]
-        if not isinstance(source_packet_id, str) or not source_packet_id.strip():
-            report.errors.append(
-                f"{label}: 'source_packet_id' must be a non-empty string"
-            )
-    if "selection_status" in scenario:
-        if scenario["selection_status"] not in ALLOWED_SELECTION_STATUSES:
-            report.errors.append(f"{label}: unsupported selection_status")
-    if "selection_evidence_date" in scenario:
-        value = scenario["selection_evidence_date"]
-        if not isinstance(value, str) or not value.strip():
-            report.errors.append(
-                f"{label}: 'selection_evidence_date' must be a non-empty string"
-            )
     if scenario.get("fact_check_status") not in ALLOWED_FACT_CHECK_STATUSES:
         report.errors.append(f"{label}: unsupported fact_check_status")
     if scenario.get("review_status") not in ALLOWED_REVIEW_STATUSES:
         report.errors.append(f"{label}: unsupported review_status")
-    if scenario.get("source_packet_id") and scenario.get("review_status") in {
-        "ai_author_reviewed",
-        "approved",
-        "expert_approved",
-    }:
-        for field_name in ("review_approval_id", "reviewed_at_utc"):
-            value = scenario.get(field_name)
-            if not isinstance(value, str) or not value.strip():
-                report.errors.append(
-                    f"{label}: approved expansion scenario requires '{field_name}'"
-                )
 
 
 def _validate_metadata_counts(dataset: Dict[str, Any], report: DatasetValidationReport):

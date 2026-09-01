@@ -207,7 +207,7 @@ def validate_collection_manifests(
     roster_manifest_path: Path | None,
 ) -> dict[str, Any] | None:
     release_modes = {
-        str(row.get("release_mode") or "legacy") for row in private_keys.values()
+        str(row.get("release_mode") or "unspecified") for row in private_keys.values()
     }
     protected_release = bool(release_modes & {"formal", "calibration"})
     if protected_release and not assignment_manifest_path:

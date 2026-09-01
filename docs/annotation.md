@@ -125,6 +125,12 @@ The importer uses the private randomization key to decode A/B into `neutral` ver
 - The importer joins returned annotations to the private key and writes another private file; do not upload it to the annotation interface.
 - `annotation_ui/index.html` can load either public JSONL file, retain progress locally, and export returned JSONL in the importer's schema. It has no network dependencies and must never receive the private key.
 
+Open `annotation_ui/index.html` in a current browser. If the browser restricts
+local-file APIs, run `python3 -m http.server 8000` from the repository root and
+open `http://localhost:8000/annotation_ui/`. Load only the assigned expert or
+student JSONL file. Progress remains in that browser's local storage; export the
+completed JSONL for import by the research team.
+
 ## Commands
 
 Required independent V3 scenario QA before the final V3 analysis freeze:

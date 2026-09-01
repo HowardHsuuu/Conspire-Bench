@@ -53,7 +53,7 @@ def render_document(
         quality_by_id[item["motif_id"]]["sensitivity"] for item in primary
     )
     main_frame_count = len(contexts["sets"]["main_v3"])
-    robustness_frame_count = len(contexts["sets"]["reviewer_robustness_v3"])
+    full_frame_count = len(contexts["sets"]["full_v3"])
     structures_per_motif = 3
 
     def projection(motif_count: int) -> tuple[int, int, int]:
@@ -61,7 +61,7 @@ def render_document(
         return (
             scenario_units,
             scenario_units * main_frame_count,
-            scenario_units * robustness_frame_count,
+            scenario_units * full_frame_count,
         )
 
     primary_projection = projection(len(primary))

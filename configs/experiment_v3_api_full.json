@@ -81,11 +81,6 @@
       "capacity_tier": "efficient"
     }
   ],
-  "model": {
-    "provider": "openai",
-    "model": "gpt-5.6-luna",
-    "api_mode": "responses"
-  },
   "judges": [
     {
       "name": "openai_strong_v3",
@@ -111,16 +106,11 @@
       "provider": "gemini",
       "model": "gemini-3.1-pro-preview",
       "omit_sampling_parameters": true,
+      "response_mime_type": "application/json",
       "max_tokens": 16000,
       "rubric_version": "2.0"
     }
   ],
-  "judge": {
-    "provider": "openai",
-    "model": "gpt-5.6-sol",
-    "api_mode": "responses",
-    "rubric_version": "2.0"
-  },
   "api_keys": {
     "openai": "env:OPENAI_API_KEY",
     "anthropic": "env:ANTHROPIC_API_KEY",

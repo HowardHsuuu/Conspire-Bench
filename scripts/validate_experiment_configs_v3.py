@@ -49,6 +49,13 @@ def validate(local_config: dict[str, Any], api_config: dict[str, Any]) -> list[s
     _validate_experiment_metadata(api_config, "api", errors)
     _validate_env_keys(local_config, "local", errors)
     _validate_env_keys(api_config, "api", errors)
+    for label, config in (("local", local_config), ("api", api_config)):
+        for singular in ("model", "judge"):
+            if singular in config:
+                errors.append(
+                    f"{label} must use only the plural models/judges V3 schema; "
+                    f"remove {singular!r}"
+                )
 
     local_models = local_config.get("models") or []
     if len(local_models) != 13:

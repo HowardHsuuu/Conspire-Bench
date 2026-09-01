@@ -261,6 +261,8 @@ async def call_gemini(
         thinking_config = _gemini_thinking_config(role_config)
         if thinking_config is not None:
             config_kwargs["thinking_config"] = thinking_config
+        if role_config.get("response_mime_type"):
+            config_kwargs["response_mime_type"] = str(role_config["response_mime_type"])
 
         response = await asyncio.to_thread(
             clients["gemini"].models.generate_content,

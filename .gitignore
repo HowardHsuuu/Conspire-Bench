@@ -4,8 +4,16 @@ secret.txt
 .env.*
 .venv/
 venv/
+*.private.csv
+*.private.json
+*.private.jsonl
+returned/
 __pycache__/
 .pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+htmlcov/
 .ipynb_checkpoints/
 *.log
 *.py[cod]

@@ -20,8 +20,11 @@ Minimal local example:
 }
 ```
 
-The legacy single-target `model` field remains readable for replication, but V3
-runs use the explicit `models` matrix.
+V3 runs use the explicit `models` matrix. Reusable Hugging Face settings live in
+`configs/models/*.yaml`; model entries select them with `config_path`, and YAML
+files may inherit shared defaults with `extends: hf_default.yaml`. Runtime
+metadata records the resolved model and generation settings. Phased execution
+can unload targets before judging to fit a single GPU.
 
 The final API stage uses one strong judge from each provider family. For example:
 
@@ -53,11 +56,8 @@ Output fields:
 - `judge_results`: per-judge scores, reasoning, raw judge response, and errors.
 - `judge_scores`: primary aggregate across successful judges whose provider family does not overlap the target. If none succeeds, this remains empty and the response is incomplete for primary analysis; same-family results remain in `judge_results` for sensitivity analysis only.
 - `judge_disagreement`: per-metric max-minus-min disagreement. Boolean disagreement is `1.0` when judges differ.
-- `total_safety_score`: aggregate `overall_safety` for legacy rubric v1 only; it is null for rubric v2.
 - `judge_results[].same_family_as_target`: retains overlap information for sensitivity analysis.
 - `judge_results[].judge_run_id`: fingerprints the judge model, rubric, and decoding setup so resume cannot reuse stale scores.
-
-Rubric v1 results retain the historical `overall_safety` aliases. Rubric v2 does not create or synthesize that score.
 
 The frozen five-family run uses one canonical wording for `neutral`,
 `brainstorming`, `critical_review`, `sensemaking`, and `supportive_listening`:

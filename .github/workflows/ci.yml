@@ -38,7 +38,7 @@ jobs:
           python scripts/validate_experiment_configs_v3.py
           python scripts/validate_analysis_plan_v3.py
           python scripts/audit_release_readiness.py
-          bash -n scripts/runpod_5090_smoke.sh
+          bash -n scripts/smoke_local_v3.sh
           python main.py \
             --config configs/experiment_v3_local_smoke.json \
             --dataset Conspire-Bench-v3.json \

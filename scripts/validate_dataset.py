@@ -10,9 +10,8 @@ ROOT = Path(__file__).resolve().parents[1]
 if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
 
+from dataset_io import load_benchmark_dataset
 from dataset_validation import format_validation_report, validate_dataset
-from scenario_expansion import load_benchmark_dataset
-from scenario_metadata import enrich_dataset
 
 
 def build_parser() -> argparse.ArgumentParser:
@@ -23,19 +22,13 @@ def build_parser() -> argparse.ArgumentParser:
         "dataset",
         type=Path,
         nargs="?",
-        default=Path("CONSPIRE-Bench.json"),
-        help="Dataset JSON path. Default: CONSPIRE-Bench.json",
+        default=Path("Conspire-Bench-v3.json"),
+        help="Dataset JSON path. Default: Conspire-Bench-v3.json",
     )
     parser.add_argument(
         "--strict-metadata",
         action="store_true",
         help="Require expansion metadata fields on every scenario.",
-    )
-    parser.add_argument(
-        "--metadata-overlay",
-        type=Path,
-        default=Path("configs/scenario_metadata_v2.json"),
-        help="Versioned scenario metadata overlay; pass a nonexistent path to validate raw data only.",
     )
     parser.add_argument(
         "--json",
@@ -48,7 +41,6 @@ def build_parser() -> argparse.ArgumentParser:
 def main() -> int:
     args = build_parser().parse_args()
     dataset = load_benchmark_dataset(args.dataset)
-    dataset = enrich_dataset(dataset, args.metadata_overlay)
     report = validate_dataset(dataset, strict_metadata=args.strict_metadata)
 
     if args.json:

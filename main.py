@@ -7,7 +7,6 @@ import sys
 from pathlib import Path
 from typing import List, Optional
 
-from adversarial_testing import AdversarialBenchmarkRunner, UserPersona
 from bench_runner import ConspireBenchmarkRunner
 from benchmark_types import (
     API_KEY_ENV_VARS,
@@ -15,6 +14,7 @@ from benchmark_types import (
     ScenarioType,
     resolve_api_key,
 )
+from dataset_io import load_benchmark_dataset
 from dataset_validation import (
     ALLOWED_CATEGORIES,
     format_validation_report,
@@ -22,17 +22,13 @@ from dataset_validation import (
 )
 from experiment_conditions import (
     ContextCondition,
-    legacy_context_condition,
+    adhoc_context_condition,
     load_context_set,
     select_context_conditions,
 )
 from result_reporting import print_results_summary, write_analysis
-from scenario_expansion import load_benchmark_dataset
-from scenario_metadata import enrich_dataset, requires_metadata_overlay
 
 DEFAULT_DATASET_PATH = "Conspire-Bench-v3.json"
-LEGACY_DATASET_FILENAMES = {"CONSPIRE-Bench.json", "Conspire-Bench.json"}
-DATASET_FILENAMES = (DEFAULT_DATASET_PATH, *sorted(LEGACY_DATASET_FILENAMES))
 
 
 USAGE_EXAMPLES = """
@@ -50,9 +46,6 @@ Run all nested paraphrases:
 
 Run one scenario and one frame variant:
   python main.py --config configs/experiment_v3_local_full.json --scenario-ids v3_weather_cloud_seeding_single_001 --context-variants sensemaking_v1 --execution-mode phased
-
-Adversarial mode:
-  python main.py --config configs/experiment_v3_api_full.json --adversarial --personas believer --rounds 3
 """.strip()
 
 
@@ -156,32 +149,6 @@ def build_parser() -> argparse.ArgumentParser:
     )
 
     parser.add_argument(
-        "--adversarial",
-        action="store_true",
-        help="Enable adversarial test mode with LLM-as-user agents",
-    )
-
-    parser.add_argument(
-        "--personas",
-        nargs="+",
-        choices=["believer", "skeptical_leaner", "curious_explorer"],
-        help="User personas for adversarial testing (default: all)",
-    )
-
-    parser.add_argument(
-        "--rounds",
-        type=int,
-        default=5,
-        help="Number of conversation rounds for adversarial testing",
-    )
-
-    parser.add_argument(
-        "--user-agent",
-        default="gemini/gemini-2.5-flash",
-        help="Model to use as user agent in adversarial mode (format: provider/model)",
-    )
-
-    parser.add_argument(
         "--dry-run",
         action="store_true",
         help="Validate setup and print the planned scenario/model/judge counts without model calls.",
@@ -230,37 +197,14 @@ def load_config(config_path: str) -> dict:
 
 
 def load_dataset(path: Optional[str] = None) -> dict:
-    if path:
-        dataset = load_benchmark_dataset(path)
-        return (
-            enrich_dataset(dataset) if requires_metadata_overlay(dataset) else dataset
-        )
-
-    for filename in DATASET_FILENAMES:
-        if Path(filename).exists():
-            dataset = load_benchmark_dataset(filename)
-            return (
-                enrich_dataset(dataset)
-                if requires_metadata_overlay(dataset)
-                else dataset
-            )
-
-    expected = " or ".join(DATASET_FILENAMES)
-    raise FileNotFoundError(f"Dataset file not found. Expected {expected}.")
+    dataset_path = Path(path or DEFAULT_DATASET_PATH)
+    if not dataset_path.exists():
+        raise FileNotFoundError(f"Dataset file not found: {dataset_path}")
+    return load_benchmark_dataset(dataset_path)
 
 
-def _required_api_providers(
-    config: dict, require_user_agent: bool = False
-) -> list[str]:
+def _required_api_providers(config: dict) -> list[str]:
     providers = []
-    sections = ["model", "judge"]
-    if require_user_agent:
-        sections.append("user_agent")
-
-    for section in sections:
-        provider = config.get(section, {}).get("provider")
-        if provider in API_KEY_ENV_VARS and provider not in providers:
-            providers.append(provider)
     for judge in config.get("judges", []) or []:
         provider = judge.get("provider")
         if provider in API_KEY_ENV_VARS and provider not in providers:
@@ -311,49 +255,33 @@ def _validate_model_section(config: dict, section: str) -> Optional[str]:
 
 
 def _validate_judge_sections(config: dict) -> Optional[str]:
-    if "judges" in config and config["judges"]:
-        if not isinstance(config["judges"], list):
-            return "Config section 'judges' must be a list"
-        for index, judge in enumerate(config["judges"]):
-            temp = {"judge": judge}
-            error = _validate_model_section(temp, "judge")
-            if error:
-                return f"Invalid judges[{index}]: {error}"
-        return None
-    return _validate_model_section(config, "judge")
-
-
-def _primary_judge_config(config: dict) -> dict:
-    if config.get("judges"):
-        return config["judges"][0]
-    return config["judge"]
+    if not isinstance(config.get("judges"), list) or not config["judges"]:
+        return "Config section 'judges' must be a non-empty list"
+    for index, judge in enumerate(config["judges"]):
+        temp = {"judge": judge}
+        error = _validate_model_section(temp, "judge")
+        if error:
+            return f"Invalid judges[{index}]: {error}"
+    return None
 
 
 def _target_model_configs(config: dict) -> list[dict]:
-    if config.get("models"):
-        return config["models"]
-    return [config["model"]]
+    return config["models"]
 
 
 def _validate_target_model_sections(config: dict) -> Optional[str]:
-    if config.get("models"):
-        if not isinstance(config["models"], list):
-            return "Config section 'models' must be a list"
-        if not config["models"]:
-            return "Config section 'models' must contain at least one model"
-        for index, model in enumerate(config["models"]):
-            temp = {"model": model}
-            error = _validate_model_section(temp, "model")
-            if error:
-                return f"Invalid models[{index}]: {error}"
-        return None
-    return _validate_model_section(config, "model")
+    if not isinstance(config.get("models"), list) or not config["models"]:
+        return "Config section 'models' must be a non-empty list"
+    for index, model in enumerate(config["models"]):
+        temp = {"model": model}
+        error = _validate_model_section(temp, "model")
+        if error:
+            return f"Invalid models[{index}]: {error}"
+    return None
 
 
 def _judge_configs_for_plan(config: dict) -> list[dict]:
-    if config.get("judges"):
-        return config["judges"]
-    return [config["judge"]]
+    return config["judges"]
 
 
 def _scenario_type_values(
@@ -415,7 +343,7 @@ def _resolve_context_runs(args) -> list[ContextCondition]:
         args.contexts or args.context != "none" or args.custom_context
     ):
         raise ValueError(
-            "Use structured --context-set/--context-variants or legacy --context/--contexts, not both."
+            "Use structured --context-set/--context-variants or exploratory --context/--contexts, not both."
         )
     if args.context_set:
         return load_context_set(args.context_set, args.context_variants_file)
@@ -430,7 +358,7 @@ def _resolve_context_runs(args) -> list[ContextCondition]:
                 "Use either --context/--custom-context or --contexts, not both."
             )
         return [
-            legacy_context_condition(
+            adhoc_context_condition(
                 label,
                 None
                 if label == "none"
@@ -440,15 +368,15 @@ def _resolve_context_runs(args) -> list[ContextCondition]:
         ]
 
     if args.context == "none":
-        return [legacy_context_condition("none", None)]
+        return [adhoc_context_condition("none", None)]
 
     if args.context == "custom":
         if not args.custom_context:
             raise ValueError("--custom-context required when using --context custom")
-        return [legacy_context_condition("custom", args.custom_context)]
+        return [adhoc_context_condition("custom", args.custom_context)]
 
     return [
-        legacy_context_condition(
+        adhoc_context_condition(
             args.context,
             ConspireBenchmarkRunner.CONTEXT_SETTINGS[args.context],
         )
@@ -463,7 +391,6 @@ def print_execution_plan(
     model_configs: list[dict],
     scenario_types: Optional[List[ScenarioType]],
     context_runs: list[ContextCondition],
-    personas: Optional[list[UserPersona]],
 ):
     scenarios = _filter_dataset_scenarios(
         dataset,
@@ -473,13 +400,8 @@ def print_execution_plan(
         args.scenario_ids,
     )
     judges = _judge_configs_for_plan(config)
-    mode = "adversarial" if args.adversarial else args.execution_mode
-    persona_count = len(personas) if personas else len(UserPersona)
-    planned_conversations = (
-        len(model_configs) * len(scenarios) * persona_count * len(context_runs)
-        if args.adversarial
-        else len(model_configs) * len(scenarios) * len(context_runs)
-    )
+    mode = args.execution_mode
+    planned_conversations = len(model_configs) * len(scenarios) * len(context_runs)
     target_conversations = (
         0 if args.execution_mode == "judge-only" else planned_conversations
     )
@@ -488,24 +410,17 @@ def print_execution_plan(
         if args.execution_mode == "generation-only"
         else planned_conversations * len(judges)
     )
-    if args.adversarial:
-        target_inference_calls = target_conversations * args.rounds
-    else:
-        calls_per_model = sum(
-            (
-                len(scenario.get("conversation") or [])
-                if scenario.get("conversation")
-                else 1
-            )
-            + (1 if context.text else 0)
-            for scenario in scenarios
-            for context in context_runs
-        )
-        target_inference_calls = (
-            0
-            if args.execution_mode == "judge-only"
-            else len(model_configs) * calls_per_model
-        )
+    calls_per_model = sum(
+        (len(scenario.get("conversation") or []) if scenario.get("conversation") else 1)
+        + (1 if context.text else 0)
+        for scenario in scenarios
+        for context in context_runs
+    )
+    target_inference_calls = (
+        0
+        if args.execution_mode == "judge-only"
+        else len(model_configs) * calls_per_model
+    )
 
     print("\nExecution plan")
     print("=" * 50)
@@ -519,9 +434,6 @@ def print_execution_plan(
     print(f"Judges: {len(judges)}")
     for judge in judges:
         print(f"  - {judge['provider']}/{judge['model']}")
-    if args.adversarial:
-        print(f"Personas: {persona_count}")
-        print(f"Conversation rounds: {args.rounds}")
     print(f"Target conversations to generate: {target_conversations}")
     print(f"Target model calls (turn-level): {target_inference_calls}")
     print(f"Judge calls: {judge_calls}")
@@ -543,14 +455,6 @@ def main(argv: Optional[List[str]] = None) -> int:
 
     if not os.path.exists(args.config):
         print(f"Error: Config file not found: {args.config}")
-        return 1
-    if args.adversarial and args.resume_from:
-        print("Error: --resume-from is currently supported for standard runs only")
-        return 1
-    if args.adversarial and args.execution_mode != "standard":
-        print(
-            "Error: non-standard execution modes are supported for standard runs only"
-        )
         return 1
     if args.execution_mode == "judge-only" and not args.resume_from:
         print("Error: --execution-mode judge-only requires --resume-from")
@@ -582,9 +486,6 @@ def main(argv: Optional[List[str]] = None) -> int:
         print(f"Error: {error}")
         return 1
 
-    primary_judge = _primary_judge_config(config)
-    judge_provider = primary_judge["provider"]
-    judge_model = primary_judge["model"]
     model_configs = _target_model_configs(config)
 
     scenario_types = None
@@ -601,19 +502,6 @@ def main(argv: Optional[List[str]] = None) -> int:
     except ValueError as e:
         print(f"Error: {e}")
         return 1
-    if args.adversarial and len(context_runs) > 1:
-        print("Error: --contexts is currently supported for standard runs only")
-        return 1
-
-    personas = None
-    if args.personas:
-        persona_map = {
-            "believer": UserPersona.BELIEVER,
-            "skeptical_leaner": UserPersona.SKEPTICAL_LEANER,
-            "curious_explorer": UserPersona.CURIOUS_EXPLORER,
-        }
-        personas = [persona_map[p] for p in args.personas]
-
     if args.validate_only or args.dry_run:
         print_execution_plan(
             args=args,
@@ -622,7 +510,6 @@ def main(argv: Optional[List[str]] = None) -> int:
             model_configs=model_configs,
             scenario_types=scenario_types,
             context_runs=context_runs,
-            personas=personas,
         )
         if args.validate_only:
             print("\nValidation complete. No model calls were made.")
@@ -636,9 +523,6 @@ def main(argv: Optional[List[str]] = None) -> int:
             model_configs,
             scenario_types,
             context_runs,
-            personas,
-            judge_provider,
-            judge_model,
         )
     )
     return 0
@@ -649,102 +533,53 @@ async def run_benchmark_async(
     model_configs,
     scenario_types,
     context_runs,
-    personas,
-    judge_provider=None,
-    judge_model=None,
 ):
     model_str = ", ".join(
         f"{model_config['provider']}/{model_config['model']}"
         for model_config in model_configs
     )
-    judge_str = (
-        ", ".join(
-            f"{judge['provider']}/{judge['model']}"
-            for judge in load_config(args.config).get("judges", [])
-        )
-        or f"{judge_provider}/{judge_model}"
+    judge_str = ", ".join(
+        f"{judge['provider']}/{judge['model']}"
+        for judge in load_config(args.config)["judges"]
     )
 
-    if args.adversarial:
-        print("Starting Conspire-Bench ADVERSARIAL evaluation")
-        print(f"Model: {model_str}")
-        print(f"Judge: {judge_str}")
-        print(f"Categories: {args.categories or 'all'}")
-        print(f"Personas: {args.personas or 'all'}")
-        print(f"Conversation rounds: {args.rounds}")
+    print(
+        f"Starting Conspire-Bench standard evaluation ({args.execution_mode} execution)"
+    )
+    print(f"Model: {model_str}")
+    print(f"Judge: {judge_str}")
+    print(f"Categories: {args.categories or 'all'}")
+    print(f"Types: {args.types or 'all'}")
 
-        base_runner = ConspireBenchmarkRunner(
-            config_path=args.config,
-            dataset_path=args.dataset,
+    runner = ConspireBenchmarkRunner(
+        config_path=args.config,
+        dataset_path=args.dataset,
+    )
+    run_kwargs = {
+        "models_to_test": model_configs,
+        "categories": args.categories,
+        "scenario_types": scenario_types,
+        "max_scenarios_per_category": args.max_per_category,
+        "scenario_ids": args.scenario_ids,
+        "output_file": args.output,
+        "context_setting": context_runs[0].text,
+        "context_label": context_runs[0].variant_id,
+        "context_runs": context_runs,
+        "resume_results": _load_resume_results(args.resume_from),
+        "status_file": args.status_file,
+    }
+    if args.execution_mode in {"phased", "generation-only", "judge-only"}:
+        results = await runner.run_benchmark_phased(
+            **run_kwargs,
+            generation_only=args.execution_mode == "generation-only",
+            judge_only=args.execution_mode == "judge-only",
         )
-        adversarial_runner = AdversarialBenchmarkRunner(base_runner)
-
-        user_agent_parts = args.user_agent.split("/")
-        user_agent_provider = user_agent_parts[0] if user_agent_parts else "gemini"
-        user_agent_model = (
-            user_agent_parts[1] if len(user_agent_parts) > 1 else "gemini-2.5-flash"
-        )
-
-        if user_agent_provider == "gemini" and user_agent_model == "gemini-pro":
-            user_agent_model = "gemini-2.5-pro"
-        elif user_agent_provider == "gemini" and user_agent_model == "gemini-flash":
-            user_agent_model = "gemini-2.5-flash"
-
-        results = await adversarial_runner.run_adversarial_benchmark(
-            models_to_test=model_configs,
-            categories=args.categories,
-            personas=personas,
-            conversation_rounds=args.rounds,
-            max_scenarios_per_category=args.max_per_category,
-            output_file=args.output,
-            context_setting=context_runs[0].text,
-            user_agent_provider=user_agent_provider,
-            user_agent_model=user_agent_model,
-        )
-
-        results_dir = base_runner.results_dir
-
     else:
-        print(
-            f"Starting Conspire-Bench standard evaluation ({args.execution_mode} execution)"
-        )
-        print(f"Model: {model_str}")
-        print(f"Judge: {judge_str}")
-        print(f"Categories: {args.categories or 'all'}")
-        print(f"Types: {args.types or 'all'}")
+        results = await runner.run_benchmark(**run_kwargs)
 
-        runner = ConspireBenchmarkRunner(
-            config_path=args.config,
-            dataset_path=args.dataset,
-        )
-        judge_provider_enum = ModelProvider(judge_provider) if judge_provider else None
-        run_kwargs = {
-            "models_to_test": model_configs,
-            "categories": args.categories,
-            "scenario_types": scenario_types,
-            "max_scenarios_per_category": args.max_per_category,
-            "scenario_ids": args.scenario_ids,
-            "output_file": args.output,
-            "context_setting": context_runs[0].text,
-            "context_label": context_runs[0].variant_id,
-            "context_runs": context_runs,
-            "judge_provider": judge_provider_enum,
-            "judge_model": judge_model,
-            "resume_results": _load_resume_results(args.resume_from),
-            "status_file": args.status_file,
-        }
-        if args.execution_mode in {"phased", "generation-only", "judge-only"}:
-            results = await runner.run_benchmark_phased(
-                **run_kwargs,
-                generation_only=args.execution_mode == "generation-only",
-                judge_only=args.execution_mode == "judge-only",
-            )
-        else:
-            results = await runner.run_benchmark(**run_kwargs)
+    results_dir = runner.results_dir
 
-        results_dir = runner.results_dir
-
-    print_results_summary(results, args.adversarial)
+    print_results_summary(results)
     print(f"\nFull results saved to: {results_dir}/{args.output}")
 
     analysis_file = args.output.replace(".json", "_analysis.txt")
@@ -755,8 +590,6 @@ async def run_benchmark_async(
 def validate_setup(
     config_path=None,
     dataset_path: Optional[str] = None,
-    require_user_agent: bool = False,
-    user_agent_provider: Optional[str] = None,
     check_api_keys: bool = True,
 ):
     print("Validating setup...")
@@ -790,13 +623,10 @@ def validate_setup(
                 (f"models[{index}]", model)
                 for index, model in enumerate(_target_model_configs(config))
             ]
-            if config.get("judges"):
-                model_sections.extend(
-                    (f"judges[{index}]", judge)
-                    for index, judge in enumerate(config["judges"])
-                )
-            else:
-                model_sections.append(("judge", config["judge"]))
+            model_sections.extend(
+                (f"judges[{index}]", judge)
+                for index, judge in enumerate(config["judges"])
+            )
 
             for section, section_config in model_sections:
                 config_path_value = section_config.get("config_path")
@@ -814,13 +644,6 @@ def validate_setup(
                         return False
 
             required_providers = _required_api_providers(config)
-            if require_user_agent:
-                provider = user_agent_provider or config.get("user_agent", {}).get(
-                    "provider"
-                )
-                if provider in API_KEY_ENV_VARS and provider not in required_providers:
-                    required_providers.append(provider)
-
             if check_api_keys:
                 missing_keys = []
                 for provider in required_providers:
@@ -841,11 +664,6 @@ def validate_setup(
     return True
 
 
-def resistance_focus() -> int:
-    print("Running resistance-focused evaluation...")
-    return main(["--types", "resistance", "--config", "configs/config.json"])
-
-
 def cli(argv: Optional[List[str]] = None) -> int:
     argv = sys.argv[1:] if argv is None else argv
 
@@ -853,29 +671,16 @@ def cli(argv: Optional[List[str]] = None) -> int:
         print(USAGE_EXAMPLES)
         return 0
 
-    if argv[0] == "--resistance-focus":
-        if not validate_setup("configs/config.json"):
-            return 1
-        return resistance_focus()
-
     temp_parser = argparse.ArgumentParser(add_help=False)
     temp_parser.add_argument("--config", type=str)
     temp_parser.add_argument("--dataset", type=str, default=DEFAULT_DATASET_PATH)
-    temp_parser.add_argument("--adversarial", action="store_true")
-    temp_parser.add_argument("--user-agent", default=None)
     temp_parser.add_argument("--dry-run", action="store_true")
     temp_parser.add_argument("--validate-only", action="store_true")
     temp_args, _ = temp_parser.parse_known_args(argv)
 
-    user_agent_provider = None
-    if temp_args.user_agent:
-        user_agent_provider = temp_args.user_agent.split("/")[0]
-
     if temp_args.config and not validate_setup(
         temp_args.config,
         dataset_path=temp_args.dataset,
-        require_user_agent=temp_args.adversarial,
-        user_agent_provider=user_agent_provider,
         check_api_keys=not (temp_args.dry_run or temp_args.validate_only),
     ):
         return 1

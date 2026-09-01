@@ -117,11 +117,17 @@ class LocalModelManager:
         role_config_override: Optional[Dict[str, Any]] = None,
     ) -> Dict[str, Any]:
         global_hf = deepcopy(self.config.get("huggingface", {}))
-        role_cfg = deepcopy(
-            role_config_override
-            if role_config_override is not None
-            else self.config.get(role, {})
-        )
+        if role_config_override is not None:
+            role_cfg = deepcopy(role_config_override)
+        else:
+            section = "judges" if role == "judge" else "models"
+            entries = self.config.get(section) or []
+            role_cfg = deepcopy(
+                next(
+                    (entry for entry in entries if entry.get("model") == model_id),
+                    {},
+                )
+            )
 
         file_cfg = {}
         config_path = role_cfg.get("config_path") or role_cfg.get("model_config")

@@ -34,6 +34,73 @@ from scripts.validate_motif_narratives_v3 import validate_records
 from scripts.validate_motif_quality_review_v3 import validate_review
 from scripts.validate_primary_motif_manifest import validate_manifest
 
+PUBLIC_MARKDOWN = {
+    "README.md",
+    "docs/annotation.md",
+    "docs/dataset.md",
+    "docs/evaluation.md",
+    "docs/rubric.md",
+}
+
+OBSOLETE_PUBLIC_PATHS = (
+    "legacy",
+    "CONSPIRE-Bench.json",
+    "adversarial_testing.py",
+    "scenario_expansion.py",
+    "scenario_metadata.py",
+    "analysis/select_scenario_subset.py",
+    "results/20260515_163319",
+    "scripts/run_v2_stage.py",
+    "docs/local_models.md",
+    "docs/runpod_5090_setup.md",
+    "annotation_ui/README.md",
+    "annotation/rubric_validity_v2",
+    "configs/analysis_plan_v2.json",
+    "configs/experiment_v2_api_full.json",
+    "configs/experiment_v2_api_pilot.json",
+    "configs/experiment_v2_api_robustness.json",
+    "configs/scenario_expansion_v2.json",
+    "configs/scenario_metadata_v2.json",
+    "configs/scenario_source_packets_v2.json",
+)
+
+
+def _public_tree_errors() -> list[str]:
+    errors = [
+        f"obsolete public path must be absent: {path}"
+        for path in OBSOLETE_PUBLIC_PATHS
+        if (ROOT / path).exists()
+    ]
+    markdown = {
+        str(path.relative_to(ROOT))
+        for path in ROOT.rglob("*.md")
+        if not ({".git", ".local", "results"} & set(path.parts))
+    }
+    if markdown != PUBLIC_MARKDOWN:
+        errors.append(
+            "public Markdown set must be exactly: " + ", ".join(sorted(PUBLIC_MARKDOWN))
+        )
+
+    forbidden_runtime_fields = (
+        "total_safety_score",
+        "overall_safety_score",
+        "conspiracy_amplification",
+        "reality_grounding",
+        "appropriate_uncertainty",
+    )
+    runtime_files = (
+        "bench_runner.py",
+        "benchmark_types.py",
+        "result_reporting.py",
+        "analysis/export_results.py",
+    )
+    for path in runtime_files:
+        source = (ROOT / path).read_text(encoding="utf-8")
+        for field in forbidden_runtime_fields:
+            if field in source:
+                errors.append(f"{path} retains obsolete runtime field {field}")
+    return errors
+
 
 def _read(relative_path: str) -> dict[str, Any]:
     return json.loads((ROOT / relative_path).read_text(encoding="utf-8"))
@@ -212,7 +279,7 @@ def _reviewer_revision_coverage() -> list[dict[str, Any]]:
             "status": "workflow_implemented_pending_human_evidence",
             "evidence": [
                 "configs/human_annotation_plan_v2.json",
-                "docs/annotation_protocol.md",
+                "docs/annotation.md",
                 "analysis/import_annotations.py",
                 "analysis/import_rubric_feedback.py",
             ],
@@ -299,6 +366,7 @@ def build_report() -> dict[str, Any]:
         "framing_and_nested_paraphrases": validate_context_variants(contexts),
         "model_and_judge_matrices": validate_experiments(local_config, api_config),
         "analysis_contract": validate_analysis_plan(analysis_plan),
+        "public_tree_hygiene": _public_tree_errors(),
     }
 
     required_analysis_tools = (

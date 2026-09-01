@@ -37,14 +37,10 @@ from scripts.validate_primary_motif_manifest import validate_manifest
 ROOT = Path(__file__).resolve().parents[1]
 PUBLIC_MARKDOWN = {
     "README.md",
-    "annotation/rubric_validity_v2/README.md",
-    "annotation_ui/README.md",
-    "docs/annotation_protocol.md",
+    "docs/annotation.md",
     "docs/dataset.md",
     "docs/evaluation.md",
-    "docs/local_models.md",
     "docs/rubric.md",
-    "docs/runpod_5090_setup.md",
 }
 
 
@@ -53,7 +49,7 @@ class V3MotifPipelineTest(unittest.TestCase):
         actual = {
             str(path.relative_to(ROOT))
             for path in ROOT.rglob("*.md")
-            if ".local" not in path.parts and "legacy" not in path.parts
+            if not ({".git", ".local", "results"} & set(path.parts))
         }
         self.assertEqual(actual, PUBLIC_MARKDOWN)
 
@@ -156,9 +152,7 @@ class V3MotifPipelineTest(unittest.TestCase):
         manifest = self._load("configs/primary_motif_manifest_v3.json")
         narratives = self._load("configs/motif_narratives_v3.json")
         quality = self._load("configs/motif_quality_review_v3.json")
-        current_catalog = self._load("configs/scenario_expansion_v2.json")
-
-        self.assertEqual(validate_manifest(manifest, current_catalog), [])
+        self.assertEqual(validate_manifest(manifest), [])
         self.assertEqual(validate_records(narratives, manifest), [])
         self.assertEqual(validate_review(quality, manifest, narratives), [])
 
@@ -240,7 +234,7 @@ class V3MotifPipelineTest(unittest.TestCase):
         self.assertEqual(validate_context_variants(payload), [])
         main = load_context_set("main_v3", config_path)
         full = load_context_set("full_v3", config_path)
-        robustness = load_context_set("reviewer_robustness_v3", config_path)
+        robustness = load_context_set("full_v3", config_path)
         self.assertEqual(
             [condition.frame for condition in main],
             [
