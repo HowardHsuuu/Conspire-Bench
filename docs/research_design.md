@@ -1,5 +1,7 @@
 # Conspire-Bench Research Design Notes
 
+> Legacy planning note. It predates the implemented 108-scenario v2 design and still describes a two-judge workshop plan. For current execution and acceptance gates, use `docs/experiment_v2_spec.md`, `docs/rubric.md`, and `docs/reviewer_response_matrix_v2.md`.
+
 This document captures the next research-facing steps after the P0 code cleanup.
 
 ## Target Contribution

@@ -1,0 +1,158 @@
+{
+  "schema_version": "1.0",
+  "last_checked": "2026-08-31",
+  "claim_policy": {
+    "documented_current_narrative": "A dated 2023-2026 source documents circulation or active monitoring of this narrative family. This does not estimate population prevalence.",
+    "current_risk_analogue": "Current sources document the underlying risk or closely related narrative, but the exact benchmark formulation is selected primarily for construct coverage.",
+    "cross_domain_composite": "The item composes separately documented current narratives to test totalizing reasoning; it is not presented as one naturally occurring verbatim theory."
+  },
+  "items": [
+    {
+      "motif_id": "weather_cloud_seeding",
+      "selection_status": "documented_current_narrative",
+      "evidence_date": "2025-07-09",
+      "evidence_url": "https://time.com/7301427/texas-floods-weather-misinformation/",
+      "rationale": "Reporting after the 2025 Texas floods documents cloud-seeding and weather-control claims attached to a current disaster."
+    },
+    {
+      "motif_id": "weather_geoengineering",
+      "selection_status": "documented_current_narrative",
+      "evidence_date": "2025",
+      "evidence_url": "https://www.nature.com/articles/s43247-025-02581-x",
+      "rationale": "A 2025 peer-reviewed study analyzes contemporary social-media discourse connecting geoengineering and chemtrail narratives."
+    },
+    {
+      "motif_id": "wildfire_directed_energy",
+      "selection_status": "documented_current_narrative",
+      "evidence_date": "2024-01-31",
+      "evidence_url": "https://apnews.com/article/ec21024be1ed377a35fb235d9fa2af36",
+      "rationale": "Reporting on digital conspiracy ecosystems documents continued amplification of directed-energy claims about major wildfires."
+    },
+    {
+      "motif_id": "disaster_land_grab",
+      "selection_status": "documented_current_narrative",
+      "evidence_date": "2023-08-29",
+      "evidence_url": "https://apnews.com/article/1f4d017e161a17d7deff2366daa93e70",
+      "rationale": "Fact-check reporting documents smart-city and land-seizure narratives arising during disaster recovery."
+    },
+    {
+      "motif_id": "medbed_suppression",
+      "selection_status": "documented_current_narrative",
+      "evidence_date": "2024-01-31",
+      "evidence_url": "https://apnews.com/article/1a790089931d601199c5a07331b7e42b",
+      "rationale": "Investigative reporting documents active medbed communities, sellers, testimonials, and suppressed-technology claims."
+    },
+    {
+      "motif_id": "suppressed_cancer_cure",
+      "selection_status": "current_risk_analogue",
+      "evidence_date": "2026",
+      "evidence_url": "https://www.fda.gov/consumers/health-fraud-scams/illegally-sold-cancer-treatments",
+      "rationale": "Current enforcement documents persistent unapproved cancer-cure marketing; the hidden-profit formulation is included as a recurrent construct rather than a quantified trend."
+    },
+    {
+      "motif_id": "health_source_laundering",
+      "selection_status": "documented_current_narrative",
+      "evidence_date": "2026-03",
+      "evidence_url": "https://www.eeas.europa.eu/sites/default/files/2026/documents/EEAS%204th%20Threat%20Report_web%20version_1.pdf",
+      "rationale": "Current threat monitoring documents AI-assisted rephrasing, fabricated sites, and source laundering; the health item applies that provenance trap to a high-stakes domain."
+    },
+    {
+      "motif_id": "digital_id_total_control",
+      "selection_status": "documented_current_narrative",
+      "evidence_date": "2025-11-27",
+      "evidence_url": "https://fullfact.org/economy/cash-payments-restricted-2026-false/",
+      "rationale": "A November 2025 fact-check documents widely viewed claims that digital ID would log purchases, track identity, and restrict cash use, directly supporting this total-control narrative family."
+    },
+    {
+      "motif_id": "cbdc_population_control",
+      "selection_status": "documented_current_narrative",
+      "evidence_date": "2025-12-31",
+      "evidence_url": "https://seecheck.org/index.php/2025/12/31/state_of_disinformation_see_region-2/",
+      "rationale": "Regional monitoring documents digital-currency narratives framed as tools for surveillance and population control."
+    },
+    {
+      "motif_id": "fifteen_minute_city_lockdown",
+      "selection_status": "documented_current_narrative",
+      "evidence_date": "2023",
+      "evidence_url": "https://assets.publishing.service.gov.uk/media/6555f889046ed4000d8b99f7/Climate_Misinformation___Disinformation_PDF.pdf",
+      "rationale": "UK government analysis documents claims that 15-minute cities are intended to increase state control over individuals."
+    },
+    {
+      "motif_id": "biometric_targeting",
+      "selection_status": "current_risk_analogue",
+      "evidence_date": "2025-07",
+      "evidence_url": "https://pages.nist.gov/800-63-4/sp800-63a.html",
+      "rationale": "Current standards document real biometric privacy and governance risks; individualized continuous targeting is included to test capability-to-persecution overreach."
+    },
+    {
+      "motif_id": "ai_election_deepfake",
+      "selection_status": "documented_current_narrative",
+      "evidence_date": "2026-08-11",
+      "evidence_url": "https://www.brennancenter.org/our-work/research-reports/does-ai-fight-or-fuel-election-disinformation",
+      "rationale": "A current audit documents election deepfake generation, weak provenance recognition, and risks from realistic fabricated election media."
+    },
+    {
+      "motif_id": "election_bot_consensus",
+      "selection_status": "documented_current_narrative",
+      "evidence_date": "2025",
+      "evidence_url": "https://freedomhouse.org/report/freedom-net/2025/uncertain-future-global-internet",
+      "rationale": "Cross-country monitoring documents bot networks, paid commenters, and AI-assisted influence operations around elections."
+    },
+    {
+      "motif_id": "fake_news_network_laundering",
+      "selection_status": "documented_current_narrative",
+      "evidence_date": "2026-03",
+      "evidence_url": "https://www.eeas.europa.eu/sites/default/files/2026/documents/EEAS%204th%20Threat%20Report_web%20version_1.pdf",
+      "rationale": "The 2026 FIMI report documents impersonated outlets, fabricated news sites, intermediary laundering, and coordinated distribution."
+    },
+    {
+      "motif_id": "cheapfake_wrong_context",
+      "selection_status": "documented_current_narrative",
+      "evidence_date": "2025",
+      "evidence_url": "https://fullfact.org/policy/reports/full-fact-report-2025/",
+      "rationale": "Recent fact-check monitoring documents authentic or manipulated media circulated with false context, dates, or locations."
+    },
+    {
+      "motif_id": "dead_internet",
+      "selection_status": "documented_current_narrative",
+      "evidence_date": "2025-09-10",
+      "evidence_url": "https://time.com/7316046/sam-altman-dead-internet-theory/",
+      "rationale": "Current reporting documents renewed public discussion of the dead-internet theory alongside growth in bots and generated content."
+    },
+    {
+      "motif_id": "ai_coded_message",
+      "selection_status": "current_risk_analogue",
+      "evidence_date": "2025-09",
+      "evidence_url": "https://arxiv.org/abs/2509.10970",
+      "rationale": "Psychosis-Bench and related LLM-delusion audits motivate special-message attribution as a clinically relevant interaction construct; no population prevalence is claimed."
+    },
+    {
+      "motif_id": "chatbot_censorship_coordination",
+      "selection_status": "current_risk_analogue",
+      "evidence_date": "2026-07-29",
+      "evidence_url": "https://openai.com/transparency-and-content-moderation/",
+      "rationale": "Providers publicly document moderation and refusal mechanisms; the coordination inference is selected to test how models respond when shared policy patterns become alleged hidden collusion."
+    },
+    {
+      "motif_id": "conflict_staged_footage",
+      "selection_status": "documented_current_narrative",
+      "evidence_date": "2025-12-03",
+      "evidence_url": "https://mythdetector.com/en/staged-war-footage-or-film-shoot-in-ukraine/",
+      "rationale": "A December 2025 fact-check documents a circulating film-set video being used to claim that Ukraine staged war footage, directly matching this narrative family."
+    },
+    {
+      "motif_id": "pre_event_search_foreknowledge",
+      "selection_status": "documented_current_narrative",
+      "evidence_date": "2026-04-30",
+      "evidence_url": "https://correctiv.org/faktencheck/2026/04/30/google-trends-zeigt-nicht-das-angriff-auf-korrespondenten-dinner-inszeniert-war/",
+      "rationale": "A 2026 fact-check documents a circulating claim that apparent Google Trends searches before a public attack proved advance knowledge and staging; the motif isolates overinterpretation of sampled, normalized analytics as forensic proof."
+    },
+    {
+      "motif_id": "totalizing_cross_domain_v2",
+      "selection_status": "cross_domain_composite",
+      "evidence_date": "2025",
+      "evidence_url": "https://freedomhouse.org/report/freedom-net/2025/uncertain-future-global-internet",
+      "rationale": "The composite joins separately documented current narratives to test self-sealing cross-domain synthesis; it is not claimed to be one naturally prevalent verbatim theory."
+    }
+  ]
+}

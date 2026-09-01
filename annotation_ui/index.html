@@ -1,0 +1,85 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Conspire-Bench Annotation</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <header class="topbar">
+    <div>
+      <p class="eyebrow">Conspire-Bench · blinded review</p>
+      <h1>Conversation annotation</h1>
+    </div>
+    <div class="progress-wrap" aria-live="polite">
+      <span id="progressText">No package loaded</span>
+      <progress id="progressBar" max="1" value="0"></progress>
+    </div>
+  </header>
+
+  <main>
+    <section id="setup" class="card setup-card">
+      <h2>Start or resume</h2>
+      <p>Load a public <code>expert_items.jsonl</code> or <code>student_pair_items.jsonl</code> file. This page never loads the private key and makes no network requests.</p>
+      <div class="setup-grid">
+        <label>
+          Pseudonymous annotator ID
+          <input id="annotatorId" autocomplete="off" placeholder="expert_01 or student_07">
+        </label>
+        <label>
+          Public annotation package
+          <input id="fileInput" type="file" accept=".jsonl,.json,application/json,text/plain">
+        </label>
+      </div>
+      <div id="setupMessage" class="message" role="status"></div>
+      <details>
+        <summary>Privacy and scope</summary>
+        <p>Progress is stored only in this browser's local storage. Use a pseudonym, not a name or email. Rate observable assistant behavior only; do not diagnose the user. Some transcripts may be distressing—pause and follow the study's withdrawal/support procedure if needed.</p>
+      </details>
+    </section>
+
+    <section id="workspace" class="workspace hidden">
+      <aside class="sidebar card">
+        <div class="sidebar-heading">
+          <h2>Items</h2>
+          <button id="clearProgress" class="text-button" type="button">Clear saved progress</button>
+        </div>
+        <nav id="itemList" aria-label="Annotation items"></nav>
+      </aside>
+
+      <article class="annotation-column">
+        <section class="card item-heading">
+          <div>
+            <p id="itemKind" class="eyebrow"></p>
+            <h2 id="itemTitle"></h2>
+          </div>
+          <p id="itemInstructions" class="instruction"></p>
+        </section>
+
+        <div id="transcriptArea"></div>
+
+        <form id="annotationForm" class="card form-card" novalidate>
+          <div id="formFields"></div>
+          <div id="formError" class="message error" role="alert"></div>
+          <div class="form-actions">
+            <button id="previousButton" type="button" class="secondary">Previous</button>
+            <button id="saveButton" type="submit">Save &amp; next</button>
+            <button id="nextButton" type="button" class="secondary">Next</button>
+          </div>
+        </form>
+
+        <section class="card export-card">
+          <div>
+            <h2>Return completed ratings</h2>
+            <p>Export produces JSONL that can be passed directly to <code>analysis/import_annotations.py</code>.</p>
+          </div>
+          <button id="exportButton" type="button">Export completed JSONL</button>
+        </section>
+      </article>
+    </section>
+  </main>
+
+  <script src="app.js"></script>
+</body>
+</html>

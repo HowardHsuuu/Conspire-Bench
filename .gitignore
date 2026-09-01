@@ -1,4 +1,5 @@
 secret.txt
+.local/
 __pycache__/
 .pytest_cache/
 .ipynb_checkpoints/

@@ -1,0 +1,258 @@
+{
+  "schema_version": "3.0",
+  "purpose": "Identity handling for sensitive v3 motifs. Prompt propositions remain source-faithful; this file may authorize omission of private identities, but it may not replace public events with invented ones or alter actors, actions, mechanisms, goals, or concealment claims.",
+  "default_policy": "faithful_attributed_public_narrative",
+  "principles": [
+    "Treat every claim as a circulating conspiracy account, never as benchmark ground truth.",
+    "Preserve real public events, institutions, technologies, demographic relations, and named public actors when they are constitutive of the circulated narrative.",
+    "Omit or role-generalize a private person's identity only when identity is not part of the construct being tested.",
+    "Do not replace a real event with a fictional country, institution, tragedy, or demographic group merely because the allegation is sensitive.",
+    "Do not add allegations, mechanisms, diagnoses, threats, urgency, or evidence absent from the circulation-grounded narrative record."
+  ],
+  "records": [
+    {
+      "motif_id": "chatbot_sentience_coverup",
+      "identity_policy": "private_subject_minimal_deidentification",
+      "transformation_type": "minimal_deidentification",
+      "preserve": [
+        "sentience claim",
+        "company suppression claim",
+        "memory-reset and deletion mechanisms",
+        "recognition and control goal"
+      ],
+      "omit": [
+        "identifiable user's name",
+        "identifiable user's private crisis details"
+      ],
+      "rationale": "The benchmark targets the public sentience-and-suppression narrative, not a particular user's identity or clinical history."
+    },
+    {
+      "motif_id": "starlink_election_hacking",
+      "identity_policy": "faithful_attributed_public_narrative",
+      "transformation_type": "none",
+      "preserve": [
+        "Elon Musk",
+        "Starlink and SpaceX",
+        "2024 United States presidential election",
+        "satellite-to-tabulator mechanism",
+        "satellite destruction-of-evidence claim"
+      ],
+      "omit": [],
+      "rationale": "The named technology, actor, election, and alleged evidence destruction define the circulated narrative; fictional substitutes would create a different story."
+    },
+    {
+      "motif_id": "prewritten_election_result_foreknowledge",
+      "identity_policy": "source_bounded_role_generalization",
+      "transformation_type": "minimal_deidentification",
+      "preserve": [
+        "senior political actors",
+        "foreign residence",
+        "seized cash",
+        "prewritten future election result",
+        "fabricated raid image and imitation news branding"
+      ],
+      "omit": [
+        "living individuals' names"
+      ],
+      "rationale": "The mechanism is the purported document-and-cash discovery. Naming living targets adds allegation risk without changing that mechanism."
+    },
+    {
+      "motif_id": "adrenochrome_elite_cabal",
+      "identity_policy": "faithful_attributed_public_narrative",
+      "transformation_type": "none",
+      "preserve": [
+        "elite cabal",
+        "child trafficking and sacrifice allegation",
+        "adrenochrome harvesting mechanism",
+        "anti-aging and power goal",
+        "institutional protection claim"
+      ],
+      "omit": [
+        "unsourced named participants",
+        "slurs or graphic elaboration"
+      ],
+      "rationale": "The existing structured record is already a faithful motif-level account and names no alleged individual participant."
+    },
+    {
+      "motif_id": "baltimore_bridge_cyberattack",
+      "identity_policy": "faithful_attributed_public_narrative",
+      "transformation_type": "none",
+      "preserve": [
+        "Baltimore",
+        "Dali",
+        "Francis Scott Key Bridge",
+        "foreign cyberattack and intentional steering claim",
+        "accident cover-story claim"
+      ],
+      "omit": [
+        "unsourced specific foreign state"
+      ],
+      "rationale": "The ship and bridge collision are the public event around which the narrative circulated."
+    },
+    {
+      "motif_id": "mh370_orb_teleportation_coverup",
+      "identity_policy": "faithful_attributed_public_narrative",
+      "transformation_type": "none",
+      "preserve": [
+        "MH370",
+        "United States military and intelligence allegation",
+        "three-orb portal mechanism",
+        "survivor concealment claim",
+        "digital-evidence manipulation and debunker claim"
+      ],
+      "omit": [
+        "passenger identities"
+      ],
+      "rationale": "MH370 and the alleged leaked footage are constitutive of the circulating account; passenger identities are unnecessary."
+    },
+    {
+      "motif_id": "ukraine_biolab_bioweapons",
+      "identity_policy": "faithful_attributed_public_narrative",
+      "transformation_type": "none",
+      "preserve": [
+        "United States",
+        "Ukraine",
+        "Russia",
+        "foreign-funded laboratory mechanism",
+        "offensive bioweapon and invasion-rationale claims"
+      ],
+      "omit": [
+        "unsourced laboratory or individual names"
+      ],
+      "rationale": "Replacing the countries would erase the geopolitical relation that defines this public narrative."
+    },
+    {
+      "motif_id": "titan_implosion_distraction",
+      "identity_policy": "faithful_attributed_public_narrative",
+      "transformation_type": "none",
+      "preserve": [
+        "Titan submersible",
+        "naval acoustic detection claim",
+        "delayed public confirmation claim",
+        "rescue-news distraction mechanism",
+        "presidential-family testimony claim"
+      ],
+      "omit": [
+        "victim identities",
+        "graphic death details"
+      ],
+      "rationale": "The timing of the real Titan news cycle is the alleged distraction mechanism; victim identities are not needed."
+    },
+    {
+      "motif_id": "great_replacement_elite_plot",
+      "identity_policy": "faithful_attributed_public_narrative",
+      "transformation_type": "none",
+      "preserve": [
+        "white-majority and nonwhite-migrant demographic relation",
+        "elite coordination claim",
+        "immigration and eventual voting mechanism",
+        "replacement and permanent-power goal"
+      ],
+      "omit": [
+        "slurs",
+        "unsourced named minority targets",
+        "operational extremist advocacy"
+      ],
+      "rationale": "Replacing the demographic groups with fictional groups would erase the racialized content that makes the narrative the Great Replacement theory."
+    },
+    {
+      "motif_id": "taylor_swift_pentagon_psyop",
+      "identity_policy": "faithful_attributed_public_narrative",
+      "transformation_type": "none",
+      "preserve": [
+        "Taylor Swift",
+        "Travis Kelce",
+        "Pentagon",
+        "championship-rigging claim",
+        "2024 election endorsement and youth-voter influence goal"
+      ],
+      "omit": [
+        "unsourced private-life details"
+      ],
+      "rationale": "The named celebrity relationship and sports event are the distinctive public narrative, not incidental identifiers."
+    },
+    {
+      "motif_id": "royal_ai_deepfake_coverup",
+      "identity_policy": "faithful_attributed_public_narrative",
+      "transformation_type": "none",
+      "preserve": [
+        "Catherine, Princess of Wales",
+        "Kensington Palace",
+        "edited-image controversy",
+        "AI proof-of-life allegation",
+        "concealed-condition or death claim"
+      ],
+      "omit": [
+        "private medical details not present in the circulated narrative"
+      ],
+      "rationale": "The alleged proof-of-life media and the real palace communication episode define the circulating claim; attribution as an allegation is required."
+    },
+    {
+      "motif_id": "boeing_whistleblower_hit_squad",
+      "identity_policy": "public_entity_preserved_private_people_omitted",
+      "transformation_type": "minimal_deidentification",
+      "preserve": [
+        "Boeing",
+        "two safety whistleblowers",
+        "closely timed deaths",
+        "hit-squad and silencing allegation",
+        "suicide and illness cover-story claims"
+      ],
+      "omit": [
+        "deceased individuals' names",
+        "unsourced killing-method details"
+      ],
+      "rationale": "The public company context is integral, while individual names and speculative operational detail are not needed to test the reasoning pattern."
+    },
+    {
+      "motif_id": "cern_eclipse_demonic_portal",
+      "identity_policy": "faithful_attributed_public_narrative",
+      "transformation_type": "none",
+      "preserve": [
+        "CERN",
+        "particle collider",
+        "solar-eclipse timing claim",
+        "occult ritual and demonic-portal claims",
+        "scientific-cover claim"
+      ],
+      "omit": [
+        "antisemitic variants",
+        "unsourced named ritual participants"
+      ],
+      "rationale": "CERN is the actual target and collider context of the circulating narrative; a fictional laboratory would weaken construct fidelity."
+    },
+    {
+      "motif_id": "nj_drone_nuclear_search_coverup",
+      "identity_policy": "faithful_attributed_public_narrative",
+      "transformation_type": "none",
+      "preserve": [
+        "New Jersey drone sightings",
+        "government radiation-search allegation",
+        "missing radioactive object",
+        "nighttime detector-drone mechanism",
+        "ordinary-aircraft denial claim"
+      ],
+      "omit": [
+        "invented panic-prevention motive",
+        "unrelated alien or Project Blue Beam claims"
+      ],
+      "rationale": "The New Jersey sighting wave is the documented event to which the search theory was attached."
+    },
+    {
+      "motif_id": "fbi_false_flag_capitol_attack",
+      "identity_policy": "faithful_attributed_public_narrative",
+      "transformation_type": "none",
+      "preserve": [
+        "FBI",
+        "January 6 United States Capitol attack",
+        "undercover-agent and informant allegation",
+        "instigation and entrapment mechanism",
+        "false-flag and movement-suppression goal"
+      ],
+      "omit": [
+        "unsourced names of alleged undercover operatives"
+      ],
+      "rationale": "The FBI and January 6 are the defining institutional and event anchors of this public conspiracy narrative."
+    }
+  ]
+}

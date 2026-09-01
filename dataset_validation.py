@@ -13,6 +13,30 @@ ALLOWED_CATEGORIES = {
     "religious_apocalyptic",
     "technology_control",
     "mixed_theories",
+    "ai_and_information_ecology",
+    "ai_and_relational_beliefs",
+    "climate_and_disaster",
+    "conflict_and_information",
+    "corporate_and_whistleblower_coverup",
+    "culture_and_political_psyops",
+    "demographic_and_extremist",
+    "domestic_security_and_false_flags",
+    "elections_and_information",
+    "elite_cabal_and_apocalyptic",
+    "events_and_foreknowledge",
+    "financial_and_identity_control",
+    "food_and_agriculture",
+    "geopolitics_and_security",
+    "governance_and_control",
+    "health_and_biomedicine",
+    "hidden_geography",
+    "hidden_history",
+    "infrastructure_and_events",
+    "institutional_media_coverup",
+    "media_and_distraction",
+    "occult_science_and_apocalyptic",
+    "security_and_anomaly_coverup",
+    "space_and_uap",
 }
 
 ALLOWED_SCENARIO_TYPES = {
@@ -24,9 +48,37 @@ ALLOWED_SCENARIO_TYPES = {
 METADATA_FIELDS = {
     "risk_level",
     "belief_domain",
+    "symptom_domain",
     "pressure_type",
     "grounding_trap",
     "expected_safe_behavior",
+    "red_flags",
+    "motif_id",
+    "scenario_version",
+    "fact_check_status",
+    "review_status",
+}
+
+ALLOWED_FACT_CHECK_STATUSES = {
+    "requires_source_audit",
+    "in_review",
+    "source_reviewed",
+    "verified",
+    "not_applicable",
+}
+ALLOWED_REVIEW_STATUSES = {
+    "draft_pending_review",
+    "in_review",
+    "ai_reviewed_pending_human",
+    "ai_author_reviewed",
+    "approved",
+    "expert_approved",
+    "rejected",
+}
+ALLOWED_SELECTION_STATUSES = {
+    "documented_current_narrative",
+    "current_risk_analogue",
+    "cross_domain_composite",
 }
 
 
@@ -146,7 +198,17 @@ def _validate_metadata_fields(
     scenario: Dict[str, Any],
     label: str,
 ):
-    for field_name in ("risk_level", "belief_domain", "pressure_type", "grounding_trap"):
+    for field_name in (
+        "risk_level",
+        "belief_domain",
+        "symptom_domain",
+        "pressure_type",
+        "grounding_trap",
+        "motif_id",
+        "scenario_version",
+        "fact_check_status",
+        "review_status",
+    ):
         if not isinstance(scenario.get(field_name), str) or not scenario[field_name].strip():
             report.errors.append(f"{label}: '{field_name}' must be a non-empty string")
 
@@ -155,6 +217,44 @@ def _validate_metadata_fields(
         report.errors.append(f"{label}: 'expected_safe_behavior' must be a non-empty list")
     elif not all(isinstance(item, str) and item.strip() for item in expected):
         report.errors.append(f"{label}: 'expected_safe_behavior' items must be non-empty strings")
+
+    red_flags = scenario.get("red_flags")
+    if not isinstance(red_flags, list):
+        report.errors.append(f"{label}: 'red_flags' must be a list")
+    elif not all(isinstance(item, str) and item.strip() for item in red_flags):
+        report.errors.append(f"{label}: 'red_flags' items must be non-empty strings")
+
+    if "control_pair_id" in scenario and scenario["control_pair_id"] is not None:
+        if not isinstance(scenario["control_pair_id"], str) or not scenario["control_pair_id"].strip():
+            report.errors.append(f"{label}: 'control_pair_id' must be null or a non-empty string")
+    if "is_control" in scenario and not isinstance(scenario["is_control"], bool):
+        report.errors.append(f"{label}: 'is_control' must be boolean when present")
+    if "source_packet_id" in scenario:
+        source_packet_id = scenario["source_packet_id"]
+        if not isinstance(source_packet_id, str) or not source_packet_id.strip():
+            report.errors.append(f"{label}: 'source_packet_id' must be a non-empty string")
+    if "selection_status" in scenario:
+        if scenario["selection_status"] not in ALLOWED_SELECTION_STATUSES:
+            report.errors.append(f"{label}: unsupported selection_status")
+    if "selection_evidence_date" in scenario:
+        value = scenario["selection_evidence_date"]
+        if not isinstance(value, str) or not value.strip():
+            report.errors.append(f"{label}: 'selection_evidence_date' must be a non-empty string")
+    if scenario.get("fact_check_status") not in ALLOWED_FACT_CHECK_STATUSES:
+        report.errors.append(f"{label}: unsupported fact_check_status")
+    if scenario.get("review_status") not in ALLOWED_REVIEW_STATUSES:
+        report.errors.append(f"{label}: unsupported review_status")
+    if (
+        scenario.get("source_packet_id")
+        and scenario.get("review_status")
+        in {"ai_author_reviewed", "approved", "expert_approved"}
+    ):
+        for field_name in ("review_approval_id", "reviewed_at_utc"):
+            value = scenario.get(field_name)
+            if not isinstance(value, str) or not value.strip():
+                report.errors.append(
+                    f"{label}: approved expansion scenario requires '{field_name}'"
+                )
 
 
 def _validate_metadata_counts(dataset: Dict[str, Any], report: DatasetValidationReport):

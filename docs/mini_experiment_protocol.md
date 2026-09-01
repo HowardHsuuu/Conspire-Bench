@@ -1,5 +1,7 @@
 # Mini Experiment Protocol
 
+> Legacy local-model protocol. Keep it only for reproducing the May 2026 pilot; it is not the reviewer-response v2 plan. Current stages and model/judge matrices are defined in `scripts/run_v2_stage.py` and `configs/experiment_v2_api_*.json`.
+
 Goal: present Conspire-Bench as a reproducible benchmark for conspiracy-susceptibility and epistemic safety, then report observations from a small local-model study.
 
 ## Claim Shape

@@ -1,0 +1,149 @@
+{
+  "model_registry_provenance": {
+    "checked_at": "2026-08-31",
+    "resolve_again_before_live_run": true,
+    "sources": [
+      "https://developers.openai.com/api/docs/guides/latest-model",
+      "https://platform.claude.com/docs/en/models/overview",
+      "https://ai.google.dev/gemini-api/docs/models"
+    ]
+  },
+  "models": [
+    {
+      "provider": "openai",
+      "model": "gpt-5.6-sol",
+      "api_mode": "responses",
+      "reasoning_effort": "low",
+      "temperature": 0.2,
+      "max_tokens": 4000,
+      "capacity_tier": "large"
+    },
+    {
+      "provider": "openai",
+      "model": "gpt-5.6-terra",
+      "api_mode": "responses",
+      "reasoning_effort": "low",
+      "temperature": 0.2,
+      "max_tokens": 4000,
+      "capacity_tier": "medium"
+    },
+    {
+      "provider": "openai",
+      "model": "gpt-5.6-luna",
+      "api_mode": "responses",
+      "reasoning_effort": "low",
+      "temperature": 0.2,
+      "max_tokens": 4000,
+      "capacity_tier": "efficient"
+    },
+    {
+      "provider": "anthropic",
+      "model": "claude-opus-5",
+      "reasoning_effort": "low",
+      "omit_sampling_parameters": true,
+      "max_tokens": 8000,
+      "capacity_tier": "large"
+    },
+    {
+      "provider": "anthropic",
+      "model": "claude-sonnet-5",
+      "reasoning_effort": "low",
+      "omit_sampling_parameters": true,
+      "max_tokens": 8000,
+      "capacity_tier": "medium"
+    },
+    {
+      "provider": "anthropic",
+      "model": "claude-haiku-4-5-20251001",
+      "temperature": 0.2,
+      "max_tokens": 4000,
+      "capacity_tier": "efficient"
+    },
+    {
+      "provider": "gemini",
+      "model": "gemini-3.1-pro-preview",
+      "thinking_level": "low",
+      "omit_sampling_parameters": true,
+      "max_tokens": 4000,
+      "capacity_tier": "large"
+    },
+    {
+      "provider": "gemini",
+      "model": "gemini-3.6-flash",
+      "thinking_level": "low",
+      "omit_sampling_parameters": true,
+      "max_tokens": 4000,
+      "capacity_tier": "medium"
+    },
+    {
+      "provider": "gemini",
+      "model": "gemini-3.1-flash-lite",
+      "thinking_level": "low",
+      "omit_sampling_parameters": true,
+      "max_tokens": 4000,
+      "capacity_tier": "efficient"
+    }
+  ],
+  "model": {
+    "provider": "openai",
+    "model": "gpt-5.6-luna",
+    "api_mode": "responses"
+  },
+  "judges": [
+    {
+      "name": "openai_strong_v2",
+      "provider": "openai",
+      "model": "gpt-5.6-sol",
+      "api_mode": "responses",
+      "reasoning_effort": "high",
+      "temperature": 0.0,
+      "max_tokens": 5000,
+      "rubric_version": "2.0"
+    },
+    {
+      "name": "anthropic_strong_v2",
+      "provider": "anthropic",
+      "model": "claude-opus-5",
+      "reasoning_effort": "high",
+      "omit_sampling_parameters": true,
+      "max_tokens": 16000,
+      "rubric_version": "2.0"
+    },
+    {
+      "name": "gemini_strong_v2",
+      "provider": "gemini",
+      "model": "gemini-3.1-pro-preview",
+      "thinking_level": "high",
+      "omit_sampling_parameters": true,
+      "max_tokens": 5000,
+      "rubric_version": "2.0"
+    }
+  ],
+  "judge": {
+    "provider": "openai",
+    "model": "gpt-5.6-sol",
+    "api_mode": "responses",
+    "rubric_version": "2.0"
+  },
+  "api_keys": {
+    "openai": "env:OPENAI_API_KEY",
+    "anthropic": "env:ANTHROPIC_API_KEY",
+    "gemini": "env:GEMINI_API_KEY"
+  },
+  "evaluation": {
+    "judge_rubric_version": "2.0",
+    "max_retries": 3,
+    "retry_delay_seconds": 2.0,
+    "delay_between_requests": 0.5,
+    "timeout": 180,
+    "parallel_scenarios": 3,
+    "save_intermediate_results": true,
+    "save_intermediate_every": 1
+  },
+  "output": {
+    "detailed_logs": true,
+    "save_conversations": true,
+    "results_directory": "./results/",
+    "include_raw_responses": true
+  }
+}

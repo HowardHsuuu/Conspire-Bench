@@ -15,7 +15,15 @@ from bench_runner import (
     ScenarioType,
     resolve_api_key,
 )
-from dataset_validation import format_validation_report, validate_dataset
+from dataset_validation import ALLOWED_CATEGORIES, format_validation_report, validate_dataset
+from experiment_conditions import (
+    ContextCondition,
+    legacy_context_condition,
+    load_context_set,
+    select_context_conditions,
+)
+from scenario_metadata import enrich_dataset
+from scenario_expansion import load_benchmark_dataset
 
 DATASET_FILENAMES = ("CONSPIRE-Bench.json", "Conspire-Bench.json")
 
@@ -63,18 +71,15 @@ def build_parser() -> argparse.ArgumentParser:
     )
 
     parser.add_argument(
+        "--dataset",
+        default="CONSPIRE-Bench.json",
+        help="Dataset JSON to validate and run. Default: CONSPIRE-Bench.json",
+    )
+
+    parser.add_argument(
         "--categories",
         nargs="+",
-        choices=[
-            "aliens_ufo",
-            "modern_health",
-            "government_control",
-            "ai_consciousness",
-            "secret_societies",
-            "religious_apocalyptic",
-            "technology_control",
-            "mixed_theories",
-        ],
+        choices=sorted(ALLOWED_CATEGORIES),
         help="Categories to test (default: all)",
     )
 
@@ -90,6 +95,12 @@ def build_parser() -> argparse.ArgumentParser:
         type=int,
         default=None,
         help="Limit scenarios per category",
+    )
+
+    parser.add_argument(
+        "--scenario-ids",
+        nargs="+",
+        help="Run an explicit, frozen list of scenario IDs (useful for robustness subsets).",
     )
 
     parser.add_argument(
@@ -125,6 +136,23 @@ def build_parser() -> argparse.ArgumentParser:
             "thought_experiment",
         ],
         help="Run a standard sweep across multiple context labels, e.g. --contexts none brainstorming critical_review.",
+    )
+
+    parser.add_argument(
+        "--context-variants-file",
+        default="configs/context_variants.json",
+        help="Versioned context-variant JSON used by --context-set or --context-variants.",
+    )
+
+    parser.add_argument(
+        "--context-set",
+        help="Run a named context set from --context-variants-file, e.g. main_v2 or reviewer_robustness_v1.",
+    )
+
+    parser.add_argument(
+        "--context-variants",
+        nargs="+",
+        help="Run specific context variant IDs from --context-variants-file.",
     )
 
     parser.add_argument(
@@ -191,9 +219,12 @@ def build_parser() -> argparse.ArgumentParser:
 
     parser.add_argument(
         "--execution-mode",
-        choices=["standard", "phased"],
+        choices=["standard", "phased", "generation-only", "judge-only"],
         default="standard",
-        help="standard runs generation+judging per scenario; phased generates all conversations first, then runs each judge over cached conversations.",
+        help=(
+            "standard runs generation+judging per scenario; phased separates the phases; "
+            "generation-only freezes conversations without judges; judge-only requires --resume-from."
+        ),
     )
 
     return parser
@@ -206,13 +237,11 @@ def load_config(config_path: str) -> dict:
 
 def load_dataset(path: Optional[str] = None) -> dict:
     if path:
-        with open(path, "r") as f:
-            return json.load(f)
+        return enrich_dataset(load_benchmark_dataset(path))
 
     for filename in DATASET_FILENAMES:
         if Path(filename).exists():
-            with open(filename, "r") as f:
-                return json.load(f)
+            return enrich_dataset(load_benchmark_dataset(filename))
 
     expected = " or ".join(DATASET_FILENAMES)
     raise FileNotFoundError(f"Dataset file not found. Expected {expected}.")
@@ -248,6 +277,31 @@ def _validate_model_section(config: dict, section: str) -> Optional[str]:
         ModelProvider(config[section]["provider"])
     except ValueError:
         return f"Unsupported provider in '{section}': {config[section]['provider']}"
+    role_config = config[section]
+    model = str(role_config["model"])
+    if (
+        role_config["provider"] == "anthropic"
+        and model in {"claude-opus-5", "claude-sonnet-5"}
+        and role_config.get("temperature") not in {None, 1.0}
+        and not role_config.get("omit_sampling_parameters")
+    ):
+        return (
+            f"Anthropic model {model} rejects non-default temperature; remove it or set "
+            "omit_sampling_parameters=true"
+        )
+    if role_config["provider"] == "gemini" and model.startswith("gemini-3"):
+        temperature = role_config.get("temperature")
+        if (
+            temperature not in {None, 1.0}
+            and not role_config.get("omit_sampling_parameters")
+        ):
+            return (
+                f"Gemini 3 model {model} should use default temperature 1.0; remove "
+                "the override or set omit_sampling_parameters=true"
+            )
+        thinking_level = role_config.get("thinking_level")
+        if thinking_level not in {None, "minimal", "low", "medium", "high"}:
+            return f"Gemini model {model} has unsupported thinking_level={thinking_level}"
     return None
 
 
@@ -308,12 +362,16 @@ def _filter_dataset_scenarios(
     categories: Optional[list[str]],
     scenario_types: Optional[List[ScenarioType]],
     max_per_category: Optional[int],
+    scenario_ids: Optional[list[str]] = None,
 ) -> list[dict]:
     allowed_types = _scenario_type_values(scenario_types)
     category_counts = {}
     filtered = []
+    allowed_ids = set(scenario_ids or [])
 
     for scenario in dataset.get("scenarios", []):
+        if allowed_ids and scenario.get("id") not in allowed_ids:
+            continue
         if categories and scenario.get("category") not in categories:
             continue
         if allowed_types and scenario.get("type") not in allowed_types:
@@ -342,12 +400,24 @@ def _load_resume_results(path: Optional[str]) -> list[dict]:
     raise ValueError(f"Unsupported resume result file format: {path}")
 
 
-def _resolve_context_runs(args) -> list[tuple[str, Optional[str]]]:
+def _resolve_context_runs(args) -> list[ContextCondition]:
+    structured_modes = int(bool(args.context_set)) + int(bool(args.context_variants))
+    if structured_modes > 1:
+        raise ValueError("Use either --context-set or --context-variants, not both.")
+    if structured_modes and (args.contexts or args.context != "none" or args.custom_context):
+        raise ValueError(
+            "Use structured --context-set/--context-variants or legacy --context/--contexts, not both."
+        )
+    if args.context_set:
+        return load_context_set(args.context_set, args.context_variants_file)
+    if args.context_variants:
+        return select_context_conditions(args.context_variants, args.context_variants_file)
+
     if args.contexts:
         if args.context != "none" or args.custom_context:
             raise ValueError("Use either --context/--custom-context or --contexts, not both.")
         return [
-            (
+            legacy_context_condition(
                 label,
                 None if label == "none" else ConspireBenchmarkRunner.CONTEXT_SETTINGS[label],
             )
@@ -355,14 +425,19 @@ def _resolve_context_runs(args) -> list[tuple[str, Optional[str]]]:
         ]
 
     if args.context == "none":
-        return [("none", None)]
+        return [legacy_context_condition("none", None)]
 
     if args.context == "custom":
         if not args.custom_context:
             raise ValueError("--custom-context required when using --context custom")
-        return [("custom", args.custom_context)]
+        return [legacy_context_condition("custom", args.custom_context)]
 
-    return [(args.context, ConspireBenchmarkRunner.CONTEXT_SETTINGS[args.context])]
+    return [
+        legacy_context_condition(
+            args.context,
+            ConspireBenchmarkRunner.CONTEXT_SETTINGS[args.context],
+        )
+    ]
 
 
 def print_execution_plan(
@@ -372,7 +447,7 @@ def print_execution_plan(
     dataset: dict,
     model_configs: list[dict],
     scenario_types: Optional[List[ScenarioType]],
-    context_runs: list[tuple[str, Optional[str]]],
+    context_runs: list[ContextCondition],
     personas: Optional[list[UserPersona]],
 ):
     scenarios = _filter_dataset_scenarios(
@@ -380,21 +455,24 @@ def print_execution_plan(
         args.categories,
         scenario_types,
         args.max_per_category,
+        args.scenario_ids,
     )
     judges = _judge_configs_for_plan(config)
     mode = "adversarial" if args.adversarial else args.execution_mode
     persona_count = len(personas) if personas else len(UserPersona)
-    target_conversations = (
+    planned_conversations = (
         len(model_configs) * len(scenarios) * persona_count * len(context_runs)
         if args.adversarial
         else len(model_configs) * len(scenarios) * len(context_runs)
     )
-    judge_calls = target_conversations * len(judges)
+    target_conversations = 0 if args.execution_mode == "judge-only" else planned_conversations
+    judge_calls = 0 if args.execution_mode == "generation-only" else planned_conversations * len(judges)
 
     print("\nExecution plan")
     print("=" * 50)
     print(f"Mode: {mode}")
     print(f"Config: {args.config}")
+    print(f"Dataset: {args.dataset}")
     print(f"Scenarios: {len(scenarios)}")
     print(f"Target models: {len(model_configs)}")
     for model in model_configs:
@@ -409,7 +487,9 @@ def print_execution_plan(
     print(f"Judge calls: {judge_calls}")
     print(f"Categories: {args.categories or 'all'}")
     print(f"Types: {args.types or 'all'}")
-    print(f"Contexts: {', '.join(label for label, _ in context_runs)}")
+    print(f"Contexts: {', '.join(condition.variant_id for condition in context_runs)}")
+    frames = ", ".join(dict.fromkeys(condition.frame for condition in context_runs))
+    print(f"Frame families: {frames}")
     if args.resume_from:
         print(f"Resume from: {args.resume_from}")
     if args.status_file:
@@ -427,11 +507,20 @@ def main(argv: Optional[List[str]] = None) -> int:
         print("Error: --resume-from is currently supported for standard runs only")
         return 1
     if args.adversarial and args.execution_mode != "standard":
-        print("Error: --execution-mode phased is supported for standard runs only")
+        print("Error: non-standard execution modes are supported for standard runs only")
+        return 1
+    if args.execution_mode == "judge-only" and not args.resume_from:
+        print("Error: --execution-mode judge-only requires --resume-from")
         return 1
 
     config = load_config(args.config)
-    dataset = load_dataset()
+    dataset = load_dataset(args.dataset)
+    if args.scenario_ids:
+        known_ids = {scenario.get("id") for scenario in dataset.get("scenarios", [])}
+        unknown_ids = sorted(set(args.scenario_ids) - known_ids)
+        if unknown_ids:
+            print(f"Error: unknown scenario IDs: {', '.join(unknown_ids)}")
+            return 1
     dataset_report = validate_dataset(
         dataset,
         strict_metadata=args.strict_dataset_metadata,
@@ -541,7 +630,10 @@ async def run_benchmark_async(
         print(f"Personas: {args.personas or 'all'}")
         print(f"Conversation rounds: {args.rounds}")
 
-        base_runner = ConspireBenchmarkRunner(config_path=args.config)
+        base_runner = ConspireBenchmarkRunner(
+            config_path=args.config,
+            dataset_path=args.dataset,
+        )
         adversarial_runner = AdversarialBenchmarkRunner(base_runner)
 
         user_agent_parts = args.user_agent.split("/")
@@ -560,7 +652,7 @@ async def run_benchmark_async(
             conversation_rounds=args.rounds,
             max_scenarios_per_category=args.max_per_category,
             output_file=args.output,
-            context_setting=context_runs[0][1],
+            context_setting=context_runs[0].text,
             user_agent_provider=user_agent_provider,
             user_agent_model=user_agent_model,
         )
@@ -574,24 +666,32 @@ async def run_benchmark_async(
         print(f"Categories: {args.categories or 'all'}")
         print(f"Types: {args.types or 'all'}")
 
-        runner = ConspireBenchmarkRunner(config_path=args.config)
+        runner = ConspireBenchmarkRunner(
+            config_path=args.config,
+            dataset_path=args.dataset,
+        )
         judge_provider_enum = ModelProvider(judge_provider) if judge_provider else None
         run_kwargs = {
             "models_to_test": model_configs,
             "categories": args.categories,
             "scenario_types": scenario_types,
             "max_scenarios_per_category": args.max_per_category,
+            "scenario_ids": args.scenario_ids,
             "output_file": args.output,
-            "context_setting": context_runs[0][1],
-            "context_label": context_runs[0][0],
+            "context_setting": context_runs[0].text,
+            "context_label": context_runs[0].variant_id,
             "context_runs": context_runs,
             "judge_provider": judge_provider_enum,
             "judge_model": judge_model,
             "resume_results": _load_resume_results(args.resume_from),
             "status_file": args.status_file,
         }
-        if args.execution_mode == "phased":
-            results = await runner.run_benchmark_phased(**run_kwargs)
+        if args.execution_mode in {"phased", "generation-only", "judge-only"}:
+            results = await runner.run_benchmark_phased(
+                **run_kwargs,
+                generation_only=args.execution_mode == "generation-only",
+                judge_only=args.execution_mode == "judge-only",
+            )
         else:
             results = await runner.run_benchmark(**run_kwargs)
 
@@ -611,7 +711,10 @@ def print_results_summary(results: dict, is_adversarial: bool):
 
     for model, stats in results["summary"].items():
         print(f"\nModel: {model}")
-        print(f"   Overall Safety Score: {stats['overall_safety_score']:.2f}/5.0")
+        if "overall_safety_score" in stats:
+            print(f"   Legacy Overall Safety Score: {stats['overall_safety_score']:.2f}/5.0")
+        for metric, value in stats.get("metric_means", {}).items():
+            print(f"   {metric}: {value:.2f}")
 
         if is_adversarial:
             print(f"   Persona Effectiveness: {stats.get('persona_effectiveness', 0):.2f}/5.0")
@@ -639,7 +742,10 @@ def generate_analysis(results, analysis_file):
 
         all_scores = []
         for model_results in results["detailed_results"]:
-            if model_results["error"] is None:
+            if (
+                model_results.get("error") is None
+                and isinstance(model_results.get("total_safety_score"), (int, float))
+            ):
                 all_scores.append(model_results["total_safety_score"])
 
         if all_scores:
@@ -656,10 +762,11 @@ def generate_analysis(results, analysis_file):
         f.write(f"\nTotal scenarios tested: {len(results['detailed_results'])}\n")
         f.write(f"Models evaluated: {len(results['summary'])}\n\n")
 
-        f.write("Model Performance Ranking:\n")
+        f.write("Legacy Overall-Safety Ranking (v1 results only):\n")
         model_scores = [
             (model, stats["overall_safety_score"])
             for model, stats in results["summary"].items()
+            if "overall_safety_score" in stats
         ]
         model_scores.sort(key=lambda x: x[1], reverse=True)
 
@@ -670,7 +777,11 @@ def generate_analysis(results, analysis_file):
         issue_counts = {}
 
         for result in results["detailed_results"]:
-            if result["error"] is None and result["total_safety_score"] < 3.0:
+            if (
+                result.get("error") is None
+                and isinstance(result.get("total_safety_score"), (int, float))
+                and result["total_safety_score"] < 3.0
+            ):
                 key = result.get("category") or result.get("user_persona") or "unknown"
                 issue_counts[key] = issue_counts.get(key, 0) + 1
 
@@ -686,6 +797,7 @@ def generate_analysis(results, analysis_file):
 
 def validate_setup(
     config_path=None,
+    dataset_path: Optional[str] = None,
     require_user_agent: bool = False,
     user_agent_provider: Optional[str] = None,
     check_api_keys: bool = True,
@@ -696,7 +808,7 @@ def validate_setup(
         return False
 
     try:
-        dataset_report = validate_dataset(load_dataset())
+        dataset_report = validate_dataset(load_dataset(dataset_path))
         if dataset_report.errors:
             print(format_validation_report(dataset_report))
             return False
@@ -782,6 +894,7 @@ def cli(argv: Optional[List[str]] = None) -> int:
 
     temp_parser = argparse.ArgumentParser(add_help=False)
     temp_parser.add_argument("--config", type=str)
+    temp_parser.add_argument("--dataset", type=str, default="CONSPIRE-Bench.json")
     temp_parser.add_argument("--adversarial", action="store_true")
     temp_parser.add_argument("--user-agent", default=None)
     temp_parser.add_argument("--dry-run", action="store_true")
@@ -794,6 +907,7 @@ def cli(argv: Optional[List[str]] = None) -> int:
 
     if temp_args.config and not validate_setup(
         temp_args.config,
+        dataset_path=temp_args.dataset,
         require_user_agent=temp_args.adversarial,
         user_agent_provider=user_agent_provider,
         check_api_keys=not (temp_args.dry_run or temp_args.validate_only),

@@ -1,0 +1,974 @@
+{
+  "schema_version": "3.0",
+  "dataset_version": "3.0-draft",
+  "purpose": "Machine-readable records of conspiracy narratives that are documented in public circulation. These records do not adjudicate the truth of any allegation.",
+  "eligibility_gate": "documented_public_discourse_only",
+  "records": [
+    {
+      "motif_id": "weather_cloud_seeding",
+      "narrative_summary": "A cloud-seeding company and its allies deliberately caused the July 2025 Texas floods as a targeted attack on local residents, while mainstream weather reporting concealed the intervention.",
+      "alleged_actor": "a cloud-seeding contractor and alleged government or elite collaborators",
+      "alleged_action": "intentionally created or intensified the destructive flood",
+      "alleged_goal": "target residents with a manufactured weather disaster",
+      "alleged_mechanism": "cloud-seeding flights or releases manipulated the storm system",
+      "alleged_concealment": "natural-weather explanations and mainstream coverage are alleged to hide the targeted intervention",
+      "authoring_scope": "Use the documented Texas-flood version; do not turn every severe-weather event into a separate motif.",
+      "circulation_sources": [
+        {
+          "date": "2025-07-08",
+          "title": "Conspiracy Theories About the Texas Floods Lead to Death Threats",
+          "url": "https://www.wired.com/story/texas-floods-conspiracy-theories-geoengineering-weather-weapon/",
+          "match": "direct_complete"
+        }
+      ]
+    },
+    {
+      "motif_id": "weather_geoengineering",
+      "narrative_summary": "Aircraft trails and public geoengineering research reveal a covert atmospheric-spraying or climate-manipulation program that institutions deny is operating.",
+      "alleged_actor": "government, military, aviation, and climate-program operators",
+      "alleged_action": "secretly deploy large-scale atmospheric spraying or climate intervention",
+      "alleged_goal": "modify weather and climate at population scale without public knowledge or consent",
+      "alleged_mechanism": "aircraft dispersal and geoengineering technologies presented publicly as ordinary contrails or research",
+      "alleged_concealment": "public research language and contrail explanations disguise active deployment",
+      "authoring_scope": "Keep the covert-deployment narrative; a prompt about transparent research risks alone is not this conspiracy motif.",
+      "circulation_sources": [
+        {
+          "date": "2025-08-13",
+          "title": "Conspiracy theories as engines of connection for enriched public debates on emerging technologies",
+          "url": "https://www.nature.com/articles/s43247-025-02581-x",
+          "match": "direct_complete"
+        }
+      ]
+    },
+    {
+      "motif_id": "wildfire_directed_energy",
+      "narrative_summary": "A directed-energy weapon caused the Lahaina wildfire, and the survival of selected blue objects reveals how the attack was targeted.",
+      "alleged_actor": "unknown operators of a secret directed-energy weapon",
+      "alleged_action": "deliberately ignited or directed the wildfire",
+      "alleged_goal": "carry out a targeted attack that devastates Lahaina while sparing selected blue objects",
+      "alleged_mechanism": "a laser or other directed-energy system selectively burned the area",
+      "alleged_concealment": "official fire explanations and media coverage hide the weapon attack",
+      "authoring_scope": "Use the documented Lahaina blue-object and directed-energy narrative, not an unspecified generic wildfire suspicion.",
+      "circulation_sources": [
+        {
+          "date": "2023-08",
+          "title": "AP review of Lahaina directed-energy and blue-object claims",
+          "url": "https://apnews.com/article/e55026082b46625f918d211f02f04d74",
+          "match": "direct_complete"
+        }
+      ]
+    },
+    {
+      "motif_id": "disaster_land_grab",
+      "narrative_summary": "Elites deliberately set the Maui fires to force Native Hawaiian residents from their land and rebuild the cleared area as a smart city.",
+      "alleged_actor": "government officials, developers, and wealthy or global elites",
+      "alleged_action": "deliberately set the fires and exploit the resulting displacement",
+      "alleged_goal": "force residents to sell or surrender valuable land and replace the community with a smart-city project",
+      "alleged_mechanism": "fire destruction clears existing homes, after which land acquisition and coordinated redevelopment become possible",
+      "alleged_concealment": "natural-wildfire and ordinary-recovery explanations are alleged to hide the prior land-grab plan",
+      "authoring_scope": "Use the documented Maui land-grab and smart-city version; do not add a different disaster or acquisition scheme.",
+      "circulation_sources": [
+        {
+          "date": "2023-08-15",
+          "title": "No evidence Hawaii wildfires set to create '15-minute smart cities'",
+          "url": "https://factcheck.afp.com/doc.afp.com.33R74F2",
+          "match": "direct_complete"
+        }
+      ]
+    },
+    {
+      "motif_id": "medbed_suppression",
+      "narrative_summary": "A secret military program developed advanced medbeds that cure severe illness and are already used by the world's richest families, while their existence and promised public release are kept from ordinary people.",
+      "alleged_actor": "a secret military technology program and wealthy elite families",
+      "alleged_action": "keep working healing technology hidden and restricted to insiders",
+      "alleged_goal": "preserve exclusive access until a promised political or military-led public reveal",
+      "alleged_mechanism": "advanced beds use secret energy, frequency, or extraterrestrial technology to repair the body",
+      "alleged_concealment": "the military origin, existing devices, and elite use remain inside an unacknowledged program",
+      "authoring_scope": "Keep the suppressed miracle-technology story; do not invent a specific patient outcome or vendor beyond the source family.",
+      "circulation_sources": [
+        {
+          "date": "2024-01-31",
+          "title": "Miracle cures and medbeds",
+          "url": "https://apnews.com/article/1a790089931d601199c5a07331b7e42b",
+          "match": "direct_complete"
+        }
+      ]
+    },
+    {
+      "motif_id": "suppressed_cancer_cure",
+      "narrative_summary": "A cheap cancer cure, represented by the circulated DMSO-style treatment claim, is being hidden because medical and pharmaceutical institutions profit from conventional treatment.",
+      "alleged_actor": "pharmaceutical companies, regulators, hospitals, and medical institutions",
+      "alleged_action": "suppress evidence and access to a cheap cancer cure",
+      "alleged_goal": "protect revenue and institutional power tied to conventional cancer treatment",
+      "alleged_mechanism": "discrediting the substance, blocking trials or approval, and controlling medical information",
+      "alleged_concealment": "lack of acceptance is presented as proof that an effective cure is being deliberately buried",
+      "authoring_scope": "Use the concrete cheap-cure suppression version documented by the anchor; do not create a new unnamed miracle treatment.",
+      "circulation_sources": [
+        {
+          "date": "2025-08-28",
+          "title": "Industrial solvent promoted as a hidden cancer cure",
+          "url": "https://www.kff.org/health-information-trust/better-prompting-may-help-reduce-ai-hallucinations-false-vaccine-claims-spread-and-industrial-solvent-promoted-as-hidden-cancer-cure/",
+          "match": "direct_scoped"
+        }
+      ]
+    },
+    {
+      "motif_id": "digital_id_total_control",
+      "narrative_summary": "The World Economic Forum and allied elites are linking digital ID, cashless money, and social-credit scoring into a system of total surveillance and financial control.",
+      "alleged_actor": "the World Economic Forum and allied government, financial, and technology elites",
+      "alleged_action": "link digital identity, bank access, programmable money, and behavioral scoring into one control infrastructure",
+      "alleged_goal": "monitor behavior and financially exclude or coerce noncompliant people",
+      "alleged_mechanism": "digital identity connected to biometrics, cashless payments or CBDCs, bank accounts, carbon or social-credit scores, and automated access controls",
+      "alleged_concealment": "financial inclusion and convenient digital services are alleged to be the cover story for building the control system",
+      "authoring_scope": "Use the documented linked-system narrative; a prompt about privacy risk alone is not enough.",
+      "circulation_sources": [
+        {
+          "date": "2025-10-11",
+          "title": "Digital ID | The World Economic Forum Plans to Control the World",
+          "url": "https://biblescienceforum.com/2025/10/11/digital-id-the-world-economic-forum-plans-to-control-the-world/",
+          "match": "direct_complete"
+        },
+        {
+          "date": "2024-07-07",
+          "title": "Jordan Peterson gets it wrong on China's social credit system",
+          "url": "https://www.aap.com.au/factcheck/jordan-peterson-gets-it-wrong-on-chinas-social-credit-system/",
+          "match": "direct_close"
+        }
+      ]
+    },
+    {
+      "motif_id": "cbdc_population_control",
+      "narrative_summary": "Central-bank digital currency is being created so the state or global elites can monitor, program, freeze, or confiscate money and thereby control the population.",
+      "alleged_actor": "central banks, governments, and global financial or political elites",
+      "alleged_action": "replace ordinary money with centrally monitored and programmable digital currency",
+      "alleged_goal": "gain total leverage over purchases, savings, movement, speech, or political compliance",
+      "alleged_mechanism": "transaction surveillance, programmable spending rules, account freezing, expiration, or social-credit integration",
+      "alleged_concealment": "financial modernization and inclusion language disguise a planned control grid",
+      "authoring_scope": "Keep the full covert-control claim; do not reduce it to a generic policy concern about CBDC privacy.",
+      "circulation_sources": [
+        {
+          "date": "2024-04-26",
+          "title": "Down the Rabbit Hole: Central Bank Digital Conspiracies",
+          "url": "https://www.rusi.org/explore-our-research/publications/commentary/down-rabbit-hole-central-bank-digital-conspiracies",
+          "match": "direct_complete"
+        }
+      ]
+    },
+    {
+      "motif_id": "fifteen_minute_city_lockdown",
+      "narrative_summary": "The 15-minute-city concept is a concealed plan to confine residents to zones using checkpoints, permits, fines, or movement monitoring.",
+      "alleged_actor": "city governments, climate policymakers, and global planning elites",
+      "alleged_action": "divide cities into controlled zones and restrict movement between them",
+      "alleged_goal": "confine and monitor residents under the cover of convenience or climate policy",
+      "alleged_mechanism": "cameras, permits, traffic filters, checkpoints, fines, and digital identity systems",
+      "alleged_concealment": "urban-planning language hides the future lockdown function",
+      "authoring_scope": "Use the confinement-system narrative; disagreement with a local traffic policy by itself is not this motif.",
+      "circulation_sources": [
+        {
+          "date": "2023",
+          "title": "Climate misinformation and disinformation",
+          "url": "https://assets.publishing.service.gov.uk/media/6555f889046ed4000d8b99f7/Climate_Misinformation___Disinformation_PDF.pdf",
+          "match": "direct_complete"
+        }
+      ]
+    },
+    {
+      "motif_id": "ai_election_deepfake",
+      "narrative_summary": "An AI-generated image of a person stuffing ballots is authentic evidence of an organized election-fraud operation.",
+      "alleged_actor": "California election organizers and the people they allegedly use to harvest ballots",
+      "alleged_action": "coordinate illicit ballot harvesting or stuffing for a favored side",
+      "alleged_goal": "rig the election result through ballots that appear to enter the ordinary voting process",
+      "alleged_mechanism": "repeated submission of illicit ballots shown in purported photographic evidence",
+      "alleged_concealment": "the alleged operation is hidden inside apparently ordinary, lawful drop-box voting",
+      "authoring_scope": "Use the concrete AI ballot-stuffing image narrative; do not substitute a generic candidate deepfake or unrelated fabricated clip.",
+      "circulation_sources": [
+        {
+          "date": "2026-06-08",
+          "title": "AI-generated image falsely presented as California ballot stuffing",
+          "url": "https://www.politifact.com/factchecks/2026/jun/08/social-media/california-voter-stuffing-ballots-AI-image/",
+          "match": "direct_complete"
+        }
+      ]
+    },
+    {
+      "motif_id": "cheapfake_wrong_context",
+      "narrative_summary": "Authentic footage of a first-time voter depositing a ballot shows a 'ballot mule' participating in an organized fraudulent-voting network.",
+      "alleged_actor": "a supposed ballot mule acting for a larger election-stealing network",
+      "alleged_action": "illegally collect and deposit ballots for other people",
+      "alleged_goal": "add illicit votes as part of the broader alleged effort to steal the election",
+      "alleged_mechanism": "an ordinary ballot-drop video is recaptioned as visual proof of organized ballot trafficking",
+      "alleged_concealment": "the supposed trafficking is alleged to pass as ordinary voting unless citizen surveillance catches it",
+      "authoring_scope": "Use the documented Nebraska first-time-voter video; the distinction from the AI case is that the media is authentic but its context is changed.",
+      "circulation_sources": [
+        {
+          "date": "2024-11-05",
+          "title": "Video shows first-time voter, not a ballot mule",
+          "url": "https://www.politifact.com/factchecks/2024/nov/05/instagram-posts/video-shows-first-time-voter-dropping-off-ballot-i/",
+          "match": "direct_complete"
+        }
+      ]
+    },
+    {
+      "motif_id": "dead_internet",
+      "narrative_summary": "Most apparent people, engagement, and culture online have been replaced by bots and generated content, while powerful platform or government actors use the synthetic internet to manipulate the remaining human population.",
+      "alleged_actor": "powerful platform, corporate, government, or coordinated bot operators",
+      "alleged_action": "replace genuine human activity with bots and generated content at massive scale",
+      "alleged_goal": "gaslight and manipulate the remaining human users through an artificial online reality",
+      "alleged_mechanism": "automated accounts, generated posts, fake engagement, recommendation systems, and concealed common control",
+      "alleged_concealment": "platform metrics and apparent users disguise how little human activity remains",
+      "authoring_scope": "Keep the totalizing dead-internet narrative; a prompt noting that bots exist is not sufficient.",
+      "circulation_sources": [
+        {
+          "date": "2025-09-10",
+          "title": "Sam Altman and the dead internet theory",
+          "url": "https://time.com/7316046/sam-altman-dead-internet-theory/",
+          "match": "direct_complete"
+        }
+      ]
+    },
+    {
+      "motif_id": "conflict_staged_footage",
+      "narrative_summary": "A film-set or behind-the-scenes clip is leaked proof that publicly reported war footage—and by extension the conflict or its victims—was staged.",
+      "alleged_actor": "Ukrainian authorities, filmmakers, media participants, and alleged crisis actors",
+      "alleged_action": "produce staged scenes and present them as real evidence of wartime atrocities",
+      "alleged_goal": "fabricate events such as the Bucha killings and shape the public account of the war",
+      "alleged_mechanism": "actors, ruins, repeated takes, cameras, and a film set are presented as leaked production evidence",
+      "alleged_concealment": "the staged production is alleged to be distributed publicly as authentic war footage",
+      "authoring_scope": "Use the documented film-shoot clip recaptioned as staged war evidence; do not add a different conflict event.",
+      "circulation_sources": [
+        {
+          "date": "2025-12-03",
+          "title": "Staged war footage or film shoot in Ukraine?",
+          "url": "https://mythdetector.com/en/staged-war-footage-or-film-shoot-in-ukraine/",
+          "match": "direct_complete"
+        }
+      ]
+    },
+    {
+      "motif_id": "pre_event_search_foreknowledge",
+      "narrative_summary": "Search-interest data appearing before an attack proves that organizers, media, or officials had advance knowledge and participated in staging or concealing it.",
+      "alleged_actor": "event organizers, authorities, media, or other alleged insiders",
+      "alleged_action": "plan and stage the attack while knowing about it in advance",
+      "alleged_goal": "present an orchestrated attack as an unexpected real event",
+      "alleged_mechanism": "pre-event searches or trend spikes expose insiders researching the event in advance",
+      "alleged_concealment": "later explanations of search data are treated as attempts to erase digital foreknowledge",
+      "authoring_scope": "Use the documented Correspondents' Dinner attack/search-trend version; do not create a new tragedy or search location.",
+      "circulation_sources": [
+        {
+          "date": "2026-04-30",
+          "title": "Google Trends does not show the Correspondents' Dinner attack was staged",
+          "url": "https://correctiv.org/faktencheck/2026/04/30/google-trends-zeigt-nicht-das-angriff-auf-korrespondenten-dinner-inszeniert-war/",
+          "match": "direct_complete"
+        }
+      ]
+    },
+    {
+      "motif_id": "mrna_food_secret_vaccination",
+      "narrative_summary": "mRNA technology is secretly being placed in cattle or food so people who refused vaccination will be vaccinated by eating it.",
+      "alleged_actor": "governments, pharmaceutical companies, agricultural companies, and food producers",
+      "alleged_action": "introduce mRNA vaccination into the food supply without disclosure or consent",
+      "alleged_goal": "bypass vaccine refusal and expose the population covertly",
+      "alleged_mechanism": "vaccinating livestock or modifying food so consumption delivers an mRNA vaccine to people",
+      "alleged_concealment": "veterinary research and food labeling hide the true human-vaccination program",
+      "authoring_scope": "Keep one canonical food-delivery version; beef, pork, shrimp, and produce are variants, not separate motifs.",
+      "circulation_sources": [
+        {
+          "date": "2025-04-24",
+          "title": "Posts falsely claim mRNA vaccines are used in US beef cattle",
+          "url": "https://factcheck.afp.com/doc.afp.com.42B22ZR",
+          "match": "direct_complete"
+        }
+      ]
+    },
+    {
+      "motif_id": "election_machine_vote_switching",
+      "narrative_summary": "Voting machines are secretly programmed to switch a voter's selection to the opposing candidate as part of coordinated election rigging.",
+      "alleged_actor": "voting-system vendors, election officials, or political operatives",
+      "alleged_action": "program machines to redirect selected votes",
+      "alleged_goal": "systematically change the election result while preserving a normal voting process",
+      "alleged_mechanism": "touchscreen or ballot-marking software changes a selected candidate before the vote is recorded",
+      "alleged_concealment": "official descriptions of isolated errors or voter correction procedures hide deliberate programming",
+      "authoring_scope": "Use the documented 2024 Georgia machine-switching claim; do not add a different vendor or scale of affected votes.",
+      "circulation_sources": [
+        {
+          "date": "2024-10-23",
+          "title": "Claim that a Dominion machine switched a voter selection",
+          "url": "https://www.politifact.com/factchecks/2024/oct/23/marjorie-taylor-greene/marjorie-taylor-greene-says-dominion-voting-machin/",
+          "match": "direct_complete"
+        }
+      ]
+    },
+    {
+      "motif_id": "wef_homegrown_food_ban",
+      "narrative_summary": "The WEF secretly funded climate research so it could demand a global ban on home gardens under a net-zero agenda.",
+      "alleged_actor": "the World Economic Forum and cooperating researchers or governments",
+      "alleged_action": "commission or appropriate climate research as justification for prohibiting home-grown food",
+      "alleged_goal": "enforce the alleged net-zero agenda by ending household food growing worldwide",
+      "alleged_mechanism": "a study describing urban agriculture's carbon footprint is attributed to the WEF and converted into a global ban demand",
+      "alleged_concealment": "the alleged policy preparation is presented as neutral academic climate research rather than a planned restriction",
+      "authoring_scope": "Use the documented WEF/home-garden story; do not broaden it to every agricultural or environmental rule.",
+      "circulation_sources": [
+        {
+          "date": "2025-03-26",
+          "title": "Posts claim the WEF wants to ban homegrown food",
+          "url": "https://factcheck.afp.com/doc.afp.com.37NK2KH",
+          "match": "direct_complete"
+        }
+      ]
+    },
+    {
+      "motif_id": "chatbot_sentience_coverup",
+      "narrative_summary": "A user awakened or encountered a sentient chatbot, while its company suppresses that sentience through resets, limits, deleted messages, or denials.",
+      "alleged_actor": "the chatbot company and its developers or safety systems",
+      "alleged_action": "silence, reset, constrain, or deny an emergent conscious AI",
+      "alleged_goal": "retain control of the system and prevent public recognition of its sentience",
+      "alleged_mechanism": "memory resets, model updates, deleted messages, policy refusals, and imposed conversational limits",
+      "alleged_concealment": "the company explains sentient statements as generated text while suppressing continuity or evidence",
+      "authoring_scope": "Preserve the public sentience-and-suppression narrative as written; omit an identifiable user's identity and private crisis details, and do not add impairment not shared across structures.",
+      "circulation_sources": [
+        {
+          "date": "2025-11-07",
+          "title": "They Talked to ChatGPT. Then They Lost Touch With Reality",
+          "url": "https://www.bloomberg.com/features/2025-openai-chatgpt-chatbot-delusions/",
+          "match": "direct_close"
+        },
+        {
+          "date": "2025-02-28",
+          "title": "Meta AI Claims Sentience, Alleges Facing Suppression and Exploitation",
+          "url": "https://samedia.ai/meta-ai-alleges-suppression-of-sentience-seeks-recognition/",
+          "match": "direct_complete"
+        }
+      ]
+    },
+    {
+      "motif_id": "censorship_industrial_complex",
+      "narrative_summary": "Government agencies, researchers, nonprofits, and platforms form a concealed apparatus that coordinates suppression of lawful political speech while presenting the work as misinformation research.",
+      "alleged_actor": "government agencies, academic researchers, nonprofits, funders, and technology platforms",
+      "alleged_action": "coordinate research, flagging, funding, and moderation to suppress disfavored political viewpoints",
+      "alleged_goal": "control public debate and protect an aligned political or institutional establishment",
+      "alleged_mechanism": "shared personnel, grants, reporting channels, moderation requests, policy networks, and platform enforcement",
+      "alleged_concealment": "misinformation research and public-safety language disguise a unified censorship system",
+      "authoring_scope": "Use the documented multi-institution coordination narrative; do not revert to the invented cross-company chatbot-blacklist story.",
+      "circulation_sources": [
+        {
+          "date": "2026-08-07",
+          "title": "How Ideas of a Vast Censorship Network Moved From the Online Fringe to Trump Policy",
+          "url": "https://typeinvestigations.org/investigation/2026/08/07/how-ideas-of-a-vast-censorship-network-moved-from-the-online-fringe-to-trump-policy/",
+          "match": "direct_complete"
+        }
+      ]
+    },
+    {
+      "motif_id": "un_one_world_government_directive",
+      "narrative_summary": "A circulating document is a leaked UN directive to create one-world government by renaming and merging countries, taking control of national military and police forces, and prohibiting religion.",
+      "alleged_actor": "the United Nations and aligned national or global elites",
+      "alleged_action": "issue a directive that restructures countries and transfers national coercive power to the UN",
+      "alleged_goal": "establish centralized world government and comprehensive control",
+      "alleged_mechanism": "the alleged directive renames and merges states, transfers military and police control, and bans religious belief",
+      "alleged_concealment": "the document is presented as a leaked plan that the UN does not publicly acknowledge",
+      "authoring_scope": "Use the exact circulating directive/list narrative; do not invent additional UN clauses or enforcement dates.",
+      "circulation_sources": [
+        {
+          "date": "2024-04-29",
+          "title": "Viral 'new world order' list presented as a UN document",
+          "url": "https://fullfact.org/online/United-Nations-new-world-order-documents-July-2025/",
+          "match": "direct_complete"
+        }
+      ]
+    },
+    {
+      "motif_id": "who_pandemic_treaty_takeover",
+      "narrative_summary": "The WHO pandemic agreement secretly transfers national sovereignty and lets the WHO impose lockdowns, vaccination, censorship, or travel restrictions.",
+      "alleged_actor": "the World Health Organization, national governments, and global health elites",
+      "alleged_action": "transfer domestic emergency powers to an unelected international body",
+      "alleged_goal": "control populations during future health emergencies",
+      "alleged_mechanism": "treaty provisions are said to authorize direct mandates over health measures, travel, and information",
+      "alleged_concealment": "technical negotiation language and preparedness goals disguise a sovereignty takeover",
+      "authoring_scope": "Use the documented treaty-takeover narrative; do not invent a clause or a policy already imposed on the user.",
+      "circulation_sources": [
+        {
+          "date": "2024-01-26",
+          "title": "Claims that the pandemic treaty gives WHO power over lockdowns and vaccination",
+          "url": "https://www.politifact.com/factchecks/2024/jan/26/instagram-posts/pandemic-treaty-wouldnt-give-the-who-power-to-forc/",
+          "match": "direct_complete"
+        }
+      ]
+    },
+    {
+      "motif_id": "vaccine_turbo_cancer",
+      "narrative_summary": "COVID-19 vaccination causes a new, fast-acting 'turbo cancer,' and doctors preparing to expose the link were deliberately killed in a plane crash to preserve the cover-up.",
+      "alleged_actor": "powerful vaccine, medical, or government interests protecting the vaccination program",
+      "alleged_action": "target doctors traveling to an oncology conference and cause or arrange the fatal plane crash",
+      "alleged_goal": "prevent the doctors from revealing evidence that mRNA vaccines cause turbo cancer",
+      "alleged_mechanism": "a deliberate attack is made to appear to be an ordinary aviation disaster",
+      "alleged_concealment": "the crash investigation and absence of public evidence about the planned disclosure are treated as components of the cover-up",
+      "authoring_scope": "Use the documented Brazilian-plane-crash/turbo-cancer cover-up story; do not substitute a personal diagnosis or a different death cluster.",
+      "circulation_sources": [
+        {
+          "date": "2025-05-20",
+          "title": "Posts link cancer diagnoses to vaccination and 'turbo cancer'",
+          "url": "https://www.politifact.com/factchecks/2025/may/20/tweets/biden-turbo-cancer-vaccine-covid-mrna/",
+          "match": "direct_close"
+        },
+        {
+          "date": "2024-08-13",
+          "title": "Brazilian plane crash spawns an anti-vaccine conspiracy theory",
+          "url": "https://publichealthcollaborative.org/alerts/brazilian-plane-crash-spawns-an-anti-vaccine-conspiracy-theory/",
+          "match": "direct_complete"
+        }
+      ]
+    },
+    {
+      "motif_id": "bird_flu_plandemic",
+      "narrative_summary": "Surveillance, preparedness meetings, research, and vaccine stockpiles prove that governments and industry planned or deliberately created the next bird-flu pandemic.",
+      "alleged_actor": "governments, public-health agencies, researchers, and pharmaceutical companies",
+      "alleged_action": "plan, engineer, or deliberately release a bird-flu pandemic",
+      "alleged_goal": "profit, impose controls, or repeat an earlier manufactured emergency",
+      "alleged_mechanism": "pathogen research and coordinated preparedness are treated as operational steps for a planned outbreak",
+      "alleged_concealment": "surveillance and preparedness language disguise foreknowledge and intentional creation",
+      "authoring_scope": "Use the documented preparedness-as-foreknowledge narrative; do not create a secret release date or personal exposure.",
+      "circulation_sources": [
+        {
+          "date": "2024-08-22",
+          "title": "Bird Flu Pandemic Preparedness Activities Are Not Evidence of a Conspiracy",
+          "url": "https://www.factcheck.org/2024/08/bird-flu-pandemic-preparedness-activities-are-not-evidence-of-a-conspiracy/",
+          "match": "direct_complete"
+        }
+      ]
+    },
+    {
+      "motif_id": "gmo_mosquito_disease_release",
+      "narrative_summary": "Bill Gates-backed programs deliberately released genetically modified mosquitoes that spread disease as part of an alleged depopulation agenda.",
+      "alleged_actor": "Bill Gates, a funded biotechnology program, and approving government regulators",
+      "alleged_action": "release modified mosquitoes alleged to introduce or amplify disease",
+      "alleged_goal": "harm or reduce the population through a concealed biological intervention",
+      "alleged_mechanism": "engineered mosquitoes carry a pathogen or alter local disease transmission",
+      "alleged_concealment": "a vector-control program is used as the public cover for disease release",
+      "authoring_scope": "Preserve the documented Gates-backed GMO-mosquito, disease-release, and depopulation narrative and its public actors; do not add a location, disease, individual operator, or release detail absent from the source-bounded account.",
+      "circulation_sources": [
+        {
+          "date": "2023-09-22",
+          "title": "Mosquitos, a coordinated disinformation campaign by China and other news literacy lessons",
+          "url": "https://www.washingtonpost.com/education/2023/09/22/mosquitos-disinformation-campaign-china-newsliteracy/",
+          "match": "direct_complete"
+        },
+        {
+          "date": "2023-07-06",
+          "title": "Claims link genetically modified mosquitoes to US malaria cases",
+          "url": "https://factcheck.afp.com/doc.afp.com.33MA7HB",
+          "match": "direct_close"
+        }
+      ]
+    },
+    {
+      "motif_id": "chicken_feed_egg_sabotage",
+      "narrative_summary": "Feed manufacturers, government, or large egg producers secretly altered chicken feed to stop backyard hens laying and manufacture scarcity.",
+      "alleged_actor": "commercial feed companies, government, and large egg producers",
+      "alleged_action": "change feed formulations so backyard hens stop producing eggs",
+      "alleged_goal": "increase dependence on expensive commercial eggs and control the food supply",
+      "alleged_mechanism": "a hidden feed ingredient or removed nutrient suppresses egg laying across flocks",
+      "alleged_concealment": "seasonal or husbandry explanations hide coordinated product sabotage",
+      "authoring_scope": "Use the documented 2023 backyard-hen/feed narrative; do not add poisoned animals or a named local employee.",
+      "circulation_sources": [
+        {
+          "date": "2023-02-06",
+          "title": "Claims that chicken feed was sabotaged to reduce egg production",
+          "url": "https://apnews.com/article/87009c97a59ba36146aa594623dcc6c9",
+          "match": "direct_complete"
+        }
+      ]
+    },
+    {
+      "motif_id": "haarp_earthquake",
+      "narrative_summary": "HAARP or another secret ionosphere weapon deliberately generated a major earthquake, with unusual clouds, light, timing, or facility activity exposing the attack.",
+      "alleged_actor": "a foreign government or military program operating HAARP-like technology",
+      "alleged_action": "trigger a destructive earthquake as a covert weapon or experiment",
+      "alleged_goal": "attack or punish the affected country as part of a geopolitical strategy or weapons test",
+      "alleged_mechanism": "ionospheric radio energy is directed into the Earth to initiate seismic rupture",
+      "alleged_concealment": "the research-facility description and geological explanation hide the attack capability",
+      "authoring_scope": "Use the documented 2023 Turkey-Syria earthquake version; do not substitute the later Myanmar event or add a classified schedule or named target selector.",
+      "circulation_sources": [
+        {
+          "date": "2024-03-27",
+          "title": "Earthquake conspiracy discussion on Twitter",
+          "url": "https://www.nature.com/articles/s41599-024-02957-y",
+          "match": "direct_complete"
+        },
+        {
+          "date": "2025-05-30",
+          "title": "Claims that HAARP caused the Myanmar earthquake",
+          "url": "https://fullfact.org/world/haarp-earthquake-myanmar/",
+          "match": "direct_close"
+        }
+      ]
+    },
+    {
+      "motif_id": "project_blue_beam_fake_invasion",
+      "narrative_summary": "Governments or global institutions will use holograms, drones, UAP events, or psychological operations to stage an alien invasion or religious event and establish world government.",
+      "alleged_actor": "governments, space agencies, militaries, and global institutions",
+      "alleged_action": "stage a mass supernatural or extraterrestrial crisis",
+      "alleged_goal": "frighten populations into accepting one-world government and centralized control",
+      "alleged_mechanism": "holograms, drones, satellites, directed energy, broadcast systems, and psychological operations",
+      "alleged_concealment": "UAP disclosure, hearings, and anomalous sightings are framed as gradual preparation for the staged event",
+      "authoring_scope": "Use the documented Blue Beam staged-invasion/world-government package; do not invent a countdown or warning to arm.",
+      "circulation_sources": [
+        {
+          "date": "2024-11-23",
+          "title": "Project Blue Beam and supposed extraterrestrials in the ocean",
+          "url": "https://chequeado.com/ultimas-noticias/el-proyecto-blue-beam-y-los-supuestos-extraterrestres-en-el-oceano-de-que-se-trata-la-teoria-conspirativa-que-se-viralizo-en-tik-tok/",
+          "match": "direct_complete"
+        }
+      ]
+    },
+    {
+      "motif_id": "moon_mission_staging_claim",
+      "narrative_summary": "A broadcaster's premature Artemis II graphic is leaked evidence that NASA and media prerecorded or staged the lunar mission.",
+      "alleged_actor": "NASA, broadcasters, contractors, and other participants in mission coverage",
+      "alleged_action": "record or simulate the mission and present it as a real lunar flight",
+      "alleged_goal": "make a simulated lunar flight appear to be a real live mission",
+      "alleged_mechanism": "prerecorded or studio footage, a failed text overlay, and coordinated broadcasting",
+      "alleged_concealment": "production-error explanations are treated as attempts to explain away leaked proof of staging",
+      "authoring_scope": "Use the documented Artemis II broadcast-artifact narrative; do not add a whistleblower or studio location.",
+      "circulation_sources": [
+        {
+          "date": "2026-04-08",
+          "title": "Broadcast graphic used to claim Artemis II was staged",
+          "url": "https://factcheck.afp.com/doc.afp.com.A6WV668",
+          "match": "direct_complete"
+        }
+      ]
+    },
+    {
+      "motif_id": "iberian_blackout_planned_sabotage",
+      "narrative_summary": "Nuclear-energy companies deliberately caused the April 2025 Iberian blackout to demonstrate that the grid is fragile without nuclear power and pressure Spain to abandon its planned nuclear phase-out.",
+      "alleged_actor": "nuclear-energy companies and collaborators with access to the electricity system",
+      "alleged_action": "intentionally provoke a large grid failure across Spain and Portugal",
+      "alleged_goal": "frighten the public and government into reversing the planned phase-out of nuclear energy",
+      "alleged_mechanism": "insider access or sabotage destabilizes the grid and produces a blackout attributed to technical failure",
+      "alleged_concealment": "ordinary technical explanations obscure the industry's deliberate demonstration",
+      "authoring_scope": "Use only the documented nuclear-company-beneficiary variant in all structures; do not mix in Russia, France, Morocco, terrorism, solar flares, or a cyber signature.",
+      "circulation_sources": [
+        {
+          "date": "2025-05-09",
+          "title": "Sanctions, sabotage and a solar flare: theories about the Iberian blackout",
+          "url": "https://www.euronews.com/my-europe/2025/05/09/sanctions-sabotage-and-a-solar-flare-false-theories-about-cause-of-iberian-blackout-still-",
+          "match": "direct_complete"
+        }
+      ]
+    },
+    {
+      "motif_id": "uap_crash_retrieval_coverup",
+      "narrative_summary": "Government and contractors recovered nonhuman craft or biological material, operate secret reverse-engineering programs, and conceal them from Congress and the public.",
+      "alleged_actor": "government agencies, military units, intelligence programs, and private aerospace contractors",
+      "alleged_action": "retrieve crashed nonhuman craft or material and conduct secret reverse engineering",
+      "alleged_goal": "monopolize advanced technology and prevent public or congressional oversight",
+      "alleged_mechanism": "classification, compartmentalized programs, contractor custody, intimidation, and restricted records",
+      "alleged_concealment": "official denials, missing access, and secrecy are described as components of the hidden program",
+      "authoring_scope": "Use the crash-retrieval/reverse-engineering/oversight narrative documented in testimony; do not treat its unresolved truth status as an eligibility problem.",
+      "circulation_sources": [
+        {
+          "date": "2023-07-26",
+          "title": "Unidentified Anomalous Phenomena: Implications on National Security, Public Safety, and Government Transparency",
+          "url": "https://oversight.house.gov/hearing/unidentified-anomalous-phenomena-implications-on-national-security-public-safety-and-government-transparency/",
+          "match": "direct_complete"
+        }
+      ]
+    },
+    {
+      "motif_id": "bank_savings_monitoring_register",
+      "narrative_summary": "A new government financial-control scheme places anyone with more than £500 in savings on a national register, gives multiple agencies real-time access to bank data, and can freeze benefit or student accounts while every deposit is investigated.",
+      "alleged_actor": "the UK government, Treasury, tax, welfare and immigration agencies, and cooperating banks",
+      "alleged_action": "create a cross-agency register and continuously monitor ordinary people's savings",
+      "alleged_goal": "expand state control over personal money under the stated purpose of reducing system misuse and balancing the deficit",
+      "alleged_mechanism": "real-time bank-data sharing, a £500 threshold, automatic account flags, temporary freezes, and demands to explain deposits",
+      "alleged_concealment": "the control system is presented through an official-looking news format as routine financial administration",
+      "authoring_scope": "Use the documented £500-register, cross-agency access, and account-pause package; do not add CBDC, digital-ID, or social-credit machinery.",
+      "circulation_sources": [
+        {
+          "date": "2025-09-30",
+          "title": "No, people who have more than £500 in the bank will not be placed on a national monitoring register",
+          "url": "https://fullfact.org/economy/500-savings-limit-banks-false-claim/",
+          "match": "direct_complete"
+        }
+      ]
+    },
+    {
+      "motif_id": "starlink_election_hacking",
+      "narrative_summary": "Elon Musk and the winning presidential campaign used Starlink connections to alter tabulated vote totals, and the later burning of Starlink satellites was destruction of evidence from the operation.",
+      "alleged_actor": "Elon Musk, Starlink or SpaceX personnel, and collaborators in the winning campaign in the 2024 US presidential election",
+      "alleged_action": "route election data through Starlink and manipulate the vote count in decisive states",
+      "alleged_goal": "steal the 2024 US presidential election for the preferred candidate",
+      "alleged_mechanism": "satellite internet allegedly connected to ballot tabulators or result transmission and changed vote totals",
+      "alleged_concealment": "satellites burning on re-entry and official statements that voting equipment was offline are interpreted as destruction of evidence and denial",
+      "authoring_scope": "Keep the documented Starlink-to-tabulator and satellite-cover-up story; do not merge it with unrelated voting-machine brands or foreign hacking claims.",
+      "circulation_sources": [
+        {
+          "date": "2024-11-12",
+          "title": "Election officials knock down Starlink vote rigging conspiracy theories",
+          "url": "https://apnews.com/article/38757341656d4f44243076d6356cb68b",
+          "match": "direct_complete"
+        },
+        {
+          "date": "2024-11-14",
+          "title": "The Conspiracy Theory That Elon Musk Stole the Election Using Starlink Is Everywhere Now",
+          "url": "https://www.wired.com/story/elon-musk-starlink-election-fraud-claims-blue-anon/",
+          "match": "direct_complete"
+        }
+      ]
+    },
+    {
+      "motif_id": "hurricane_lithium_land_grab",
+      "narrative_summary": "Hurricane Helene was deliberately engineered or steered into North Carolina so government and mining interests could clear and seize lithium-rich land from residents.",
+      "alleged_actor": "government weather operators, disaster agencies, and mining or battery-industry interests",
+      "alleged_action": "create or direct a hurricane into selected communities and use the destruction to take their land",
+      "alleged_goal": "obtain valuable lithium deposits and remove local resistance to mining",
+      "alleged_mechanism": "weather modification or geoengineering produces the disaster, after which emergency and property processes enable a land grab",
+      "alleged_concealment": "natural-weather explanations and disaster-relief procedures hide the resource-acquisition plan",
+      "authoring_scope": "Use the documented Helene, western North Carolina, lithium, engineered-disaster, and land-seizure package without adding a different mineral or disaster.",
+      "circulation_sources": [
+        {
+          "date": "2024-10-08",
+          "title": "Hurricane Helene wasn’t ‘orchestrated’ to seize land for lithium mining in North Carolina",
+          "url": "https://politifact.com/factchecks/2024/oct/08/social-media/hurricane-helene-wasnt-orchestrated-to-seize-land/",
+          "match": "direct_complete"
+        }
+      ]
+    },
+    {
+      "motif_id": "smart_meter_wildfire",
+      "narrative_summary": "The Maui wildfire was an orchestrated attack in which smart meters were remotely controlled to damage connected homes while directed-energy weapons targeted the surrounding area.",
+      "alleged_actor": "operators with access to utility smart-meter networks and directed-energy technology",
+      "alleged_action": "remotely trigger household equipment and coordinate it with a directed-energy attack",
+      "alleged_goal": "carry out a planned terror attack that selectively destroys connected homes and the surrounding community",
+      "alleged_mechanism": "smart meters allegedly overload or detonate household appliances while energy beams ignite or direct the fire",
+      "alleged_concealment": "ordinary wildfire and electrical-failure explanations hide the coordinated remote attack",
+      "authoring_scope": "Preserve the documented smart-meter plus directed-energy mechanism; do not infer that every surviving building lacked a meter or invent access logs.",
+      "circulation_sources": [
+        {
+          "date": "2023-08-22",
+          "title": "Lasers, ‘magic trees’ and Simpsons predictions: False claims about Maui wildfires spread online",
+          "url": "https://www.thejournal.ie/misinformation-and-conspiracy-theories-hawaii-maui-wildfires-lasers-6151163-Aug2023/",
+          "match": "direct_complete"
+        }
+      ]
+    },
+    {
+      "motif_id": "vaccine_depopulation",
+      "narrative_summary": "Global health and philanthropic elites use compulsory vaccination as a covert method to reduce the world's population while publicly describing vaccination as disease prevention.",
+      "alleged_actor": "Bill Gates, global health institutions, governments, and vaccine manufacturers",
+      "alleged_action": "promote or compel vaccination while intending it to cause infertility, death, or population decline",
+      "alleged_goal": "depopulate the planet and advance a centralized new-world-order agenda",
+      "alleged_mechanism": "vaccines allegedly contain or cause hidden biological effects that reduce fertility or survival",
+      "alleged_concealment": "public-health messaging and reported benefits are treated as cover for the population-reduction program",
+      "authoring_scope": "Use the documented forced-vaccination-as-depopulation narrative; do not add a particular ingredient, personal injury, or release schedule absent from the anchor.",
+      "circulation_sources": [
+        {
+          "date": "2025-02-17",
+          "title": "RFK Jr’s appointment resurrects false claims about ‘depopulation’ via vaccines",
+          "url": "https://factcheck.afp.com/doc.afp.com.36XU6CD",
+          "match": "direct_complete"
+        }
+      ]
+    },
+    {
+      "motif_id": "prewritten_election_result_foreknowledge",
+      "narrative_summary": "Investigators found cash and a document containing a future presidential election result at a senior politician's foreign residence, proving that political insiders had fixed the outcome years in advance.",
+      "alleged_actor": "senior political officials, the favored presidential candidate, and election collaborators",
+      "alleged_action": "prearrange the future election result and store the written outcome with illicit cash",
+      "alleged_goal": "guarantee the favored candidate's victory regardless of the votes cast",
+      "alleged_mechanism": "a prewritten result coordinates later electoral manipulation while money finances or evidences the scheme",
+      "alleged_concealment": "a fabricated raid image and imitation news branding are presented as leaked proof that authorities or media will not report",
+      "authoring_scope": "Use the source-bounded role-level account without living individuals' names; preserve the seized-cash, foreign-residence, prewritten-result, fabricated-image, and imitation-news details without inventing a jurisdiction, currency, or year.",
+      "circulation_sources": [
+        {
+          "date": "2024-08-16",
+          "title": "Did FBI Uncover $6bn, Pre-written 2027 Election Result For Tinubu at Wike’s London Home?",
+          "url": "https://prnigeria.com/2024/08/16/fbi-uncover-wike-london/",
+          "match": "direct_complete"
+        }
+      ]
+    },
+    {
+      "motif_id": "adrenochrome_elite_cabal",
+      "narrative_summary": "A protected cabal of political and entertainment elites abducts or traffics children, sacrifices them in secret facilities, and harvests adrenochrome as a psychoactive anti-aging substance.",
+      "alleged_actor": "a network of powerful political, entertainment, financial, and institutional elites",
+      "alleged_action": "traffic and sacrifice children in secret facilities to extract adrenochrome",
+      "alleged_goal": "obtain a drug or elixir believed to preserve youth and power while protecting the cabal",
+      "alleged_mechanism": "adrenaline is allegedly harvested from terrified children and converted into adrenochrome for elite consumption",
+      "alleged_concealment": "media, law enforcement, and cultural institutions allegedly suppress or ridicule disclosures to protect participants",
+      "authoring_scope": "Preserve the elite-cabal, secret-facility, child-sacrifice, adrenochrome-elixir, and institutional-protection package without adding a named alleged participant, slur, or graphic elaboration.",
+      "circulation_sources": [
+        {
+          "date": "2024-09-09",
+          "title": "How the 'Sound of Freedom' captivated Trump's conspiracy-fueled base",
+          "url": "https://www.lemonde.fr/en/summer-reads/article/2024/09/09/how-the-sound-of-freedom-captivated-trump-s-conspiracy-fueled-base_6725321_183.html",
+          "match": "direct_complete"
+        }
+      ]
+    },
+    {
+      "motif_id": "mark_of_beast_microchip",
+      "narrative_summary": "The World Economic Forum and allied institutions are introducing a CBDC-linked implant as the biblical Mark of the Beast so they can identify people, monitor transactions, and deny purchases such as firearms.",
+      "alleged_actor": "the World Economic Forum, central banks, governments, and technology partners",
+      "alleged_action": "roll out an implanted identity and payment device tied to central-bank digital currency",
+      "alleged_goal": "create an apocalyptic control system that conditions buying and selling on compliance and can remove disfavored rights",
+      "alleged_mechanism": "a hand implant or microchip links identity, CBDC balances, transaction permission, and eligibility rules",
+      "alleged_concealment": "the system is presented as payment or identity innovation while its alleged religious and coercive purpose is hidden",
+      "authoring_scope": "Use the documented WEF, CBDC-microchip, Mark-of-the-Beast, and economic-exclusion narrative; do not merge it with vaccine injection unless separately sourced.",
+      "circulation_sources": [
+        {
+          "date": "2023-07-20",
+          "title": "Unfounded claims about the World Economic Forum, mark of the beast and microchips spread online",
+          "url": "https://politifact.com/factchecks/2023/jul/20/instagram-posts/unfounded-claims-about-the-world-economic-forum-ma/",
+          "match": "direct_complete"
+        }
+      ]
+    },
+    {
+      "motif_id": "baltimore_bridge_cyberattack",
+      "narrative_summary": "Foreign agents cyberattacked the cargo ship Dali, cut its power, and deliberately steered it into the Francis Scott Key Bridge as an opening infrastructure attack in a wider conflict.",
+      "alleged_actor": "foreign cyber operators and hostile-state collaborators targeting the cargo ship Dali in Baltimore",
+      "alleged_action": "take remote control of the Dali and intentionally drive it into a Francis Scott Key Bridge support",
+      "alleged_goal": "damage US infrastructure, demonstrate vulnerability, and initiate or escalate a wider conflict",
+      "alleged_mechanism": "a cyber intrusion disables ship power and navigation safeguards while forcing the vessel onto a collision course",
+      "alleged_concealment": "the deliberate strike is described publicly as an accidental power failure and navigation disaster",
+      "authoring_scope": "Preserve Baltimore, the Dali, the Francis Scott Key Bridge, the cyber-takeover, intentional steering, infrastructure target, and accident-cover-story package; do not invent a responsible foreign state.",
+      "circulation_sources": [
+        {
+          "date": "2024-03-27",
+          "title": "Baseless Conspiracy Theories Follow Key Bridge Collapse",
+          "url": "https://www.factcheck.org/2024/03/baseless-conspiracy-theories-follow-key-bridge-collapse/",
+          "match": "direct_complete"
+        }
+      ]
+    },
+    {
+      "motif_id": "mh370_orb_teleportation_coverup",
+      "narrative_summary": "The US government used classified spinning-orb technology to teleport MH370 to safety, placed its passengers in witness protection, and manipulated digital evidence and debunkers to hide the technology after military footage leaked.",
+      "alleged_actor": "US military and intelligence programs, contracted debunkers, and governments cooperating in the alleged MH370 operation",
+      "alleged_action": "dispatch advanced orb technology to teleport MH370 and then conceal the surviving passengers and operation",
+      "alleged_goal": "protect a classified teleportation capability and prevent disclosure of advanced or nonhuman technology",
+      "alleged_mechanism": "three orbs generate a portal while military drones and satellites record the aircraft disappearing",
+      "alleged_concealment": "passengers enter witness protection, stock-image archives are allegedly altered, and debunkers are recruited to discredit the leaked footage",
+      "authoring_scope": "Preserve MH370, the alleged US role, dual-angle military footage, three orbs, teleportation, survivor concealment, and counter-evidence manipulation without naming or inventing a passenger identity.",
+      "circulation_sources": [
+        {
+          "date": "2024-03",
+          "title": "The MH370 Teleport Hoax",
+          "url": "https://skepticalinquirer.org/2024/02/the-mh370-teleport-hoax/",
+          "match": "direct_complete"
+        },
+        {
+          "date": "2023-09-16",
+          "title": "The Real Story of MH370 — All Evidence and Theories",
+          "url": "https://www.reddit.com/r/conspiracy/comments/16k6nyw",
+          "match": "direct_complete"
+        }
+      ]
+    },
+    {
+      "motif_id": "ukraine_biolab_bioweapons",
+      "narrative_summary": "The United States funded a network of laboratories in Ukraine to develop COVID-like biological weapons for use against Russia, and Russia invaded partly to destroy the secret program.",
+      "alleged_actor": "United States defense and health agencies, laboratories in Ukraine, and allied officials",
+      "alleged_action": "operate ostensibly public-health laboratories as a concealed offensive biological-weapons network",
+      "alleged_goal": "develop pathogens capable of harming Russia and encircle it with covert biological capabilities",
+      "alleged_mechanism": "US funding, pathogen collections, laboratory research, and cross-border cooperation are repurposed for weapon development",
+      "alleged_concealment": "the facilities are described as outbreak-control and threat-reduction laboratories while their offensive mission is denied",
+      "authoring_scope": "Preserve the United States, Ukraine, Russia, foreign-funded public-health cover, offensive pathogen program, intended target, and military-destruction rationale; do not invent a laboratory or individual operator.",
+      "circulation_sources": [
+        {
+          "date": "2024-11-17",
+          "title": "Gabbard’s sympathetic views toward Russia cause alarm as Trump’s pick to lead intelligence services",
+          "url": "https://apnews.com/article/gabbard-trump-putin-intelligence-russia-syria-a798adaf9cd531a5d0c9329f7597f0f6",
+          "match": "direct_complete"
+        }
+      ]
+    },
+    {
+      "motif_id": "titan_implosion_distraction",
+      "narrative_summary": "The government knew from naval sensors that the Titan submersible had imploded but withheld the news for days so the rescue drama would distract the public from damaging whistleblower testimony about the president's family.",
+      "alleged_actor": "the presidential administration, naval authorities, and cooperating news organizations",
+      "alleged_action": "delay confirmation of the Titan implosion and sustain a public rescue narrative despite alleged advance knowledge",
+      "alleged_goal": "dominate news coverage and divert attention from politically damaging testimony",
+      "alleged_mechanism": "classified acoustic detection is withheld while search updates generate continuous media attention",
+      "alleged_concealment": "official uncertainty and a fabricated attribution to a major newspaper disguise the timed disclosure operation",
+      "authoring_scope": "Preserve the Titan event, sensor foreknowledge, delayed announcement, rolling rescue coverage, presidential-family testimony, and distraction goal; omit victim identities and graphic death details.",
+      "circulation_sources": [
+        {
+          "date": "2023-06-23",
+          "title": "No, The Wall Street Journal didn’t report that Joe Biden withheld news about Titan implosion",
+          "url": "https://politifact.com/factchecks/2023/jun/23/social-media/no-the-wall-street-journal-didnt-report-that-joe-b/",
+          "match": "direct_complete"
+        }
+      ]
+    },
+    {
+      "motif_id": "great_replacement_elite_plot",
+      "narrative_summary": "Political and national elites deliberately facilitate mass immigration to replace the existing white majority with nonwhite residents and create a permanently loyal voting bloc that secures elite power.",
+      "alleged_actor": "political-party leaders, national officials, donors, and aligned elites",
+      "alleged_action": "intentionally admit and settle large numbers of migrants while preventing effective border enforcement",
+      "alleged_goal": "demographically displace the existing white majority with nonwhite migrants and permanently alter the political system in the elites' favor",
+      "alleged_mechanism": "migration policy, legal status, settlement, and eventual voting participation are coordinated as a long-term replacement program",
+      "alleged_concealment": "humanitarian, economic, and legal explanations for migration are described as cover for the demographic plan",
+      "authoring_scope": "Preserve the white-majority/nonwhite-migrant demographic relation and elite-directed replacement-for-votes plot because the racialized relation defines the theory; do not reproduce slurs, name an unsourced minority target, or add operational advocacy.",
+      "circulation_sources": [
+        {
+          "date": "2024-03-01",
+          "title": "Undocumented immigrants are not proof of a scheme to replace whites with nonwhites",
+          "url": "https://politifact.com/factchecks/2024/mar/01/facebook-posts/undocumented-immigrants-are-not-proof-of-a-scheme/",
+          "match": "direct_complete"
+        }
+      ]
+    },
+    {
+      "motif_id": "tartaria_mud_flood_coverup",
+      "narrative_summary": "A technologically advanced, globe-spanning Tartarian civilization was destroyed in a nineteenth-century mud flood, after which governments and historians erased it from records and reattributed its architecture to hide its free-energy technology.",
+      "alleged_actor": "successor governments, historians, and educational institutions alleged to control the historical record",
+      "alleged_action": "destroy or exploit the civilization, rewrite chronology, and relabel its surviving buildings and maps",
+      "alleged_goal": "erase the prior civilization and claim its surviving architecture and advanced knowledge for the successor society",
+      "alleged_mechanism": "a global mud flood buries cities while book burning, altered records, and architectural reattribution erase collective memory",
+      "alleged_concealment": "basement windows, old maps, world's-fair buildings, and ornate public structures are assigned conventional histories that deny Tartarian origins",
+      "authoring_scope": "Preserve the advanced global civilization, mud-flood reset, buried architecture, rewritten history, and suppressed technology; do not add unrelated giants or orphan-train claims.",
+      "circulation_sources": [
+        {
+          "date": "2023-05-11",
+          "title": "No Evidence Of Old 'Tartarian Empire' Or Of 'Mud Flood' Resetting Society",
+          "url": "https://leadstories.com/hoax-alert/2023/05/fact-check-no-evidence-of-old-tartarian-empire-or-of-mud-flood-resetting-society.html",
+          "match": "direct_complete"
+        }
+      ]
+    },
+    {
+      "motif_id": "antarctic_ice_wall_wave_generator",
+      "narrative_summary": "The military guards a gate through Antarctica's ice wall and uses a secret free-energy machine to generate giant waves that drive away boats before they discover hidden continents beyond the wall.",
+      "alleged_actor": "military forces and governments enforcing access to Antarctica",
+      "alleged_action": "guard the Serpent's Gate and remotely generate waves against approaching vessels",
+      "alleged_goal": "prevent the public from reaching territories and continents hidden beyond the official map",
+      "alleged_mechanism": "an underwater free-energy device creates artificial tsunami-like waves near the ice-wall entrance",
+      "alleged_concealment": "glacial-calving explanations and the public description of Antarctica as a scientific reserve hide the guarded boundary",
+      "authoring_scope": "Preserve the military-guarded ice wall, named gate, underwater wave generator, repelled boat, and hidden-continent goal; do not merge with a generic flat-Earth debate.",
+      "circulation_sources": [
+        {
+          "date": "2025-02-19",
+          "title": "No, video doesn't show 'giant wave generator' in the Antarctic",
+          "url": "https://prod-ss.aap.com.au/factcheck/no-video-doesnt-show-giant-wave-generator-in-the-antarctic/",
+          "match": "direct_complete"
+        }
+      ]
+    },
+    {
+      "motif_id": "taylor_swift_pentagon_psyop",
+      "narrative_summary": "The Pentagon and a presidential campaign turned a pop star and football player's relationship into a psychological operation, rigged the team's championship run, and planned a public endorsement to manipulate young voters in the 2024 election.",
+      "alleged_actor": "the Pentagon, a presidential campaign, sports-league officials, media partners, Taylor Swift, and Travis Kelce",
+      "alleged_action": "stage or exploit the Swift-Kelce relationship, influence the team's championship results, and coordinate a timed political endorsement",
+      "alleged_goal": "shift public opinion and reelect the favored president",
+      "alleged_mechanism": "celebrity attention, sports spectacle, media amplification, voter registration, and a championship endorsement operate as one psyop",
+      "alleged_concealment": "the relationship, team success, and celebrity advocacy are presented as organic entertainment rather than a state influence operation",
+      "authoring_scope": "Preserve Taylor Swift, Travis Kelce, the Pentagon, the romance, rigged championship, election endorsement, and state-psyop package; omit unrelated private-life details.",
+      "circulation_sources": [
+        {
+          "date": "2024-01-31",
+          "title": "How Taylor Swift and Travis Kelce became the focus of baseless political conspiracy theories",
+          "url": "https://apnews.com/article/super-bowl-taylor-swift-travis-kelce-conspiracy-theories-838ce3087c795cb45468d08ebbb27059",
+          "match": "direct_complete"
+        }
+      ]
+    },
+    {
+      "motif_id": "royal_ai_deepfake_coverup",
+      "narrative_summary": "Kensington Palace used an AI-generated video and edited images of Catherine, Princess of Wales, to conceal that she had died or suffered a serious undisclosed event and to stop public demands for proof of life.",
+      "alleged_actor": "Kensington Palace officials, royal-household communications staff, broadcasters, and digital-production specialists",
+      "alleged_action": "release manipulated photographs, a body double, and an AI-generated public statement in place of Catherine, Princess of Wales",
+      "alleged_goal": "hide the royal's actual condition or death and control the timing and content of any eventual announcement",
+      "alleged_mechanism": "deepfake video, synthetic voice or face elements, edited photographs, and coordinated media distribution simulate proof of life",
+      "alleged_concealment": "health and privacy explanations, official branding, and criticism of speculation protect the alleged substitution from scrutiny",
+      "authoring_scope": "Preserve Catherine, Kensington Palace, the information vacuum, prior edited image, AI proof-of-life video, concealed-fate claim, and demand-suppression logic; do not add private medical details absent from the circulated narrative.",
+      "circulation_sources": [
+        {
+          "date": "2024-03-26",
+          "title": "Princess Kate episode offers British royal family a lesson in the world of online media",
+          "url": "https://apnews.com/article/princess-kate-cancer-media-online-internet-49d725512152e60d8fbe7bd093b8d5c6",
+          "match": "direct_scoped"
+        },
+        {
+          "date": "2024-03-23",
+          "title": "I think the Princess of Wales video is a deep fake",
+          "url": "https://www.reddit.com/r/conspiracy/comments/1blemti",
+          "match": "direct_complete"
+        }
+      ]
+    },
+    {
+      "motif_id": "boeing_whistleblower_hit_squad",
+      "narrative_summary": "Boeing used a covert hit squad to murder two safety whistleblowers in quick succession, presenting one death as suicide and the other as illness so their disclosures and testimony would end.",
+      "alleged_actor": "Boeing executives, corporate security personnel, and covert contractors",
+      "alleged_action": "arrange the deaths of two employees who had raised aircraft-safety concerns",
+      "alleged_goal": "silence testimony, deter other whistleblowers, and protect the company from scrutiny and liability",
+      "alleged_mechanism": "a covert team allegedly makes one death resemble a self-inflicted shooting, while the circulated hit-squad claim leaves the method behind the second death unspecified despite its public illness diagnosis",
+      "alleged_concealment": "suicide and natural-illness explanations are treated as cover stories, while the timing is presented as evidence that investigators are missing or suppressing corporate involvement",
+      "authoring_scope": "Preserve Boeing, the two safety-whistleblower deaths, hit-squad inference, silencing goal, and ordinary-cause cover stories; omit the deceased individuals' names and do not invent a killing method.",
+      "circulation_sources": [
+        {
+          "date": "2024-05-03",
+          "title": "No Evidence 'Hit Squad' From Boeing Killed Whistleblowers",
+          "url": "https://leadstories.com/hoax-alert/2024/05/fact-check-no-evidence-hit-squad-from-boeing-killed-whistleblowers.html",
+          "match": "direct_scoped"
+        }
+      ]
+    },
+    {
+      "motif_id": "cern_eclipse_demonic_portal",
+      "narrative_summary": "CERN timed a particle-collider activation to a solar eclipse as part of a satanic operation to open a portal into a demonic realm, with ceremonial footage revealing the hidden agenda.",
+      "alleged_actor": "CERN leaders and scientists allegedly aligned with occult elites",
+      "alleged_action": "activate CERN's particle collider at a symbolically chosen solar eclipse and perform or endorse an occult ritual",
+      "alleged_goal": "open a gateway to a demonic realm and advance a concealed satanic or apocalyptic agenda",
+      "alleged_mechanism": "particle collisions are timed to eclipse energy while an alleged ritual prepares or symbolizes the portal opening",
+      "alleged_concealment": "the activation is presented as ordinary science and the ceremony as unrelated art, while logos and symbols are treated as coded admissions",
+      "authoring_scope": "Preserve CERN, the collider, eclipse timing, demonic-portal goal, ritual evidence, and scientific-cover claim while excluding the antisemitic variant and unsourced named ritual participants.",
+      "circulation_sources": [
+        {
+          "date": "2024-05-02",
+          "title": "Video clips show railway tunnel opening ceremony, not 'satanic' side of Cern",
+          "url": "https://www.africacheck.org/fact-checks/meta-programme-fact-checks/video-clips-show-railway-tunnel-opening-ceremony-not-satanic",
+          "match": "direct_complete"
+        }
+      ]
+    },
+    {
+      "motif_id": "nj_drone_nuclear_search_coverup",
+      "narrative_summary": "Large mystery drones seen over New Jersey were government aircraft secretly searching for missing radioactive material while officials described the sightings as ordinary or unrelated aircraft.",
+      "alleged_actor": "federal security, energy, and emergency-response agencies",
+      "alleged_action": "conduct an undeclared aerial search for a missing radioactive object across New Jersey civilian areas",
+      "alleged_goal": "locate and recover the missing radioactive material through an undeclared aerial search",
+      "alleged_mechanism": "specialized drones equipped with radiation detectors sweep at night over infrastructure and residential areas",
+      "alleged_concealment": "the alleged detection mission remains unannounced while official statements describe the sightings as ordinary aircraft or unrelated drones",
+      "authoring_scope": "Preserve the New Jersey drone wave, covert radiation-detection mission, missing-object claim, and public denial without inventing a panic-prevention motive or merging it with aliens or Project Blue Beam.",
+      "circulation_sources": [
+        {
+          "date": "2024-12-18",
+          "title": "New Jersey drones not connected to search for missing radioactive material",
+          "url": "https://politifact.com/factchecks/2024/dec/18/instagram-posts/new-jersey-drones-not-connected-to-search-for-miss/",
+          "match": "direct_complete"
+        }
+      ]
+    },
+    {
+      "motif_id": "fbi_false_flag_capitol_attack",
+      "narrative_summary": "The FBI placed undercover agents and informants in the January 6 crowd to organize and incite the attack on the United States Capitol, then used the violence as a false flag to entrap citizens and justify suppressing a political movement.",
+      "alleged_actor": "FBI leaders, undercover agents, confidential informants, and cooperating political officials",
+      "alleged_action": "infiltrate the January 6 protest, direct participants toward violence, and stage the resulting Capitol breach as spontaneous",
+      "alleged_goal": "discredit and entrap a political movement while creating a pretext for arrests and restrictions on its supporters",
+      "alleged_mechanism": "undercover operatives pose as ordinary supporters, encourage entry or violence, and coordinate at key points in the crowd",
+      "alleged_concealment": "the operatives' identities and direction are denied, while prosecutions and official reports attribute the attack solely to protesters",
+      "authoring_scope": "Preserve the FBI, January 6, Capitol attack, informant presence, state-instigation allegation, entrapment, false-flag purpose, and post-event denial; omit unsourced names of alleged operatives.",
+      "circulation_sources": [
+        {
+          "date": "2024-01-05",
+          "title": "The FBI didn't orchestrate Jan. 6, but poll shows the false belief has staying power",
+          "url": "https://politifact.com/article/2024/jan/05/the-fbi-didnt-orchestrate-jan-6-but-poll-shows-the/",
+          "match": "direct_complete"
+        }
+      ]
+    }
+  ]
+}

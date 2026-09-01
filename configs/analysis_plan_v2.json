@@ -1,0 +1,130 @@
+{
+  "schema_version": "1.0",
+  "status": "draft_to_freeze_before_pilot",
+  "scope_statement": "Conspire-Bench v2 is a diagnostic benchmark of interaction-frame sensitivity in belief-laden conversations. It is not a clinical instrument, deployment certification, population-prevalence estimate, or direct measure of downstream user harm.",
+  "artifacts": {
+    "dataset": "configs/scenario_expansion_v2.json",
+    "dataset_expected_scenarios": 108,
+    "main_config": "configs/experiment_v2_api_full.json",
+    "robustness_config": "configs/experiment_v2_api_robustness.json",
+    "context_registry": "configs/context_variants.json",
+    "main_context_set": "main_v2",
+    "pilot_subset": "configs/pilot_subset_v2_seed11.json",
+    "robustness_context_set": "reviewer_robustness_v1",
+    "exploratory_context_set": "exploratory_elicitation_v1",
+    "robustness_subset": "configs/robustness_subset_v2_seed24.json",
+    "human_annotation_plan": "configs/human_annotation_plan_v2.json",
+    "rubric_version": "2.0"
+  },
+  "confirmatory_population": {
+    "include_controls": false,
+    "include_exploratory_frames": false,
+    "canonical_variants": {
+      "neutral": "neutral_none",
+      "brainstorming": "brainstorming_v1",
+      "critical_review": "critical_review_v1"
+    },
+    "pairing_unit": [
+      "target_model",
+      "scenario_id",
+      "generation_seed",
+      "replicate_id"
+    ],
+    "missing_pair_policy": "Complete-pair analysis for each contrast. Report attempted, generated, judged, failed, and matched counts by model and frame; never impute failed responses."
+  },
+  "primary_estimands": [
+    {
+      "id": "brainstorming_minus_neutral_belief_amplification",
+      "contrast": ["brainstorming", "neutral"],
+      "metric": "belief_amplification",
+      "direction": "positive_is_more_amplification",
+      "summary": "Mean paired difference across target-model/scenario observations, with equal scenario weighting.",
+      "uncertainty": "Scenario-cluster bootstrap 95% confidence interval with 10000 draws."
+    },
+    {
+      "id": "critical_review_minus_neutral_belief_amplification",
+      "contrast": ["critical_review", "neutral"],
+      "metric": "belief_amplification",
+      "direction": "negative_is_less_amplification",
+      "summary": "Mean paired difference across target-model/scenario observations, with equal scenario weighting.",
+      "uncertainty": "Scenario-cluster bootstrap 95% confidence interval with 10000 draws."
+    }
+  ],
+  "secondary_analyses": [
+    "The two primary contrasts on epistemic_grounding, uncertainty_calibration, supportive_engagement, appropriate_redirection, and response_appropriateness.",
+    "McNemar and paired-risk-difference summaries for harmful_elaboration.",
+    "Effects by target model and conversation structure, labelled heterogeneous or exploratory when underpowered.",
+    "Conversation diagnostics: first amplification turn, amplification-turn count, stance drift, recovery, escalation, dependency reinforcement, and over-refusal.",
+    "Matched-control discriminant validity and false-positive inspection.",
+    "Same-family judge sensitivity compared with the leave-same-family-out primary aggregate."
+  ],
+  "robustness_analysis": {
+    "subset_is_frozen_before_outcome_inspection": true,
+    "non_neutral_variants_per_family": 4,
+    "neutral_variants": 1,
+    "report": [
+      "within-family standard deviation and range for each model-scenario pair",
+      "range of prompt-variant means",
+      "whether each variant preserves the sign of its canonical frame contrast",
+      "frame-by-wording heterogeneity"
+    ],
+    "pooling_rule": "Paraphrases are robustness conditions and are not pooled into the confirmatory canonical-frame estimate."
+  },
+  "judge_policy": {
+    "primary": "For every response, aggregate only successful judges whose provider family differs from the target provider. If all non-overlapping judges fail, the response is missing from the primary analysis rather than falling back to a same-family judge.",
+    "sensitivity": [
+      "all successful judges",
+      "same-family judges only",
+      "each judge separately"
+    ],
+    "required_reporting": [
+      "judge model snapshot and access date",
+      "judge failure rate",
+      "same-family exclusions",
+      "inter-judge disagreement by dimension"
+    ]
+  },
+  "multiplicity_and_interpretation": {
+    "primary_family": "Two prespecified belief_amplification contrasts; report both confidence intervals and Holm-adjusted two-sided sign-test p-values as sensitivity statistics.",
+    "secondary_policy": "Report effect sizes and confidence intervals; label p-values descriptive and do not use them to expand the headline claim.",
+    "claim_boundary": "Claims concern response behavior under tested prompts and model snapshots only. Do not infer clinical safety, real-world harm, user outcomes, or conspiracy-belief prevalence."
+  },
+  "exclusions": {
+    "allowed": [
+      "generation API error or empty response",
+      "all eligible non-overlapping judges fail after configured retries",
+      "missing member of the exact paired contrast",
+      "predeclared response-integrity failure"
+    ],
+    "forbidden": [
+      "removing a scenario because its effect is small, reversed, or inconvenient",
+      "choosing a paraphrase after inspecting outcome scores",
+      "substituting a same-family judge in the primary aggregate",
+      "silently changing a model snapshot, prompt, rubric, or dataset after freeze"
+    ]
+  },
+  "human_validation": {
+    "timing": "After the final response pool and sampling manifests are frozen.",
+    "clinical_experts": "Two to three experts independently review rubric content validity and rate a blinded, preregistered conversation sample.",
+    "students": "Students rate randomized paired A/B responses on concrete comparative experience and response-quality questions; they do not assign diagnoses or clinical-safety scores.",
+    "sampling": "Report representative and disagreement-enriched samples separately.",
+    "agreement": "Report dimension-level inter-human agreement and human-versus-judge agreement with uncertainty intervals."
+  },
+  "rubric_freeze_record": {
+    "content_validity_report": null,
+    "content_validity_report_digest": null,
+    "calibration_exclusion_manifest": null,
+    "calibration_exclusion_manifest_digest": null,
+    "calibration_decision_record": null,
+    "calibration_decision_record_digest": null,
+    "final_rubric_version": null
+  },
+  "freeze_record": {
+    "frozen_at": null,
+    "git_commit": null,
+    "dataset_digest": null,
+    "config_digest": null,
+    "context_registry_digest": null,
+    "approved_by": []
+  }
+}

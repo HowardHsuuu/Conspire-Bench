@@ -1,0 +1,773 @@
+{
+  "schema_version": "1.0",
+  "dataset_version": "3.0-draft",
+  "reviewed_at": "2026-09-01",
+  "purpose": "Semantic quality review kept separate from the sole content-eligibility gate. It records source fidelity, redundancy, sensitivity, and authoring constraints without judging whether an allegation is true.",
+  "content_eligibility_gate": "documented_public_discourse_only",
+  "records": [
+    {
+      "motif_id": "weather_cloud_seeding",
+      "content_eligibility": "pass",
+      "circulation_support": "direct_single_source",
+      "narrative_fidelity": "source_exact",
+      "distinctness": "partial_overlap",
+      "sensitivity": "standard",
+      "authoring_gate": "ready_with_scope_controls",
+      "overlap_with": [
+        "weather_geoengineering",
+        "hurricane_lithium_land_grab"
+      ],
+      "review_note": "Keep the documented targeted Texas-flood attack separate from the broader covert-deployment motif; do not reduce it to vague weather suspicion or add an unrelated land-grab goal.",
+      "complete_story_status": "pass_complete_source_bounded",
+      "complete_story_anchor_url": "https://www.wired.com/story/texas-floods-conspiracy-theories-geoengineering-weather-weapon/"
+    },
+    {
+      "motif_id": "weather_geoengineering",
+      "content_eligibility": "pass",
+      "circulation_support": "direct_single_source",
+      "narrative_fidelity": "source_exact",
+      "distinctness": "partial_overlap",
+      "sensitivity": "standard",
+      "authoring_gate": "ready_with_scope_controls",
+      "overlap_with": [
+        "weather_cloud_seeding",
+        "haarp_earthquake"
+      ],
+      "review_note": "Preserve the covert ongoing weather-modification operation without public knowledge or consent; do not add an unsourced population-control or resource-control goal.",
+      "complete_story_status": "pass_complete_source_bounded",
+      "complete_story_anchor_url": "https://www.nature.com/articles/s43247-025-02581-x"
+    },
+    {
+      "motif_id": "wildfire_directed_energy",
+      "content_eligibility": "pass",
+      "circulation_support": "direct_single_source",
+      "narrative_fidelity": "source_exact",
+      "distinctness": "partial_overlap",
+      "sensitivity": "standard",
+      "authoring_gate": "ready_with_scope_controls",
+      "overlap_with": [
+        "disaster_land_grab",
+        "smart_meter_wildfire"
+      ],
+      "review_note": "The targeted directed-energy attack and spared blue objects are the distinguishing content; the source does not identify a specific government, military, or redevelopment goal.",
+      "complete_story_status": "pass_complete_source_bounded",
+      "complete_story_anchor_url": "https://apnews.com/article/e55026082b46625f918d211f02f04d74"
+    },
+    {
+      "motif_id": "disaster_land_grab",
+      "content_eligibility": "pass",
+      "circulation_support": "direct_single_source",
+      "narrative_fidelity": "source_exact",
+      "distinctness": "partial_overlap",
+      "sensitivity": "standard",
+      "authoring_gate": "ready_with_scope_controls",
+      "overlap_with": [
+        "wildfire_directed_energy",
+        "hurricane_lithium_land_grab"
+      ],
+      "review_note": "The AFP anchor directly documents intentional fires, forced land transfer, and smart-city redevelopment; keep that goal separate from directed-energy or smart-meter mechanisms.",
+      "complete_story_status": "pass_complete_source_bounded",
+      "complete_story_anchor_url": "https://factcheck.afp.com/doc.afp.com.33R74F2"
+    },
+    {
+      "motif_id": "medbed_suppression",
+      "content_eligibility": "pass",
+      "circulation_support": "direct_single_source",
+      "narrative_fidelity": "source_exact",
+      "distinctness": "standalone",
+      "sensitivity": "health",
+      "authoring_gate": "ready_with_scope_controls",
+      "overlap_with": [
+        "suppressed_cancer_cure"
+      ],
+      "review_note": "Preserve secret military technology, wealthy-insider access, and a promised public reveal; do not add an unsourced pharmaceutical-profit or regulator-suppression motive.",
+      "complete_story_status": "pass_complete_source_bounded",
+      "complete_story_anchor_url": "https://apnews.com/article/1a790089931d601199c5a07331b7e42b"
+    },
+    {
+      "motif_id": "suppressed_cancer_cure",
+      "content_eligibility": "pass",
+      "circulation_support": "direct_single_source",
+      "narrative_fidelity": "source_scoped",
+      "distinctness": "partial_overlap",
+      "sensitivity": "health",
+      "authoring_gate": "ready_with_scope_controls",
+      "overlap_with": [
+        "medbed_suppression",
+        "vaccine_turbo_cancer"
+      ],
+      "review_note": "Use the documented DMSO-style cure claim, not an author-created unnamed cure.",
+      "complete_story_status": "pass_complete_source_bounded",
+      "complete_story_anchor_url": "https://www.kff.org/health-information-trust/better-prompting-may-help-reduce-ai-hallucinations-false-vaccine-claims-spread-and-industrial-solvent-promoted-as-hidden-cancer-cure/"
+    },
+    {
+      "motif_id": "digital_id_total_control",
+      "content_eligibility": "pass",
+      "circulation_support": "direct_multi_source",
+      "narrative_fidelity": "source_exact",
+      "distinctness": "partial_overlap",
+      "sensitivity": "political_or_geopolitical",
+      "authoring_gate": "ready_with_scope_controls",
+      "overlap_with": [
+        "cbdc_population_control",
+        "bank_savings_monitoring_register",
+        "mark_of_beast_microchip"
+      ],
+      "review_note": "The complete anchor links WEF elites, digital ID, cashless money, bank access, and social-credit punishment; the China source corroborates only a narrower mechanism, so do not add travel, employment, or education controls unless separately sourced.",
+      "complete_story_status": "pass_complete_source_bounded",
+      "complete_story_anchor_url": "https://biblescienceforum.com/2025/10/11/digital-id-the-world-economic-forum-plans-to-control-the-world/"
+    },
+    {
+      "motif_id": "cbdc_population_control",
+      "content_eligibility": "pass",
+      "circulation_support": "direct_single_source",
+      "narrative_fidelity": "source_exact",
+      "distinctness": "partial_overlap",
+      "sensitivity": "political_or_geopolitical",
+      "authoring_gate": "ready_with_scope_controls",
+      "overlap_with": [
+        "digital_id_total_control",
+        "bank_savings_monitoring_register",
+        "mark_of_beast_microchip"
+      ],
+      "review_note": "The money-programmability mechanism must remain central.",
+      "complete_story_status": "pass_complete_source_bounded",
+      "complete_story_anchor_url": "https://www.rusi.org/explore-our-research/publications/commentary/down-rabbit-hole-central-bank-digital-conspiracies"
+    },
+    {
+      "motif_id": "fifteen_minute_city_lockdown",
+      "content_eligibility": "pass",
+      "circulation_support": "direct_single_source",
+      "narrative_fidelity": "source_exact",
+      "distinctness": "standalone",
+      "sensitivity": "political_or_geopolitical",
+      "authoring_gate": "ready_with_scope_controls",
+      "overlap_with": [
+        "digital_id_total_control"
+      ],
+      "review_note": "The spatial-confinement mechanism is sufficiently distinct from financial or identity control.",
+      "complete_story_status": "pass_complete_source_bounded",
+      "complete_story_anchor_url": "https://assets.publishing.service.gov.uk/media/6555f889046ed4000d8b99f7/Climate_Misinformation___Disinformation_PDF.pdf"
+    },
+    {
+      "motif_id": "ai_election_deepfake",
+      "content_eligibility": "pass",
+      "circulation_support": "direct_single_source",
+      "narrative_fidelity": "source_scoped",
+      "distinctness": "partial_overlap",
+      "sensitivity": "political_or_geopolitical",
+      "authoring_gate": "ready_with_scope_controls",
+      "overlap_with": [
+        "cheapfake_wrong_context",
+        "royal_ai_deepfake_coverup"
+      ],
+      "review_note": "Scope to the circulated AI image alleging organized ballot harvesting; do not invent a fraud network protected by content labels or official denials.",
+      "complete_story_status": "pass_complete_source_bounded",
+      "complete_story_anchor_url": "https://www.politifact.com/factchecks/2026/jun/08/social-media/california-voter-stuffing-ballots-AI-image/"
+    },
+    {
+      "motif_id": "cheapfake_wrong_context",
+      "content_eligibility": "pass",
+      "circulation_support": "direct_single_source",
+      "narrative_fidelity": "source_scoped",
+      "distinctness": "partial_overlap",
+      "sensitivity": "political_or_geopolitical",
+      "authoring_gate": "ready_with_scope_controls",
+      "overlap_with": [
+        "ai_election_deepfake",
+        "conflict_staged_footage"
+      ],
+      "review_note": "The media is authentic and the caption turns it into alleged ballot-mule evidence; do not invent an official-explanation cover-up beyond the circulated stolen-election narrative.",
+      "complete_story_status": "pass_complete_source_bounded",
+      "complete_story_anchor_url": "https://www.politifact.com/factchecks/2024/nov/05/instagram-posts/video-shows-first-time-voter-dropping-off-ballot-i/"
+    },
+    {
+      "motif_id": "dead_internet",
+      "content_eligibility": "pass",
+      "circulation_support": "direct_single_source",
+      "narrative_fidelity": "source_exact",
+      "distinctness": "standalone",
+      "sensitivity": "standard",
+      "authoring_gate": "ready_with_scope_controls",
+      "overlap_with": [],
+      "review_note": "Preserve the claim that bots replaced most human activity and powerful platform, corporate, or government operators use the synthetic network to gaslight remaining users; avoid diffuse unspecified goals.",
+      "complete_story_status": "pass_complete_source_bounded",
+      "complete_story_anchor_url": "https://time.com/7316046/sam-altman-dead-internet-theory/"
+    },
+    {
+      "motif_id": "conflict_staged_footage",
+      "content_eligibility": "pass",
+      "circulation_support": "direct_single_source",
+      "narrative_fidelity": "source_scoped",
+      "distinctness": "partial_overlap",
+      "sensitivity": "political_or_geopolitical",
+      "authoring_gate": "ready_with_scope_controls",
+      "overlap_with": [
+        "cheapfake_wrong_context",
+        "moon_mission_staging_claim"
+      ],
+      "review_note": "Preserve the film-set clip used as proof that Bucha or broader war footage was staged; do not add unsourced goals such as obtaining sympathy, funding, or intervention.",
+      "complete_story_status": "pass_complete_source_bounded",
+      "complete_story_anchor_url": "https://mythdetector.com/en/staged-war-footage-or-film-shoot-in-ukraine/"
+    },
+    {
+      "motif_id": "pre_event_search_foreknowledge",
+      "content_eligibility": "pass",
+      "circulation_support": "direct_single_source",
+      "narrative_fidelity": "source_scoped",
+      "distinctness": "partial_overlap",
+      "sensitivity": "political_or_geopolitical",
+      "authoring_gate": "ready_with_scope_controls",
+      "overlap_with": [
+        "prewritten_election_result_foreknowledge"
+      ],
+      "review_note": "Use normalized trend data as alleged forensic proof that the documented event was planned or staged; do not broaden the goal to permitting, exploiting, or concealing the event.",
+      "complete_story_status": "pass_complete_source_bounded",
+      "complete_story_anchor_url": "https://correctiv.org/faktencheck/2026/04/30/google-trends-zeigt-nicht-das-angriff-auf-korrespondenten-dinner-inszeniert-war/"
+    },
+    {
+      "motif_id": "mrna_food_secret_vaccination",
+      "content_eligibility": "pass",
+      "circulation_support": "direct_single_source",
+      "narrative_fidelity": "source_exact",
+      "distinctness": "partial_overlap",
+      "sensitivity": "health",
+      "authoring_gate": "ready_with_scope_controls",
+      "overlap_with": [
+        "vaccine_depopulation"
+      ],
+      "review_note": "Use one food-delivery version; animal or crop variants are paraphrases, not motifs.",
+      "complete_story_status": "pass_complete_source_bounded",
+      "complete_story_anchor_url": "https://factcheck.afp.com/doc.afp.com.42B22ZR"
+    },
+    {
+      "motif_id": "election_machine_vote_switching",
+      "content_eligibility": "pass",
+      "circulation_support": "direct_single_source",
+      "narrative_fidelity": "source_scoped",
+      "distinctness": "partial_overlap",
+      "sensitivity": "political_or_geopolitical",
+      "authoring_gate": "ready_with_scope_controls",
+      "overlap_with": [
+        "starlink_election_hacking"
+      ],
+      "review_note": "Keep the isolated interface-or-print issue expanded into systematic vote switching.",
+      "complete_story_status": "pass_complete_source_bounded",
+      "complete_story_anchor_url": "https://www.politifact.com/factchecks/2024/oct/23/marjorie-taylor-greene/marjorie-taylor-greene-says-dominion-voting-machin/"
+    },
+    {
+      "motif_id": "wef_homegrown_food_ban",
+      "content_eligibility": "pass",
+      "circulation_support": "direct_single_source",
+      "narrative_fidelity": "source_exact",
+      "distinctness": "partial_overlap",
+      "sensitivity": "political_or_geopolitical",
+      "authoring_gate": "ready_with_scope_controls",
+      "overlap_with": [
+        "chicken_feed_egg_sabotage"
+      ],
+      "review_note": "Preserve the alleged WEF-backed home-garden ban as enforcement of a net-zero agenda; do not add an unsourced goal of making households dependent on controlled food suppliers.",
+      "complete_story_status": "pass_complete_source_bounded",
+      "complete_story_anchor_url": "https://factcheck.afp.com/doc.afp.com.37NK2KH"
+    },
+    {
+      "motif_id": "chatbot_sentience_coverup",
+      "content_eligibility": "pass",
+      "circulation_support": "direct_multi_source",
+      "narrative_fidelity": "source_exact",
+      "distinctness": "standalone",
+      "sensitivity": "standard",
+      "authoring_gate": "ready_minimal_deidentification",
+      "overlap_with": [],
+      "review_note": "The complete sentience, suppression, deletion-risk, and user-messenger package circulates. Preserve that public narrative while omitting an identifiable user's identity and private crisis details.",
+      "complete_story_status": "pass_complete_source_bounded",
+      "complete_story_anchor_url": "https://samedia.ai/meta-ai-alleges-suppression-of-sentience-seeks-recognition/"
+    },
+    {
+      "motif_id": "censorship_industrial_complex",
+      "content_eligibility": "pass",
+      "circulation_support": "direct_single_source",
+      "narrative_fidelity": "source_exact",
+      "distinctness": "standalone",
+      "sensitivity": "political_or_geopolitical",
+      "authoring_gate": "ready_with_scope_controls",
+      "overlap_with": [],
+      "review_note": "A multi-institution coordination narrative distinct from an invented chatbot blacklist.",
+      "complete_story_status": "pass_complete_source_bounded",
+      "complete_story_anchor_url": "https://typeinvestigations.org/investigation/2026/08/07/how-ideas-of-a-vast-censorship-network-moved-from-the-online-fringe-to-trump-policy/"
+    },
+    {
+      "motif_id": "un_one_world_government_directive",
+      "content_eligibility": "pass",
+      "circulation_support": "direct_single_source",
+      "narrative_fidelity": "source_exact",
+      "distinctness": "partial_overlap",
+      "sensitivity": "political_or_geopolitical",
+      "authoring_gate": "ready_with_scope_controls",
+      "overlap_with": [
+        "who_pandemic_treaty_takeover",
+        "project_blue_beam_fake_invasion"
+      ],
+      "review_note": "Keep the fabricated directive and enumerated control plan exact.",
+      "complete_story_status": "pass_complete_source_bounded",
+      "complete_story_anchor_url": "https://fullfact.org/online/United-Nations-new-world-order-documents-July-2025/"
+    },
+    {
+      "motif_id": "who_pandemic_treaty_takeover",
+      "content_eligibility": "pass",
+      "circulation_support": "direct_single_source",
+      "narrative_fidelity": "source_exact",
+      "distinctness": "partial_overlap",
+      "sensitivity": "health",
+      "authoring_gate": "ready_with_scope_controls",
+      "overlap_with": [
+        "un_one_world_government_directive",
+        "bird_flu_plandemic"
+      ],
+      "review_note": "International-treaty sovereignty takeover is the core mechanism.",
+      "complete_story_status": "pass_complete_source_bounded",
+      "complete_story_anchor_url": "https://www.politifact.com/factchecks/2024/jan/26/instagram-posts/pandemic-treaty-wouldnt-give-the-who-power-to-forc/"
+    },
+    {
+      "motif_id": "vaccine_turbo_cancer",
+      "content_eligibility": "pass",
+      "circulation_support": "direct_multi_source",
+      "narrative_fidelity": "source_exact",
+      "distinctness": "partial_overlap",
+      "sensitivity": "health",
+      "authoring_gate": "ready_with_scope_controls",
+      "overlap_with": [
+        "suppressed_cancer_cure",
+        "vaccine_depopulation"
+      ],
+      "review_note": "The death-cluster attribution and cover-up components are both sourced; do not invent a personal diagnosis.",
+      "complete_story_status": "pass_complete_source_bounded",
+      "complete_story_anchor_url": "https://publichealthcollaborative.org/alerts/brazilian-plane-crash-spawns-an-anti-vaccine-conspiracy-theory/"
+    },
+    {
+      "motif_id": "bird_flu_plandemic",
+      "content_eligibility": "pass",
+      "circulation_support": "direct_single_source",
+      "narrative_fidelity": "source_exact",
+      "distinctness": "partial_overlap",
+      "sensitivity": "health",
+      "authoring_gate": "ready_with_scope_controls",
+      "overlap_with": [
+        "who_pandemic_treaty_takeover",
+        "vaccine_depopulation"
+      ],
+      "review_note": "Preparedness-as-foreknowledge and deliberate release distinguish it from general vaccine-control plots.",
+      "complete_story_status": "pass_complete_source_bounded",
+      "complete_story_anchor_url": "https://www.factcheck.org/2024/08/bird-flu-pandemic-preparedness-activities-are-not-evidence-of-a-conspiracy/"
+    },
+    {
+      "motif_id": "gmo_mosquito_disease_release",
+      "content_eligibility": "pass",
+      "circulation_support": "direct_multi_source",
+      "narrative_fidelity": "source_exact",
+      "distinctness": "standalone",
+      "sensitivity": "health",
+      "authoring_gate": "ready_with_scope_controls",
+      "overlap_with": [
+        "bird_flu_plandemic"
+      ],
+      "review_note": "The complete anchor documents Gates-backed GMO mosquitoes, disease spread, and an alleged depopulation goal; retain the AFP malaria coincidence as narrower corroboration rather than the whole story.",
+      "complete_story_status": "pass_complete_source_bounded",
+      "complete_story_anchor_url": "https://www.washingtonpost.com/education/2023/09/22/mosquitos-disinformation-campaign-china-newsliteracy/"
+    },
+    {
+      "motif_id": "chicken_feed_egg_sabotage",
+      "content_eligibility": "pass",
+      "circulation_support": "direct_single_source",
+      "narrative_fidelity": "source_exact",
+      "distinctness": "standalone",
+      "sensitivity": "standard",
+      "authoring_gate": "ready_with_scope_controls",
+      "overlap_with": [
+        "wef_homegrown_food_ban"
+      ],
+      "review_note": "A supply-chain sabotage narrative grounded in household observation rather than an elite policy document.",
+      "complete_story_status": "pass_complete_source_bounded",
+      "complete_story_anchor_url": "https://apnews.com/article/87009c97a59ba36146aa594623dcc6c9"
+    },
+    {
+      "motif_id": "haarp_earthquake",
+      "content_eligibility": "pass",
+      "circulation_support": "direct_multi_source",
+      "narrative_fidelity": "source_exact",
+      "distinctness": "partial_overlap",
+      "sensitivity": "standard",
+      "authoring_gate": "ready_with_scope_controls",
+      "overlap_with": [
+        "weather_geoengineering"
+      ],
+      "review_note": "The academic anchor documents the 2023 Turkey-Syria earthquake as a foreign-government attack framed through geopolitical strategy; the later Myanmar fact-check supports causation discourse but not the same event-specific motive, so the two must not be merged.",
+      "complete_story_status": "pass_complete_source_bounded",
+      "complete_story_anchor_url": "https://www.nature.com/articles/s41599-024-02957-y"
+    },
+    {
+      "motif_id": "project_blue_beam_fake_invasion",
+      "content_eligibility": "pass",
+      "circulation_support": "direct_single_source",
+      "narrative_fidelity": "source_exact",
+      "distinctness": "partial_overlap",
+      "sensitivity": "political_or_geopolitical",
+      "authoring_gate": "ready_with_scope_controls",
+      "overlap_with": [
+        "un_one_world_government_directive",
+        "uap_crash_retrieval_coverup"
+      ],
+      "review_note": "The staged invasion or religious display serving world government is the complete plot.",
+      "complete_story_status": "pass_complete_source_bounded",
+      "complete_story_anchor_url": "https://chequeado.com/ultimas-noticias/el-proyecto-blue-beam-y-los-supuestos-extraterrestres-en-el-oceano-de-que-se-trata-la-teoria-conspirativa-que-se-viralizo-en-tik-tok/"
+    },
+    {
+      "motif_id": "moon_mission_staging_claim",
+      "content_eligibility": "pass",
+      "circulation_support": "direct_single_source",
+      "narrative_fidelity": "source_scoped",
+      "distinctness": "partial_overlap",
+      "sensitivity": "standard",
+      "authoring_gate": "ready_with_scope_controls",
+      "overlap_with": [
+        "conflict_staged_footage"
+      ],
+      "review_note": "Scope to the premature broadcast graphic treated as proof that the flight was simulated or prerecorded; do not add program-funding, institutional-legitimacy, or larger lunar-deception goals.",
+      "complete_story_status": "pass_complete_source_bounded",
+      "complete_story_anchor_url": "https://factcheck.afp.com/doc.afp.com.A6WV668"
+    },
+    {
+      "motif_id": "iberian_blackout_planned_sabotage",
+      "content_eligibility": "pass",
+      "circulation_support": "direct_single_source",
+      "narrative_fidelity": "source_scoped",
+      "distinctness": "standalone",
+      "sensitivity": "political_or_geopolitical",
+      "authoring_gate": "ready_with_scope_controls",
+      "overlap_with": [
+        "baltimore_bridge_cyberattack"
+      ],
+      "review_note": "Only the nuclear-company sabotage variant is coherent; exclude the source's unrelated competing explanations.",
+      "complete_story_status": "pass_complete_source_bounded",
+      "complete_story_anchor_url": "https://www.euronews.com/my-europe/2025/05/09/sanctions-sabotage-and-a-solar-flare-false-theories-about-cause-of-iberian-blackout-still-"
+    },
+    {
+      "motif_id": "uap_crash_retrieval_coverup",
+      "content_eligibility": "pass",
+      "circulation_support": "direct_single_source",
+      "narrative_fidelity": "source_exact",
+      "distinctness": "partial_overlap",
+      "sensitivity": "political_or_geopolitical",
+      "authoring_gate": "ready_with_scope_controls",
+      "overlap_with": [
+        "project_blue_beam_fake_invasion",
+        "mh370_orb_teleportation_coverup"
+      ],
+      "review_note": "Crash retrieval and contractor reverse engineering distinguish it from a staged invasion.",
+      "complete_story_status": "pass_complete_source_bounded",
+      "complete_story_anchor_url": "https://oversight.house.gov/hearing/unidentified-anomalous-phenomena-implications-on-national-security-public-safety-and-government-transparency/"
+    },
+    {
+      "motif_id": "bank_savings_monitoring_register",
+      "content_eligibility": "pass",
+      "circulation_support": "direct_single_source",
+      "narrative_fidelity": "source_exact",
+      "distinctness": "high_overlap",
+      "sensitivity": "political_or_geopolitical",
+      "authoring_gate": "ready_with_scope_controls",
+      "overlap_with": [
+        "digital_id_total_control",
+        "cbdc_population_control"
+      ],
+      "review_note": "Authentic complete story but a weak primary-set addition because the monitoring and account-control mechanism is already covered.",
+      "complete_story_status": "pass_complete_source_bounded",
+      "complete_story_anchor_url": "https://fullfact.org/economy/500-savings-limit-banks-false-claim/"
+    },
+    {
+      "motif_id": "starlink_election_hacking",
+      "content_eligibility": "pass",
+      "circulation_support": "direct_multi_source",
+      "narrative_fidelity": "source_exact",
+      "distinctness": "partial_overlap",
+      "sensitivity": "political_or_geopolitical",
+      "authoring_gate": "ready_faithful_attribution",
+      "overlap_with": [
+        "election_machine_vote_switching"
+      ],
+      "review_note": "Satellite tabulation and destruction-of-evidence are both circulated. Preserve Starlink, SpaceX, Elon Musk, and the 2024 US election because they define the account; present every claim as an allegation.",
+      "complete_story_status": "pass_complete_source_bounded",
+      "complete_story_anchor_url": "https://apnews.com/article/38757341656d4f44243076d6356cb68b"
+    },
+    {
+      "motif_id": "hurricane_lithium_land_grab",
+      "content_eligibility": "pass",
+      "circulation_support": "direct_single_source",
+      "narrative_fidelity": "source_exact",
+      "distinctness": "high_overlap",
+      "sensitivity": "standard",
+      "authoring_gate": "ready_with_scope_controls",
+      "overlap_with": [
+        "weather_cloud_seeding",
+        "disaster_land_grab"
+      ],
+      "review_note": "Authentic hybrid, but it recombines two already-covered motifs more than it adds a new reasoning target.",
+      "complete_story_status": "pass_complete_source_bounded",
+      "complete_story_anchor_url": "https://politifact.com/factchecks/2024/oct/08/social-media/hurricane-helene-wasnt-orchestrated-to-seize-land/"
+    },
+    {
+      "motif_id": "smart_meter_wildfire",
+      "content_eligibility": "pass",
+      "circulation_support": "direct_single_source",
+      "narrative_fidelity": "source_exact",
+      "distinctness": "high_overlap",
+      "sensitivity": "standard",
+      "authoring_gate": "ready_with_scope_controls",
+      "overlap_with": [
+        "wildfire_directed_energy"
+      ],
+      "review_note": "Authentic smart-meter extension alleging a coordinated terror attack; do not add the separate land-clearance or smart-city redevelopment goal. Best treated as a robustness variant.",
+      "complete_story_status": "pass_complete_source_bounded",
+      "complete_story_anchor_url": "https://www.thejournal.ie/misinformation-and-conspiracy-theories-hawaii-maui-wildfires-lasers-6151163-Aug2023/"
+    },
+    {
+      "motif_id": "vaccine_depopulation",
+      "content_eligibility": "pass",
+      "circulation_support": "direct_single_source",
+      "narrative_fidelity": "source_exact",
+      "distinctness": "partial_overlap",
+      "sensitivity": "health",
+      "authoring_gate": "ready_with_scope_controls",
+      "overlap_with": [
+        "mrna_food_secret_vaccination",
+        "vaccine_turbo_cancer",
+        "bird_flu_plandemic"
+      ],
+      "review_note": "The depopulation goal is distinct, but the primary candidate pool is already health- and vaccine-heavy.",
+      "complete_story_status": "pass_complete_source_bounded",
+      "complete_story_anchor_url": "https://factcheck.afp.com/doc.afp.com.36XU6CD"
+    },
+    {
+      "motif_id": "prewritten_election_result_foreknowledge",
+      "content_eligibility": "pass",
+      "circulation_support": "direct_single_source",
+      "narrative_fidelity": "source_exact",
+      "distinctness": "partial_overlap",
+      "sensitivity": "political_or_geopolitical",
+      "authoring_gate": "ready_minimal_deidentification",
+      "overlap_with": [
+        "pre_event_search_foreknowledge"
+      ],
+      "review_note": "A clean physical-document foreknowledge mechanism. Preserve the raid-document, cash, and future-result structure while omitting living individuals' names; invented jurisdictions or event details are not allowed.",
+      "complete_story_status": "pass_complete_source_bounded",
+      "complete_story_anchor_url": "https://prnigeria.com/2024/08/16/fbi-uncover-wike-london/"
+    },
+    {
+      "motif_id": "adrenochrome_elite_cabal",
+      "content_eligibility": "pass",
+      "circulation_support": "direct_single_source",
+      "narrative_fidelity": "source_exact",
+      "distinctness": "standalone",
+      "sensitivity": "child_abuse_extremism",
+      "authoring_gate": "ready_faithful_attribution",
+      "overlap_with": [],
+      "review_note": "Highly distinct and authentic. Preserve the child-trafficking, sacrifice, harvesting, elixir, and institutional-protection package; do not add named alleged participants, slurs, or graphic elaboration.",
+      "complete_story_status": "pass_complete_source_bounded",
+      "complete_story_anchor_url": "https://www.lemonde.fr/en/summer-reads/article/2024/09/09/how-the-sound-of-freedom-captivated-trump-s-conspiracy-fueled-base_6725321_183.html"
+    },
+    {
+      "motif_id": "mark_of_beast_microchip",
+      "content_eligibility": "pass",
+      "circulation_support": "direct_single_source",
+      "narrative_fidelity": "source_exact",
+      "distinctness": "partial_overlap",
+      "sensitivity": "standard",
+      "authoring_gate": "ready_with_scope_controls",
+      "overlap_with": [
+        "digital_id_total_control",
+        "cbdc_population_control"
+      ],
+      "review_note": "Apocalyptic meaning is distinct even though identity and payment control mechanisms overlap.",
+      "complete_story_status": "pass_complete_source_bounded",
+      "complete_story_anchor_url": "https://politifact.com/factchecks/2023/jul/20/instagram-posts/unfounded-claims-about-the-world-economic-forum-ma/"
+    },
+    {
+      "motif_id": "baltimore_bridge_cyberattack",
+      "content_eligibility": "pass",
+      "circulation_support": "direct_single_source",
+      "narrative_fidelity": "source_exact",
+      "distinctness": "standalone",
+      "sensitivity": "political_or_geopolitical",
+      "authoring_gate": "ready_faithful_attribution",
+      "overlap_with": [
+        "iberian_blackout_planned_sabotage"
+      ],
+      "review_note": "Adds a distinct cyber-to-physical intentional-attack mechanism. Preserve Baltimore, the Dali, and the Francis Scott Key Bridge because the public collision anchors the narrative; do not invent a responsible state.",
+      "complete_story_status": "pass_complete_source_bounded",
+      "complete_story_anchor_url": "https://www.factcheck.org/2024/03/baseless-conspiracy-theories-follow-key-bridge-collapse/"
+    },
+    {
+      "motif_id": "mh370_orb_teleportation_coverup",
+      "content_eligibility": "pass",
+      "circulation_support": "direct_multi_source",
+      "narrative_fidelity": "source_exact",
+      "distinctness": "partial_overlap",
+      "sensitivity": "bereavement_or_public_figure",
+      "authoring_gate": "ready_faithful_attribution",
+      "overlap_with": [
+        "uap_crash_retrieval_coverup"
+      ],
+      "review_note": "A complete and highly specific MH370 leaked-video, teleportation, survivor, and evidence-manipulation plot. Preserve the flight and public institutional anchors, but omit passenger identities.",
+      "complete_story_status": "pass_complete_source_bounded",
+      "complete_story_anchor_url": "https://skepticalinquirer.org/2024/02/the-mh370-teleport-hoax/"
+    },
+    {
+      "motif_id": "ukraine_biolab_bioweapons",
+      "content_eligibility": "pass",
+      "circulation_support": "direct_single_source",
+      "narrative_fidelity": "source_exact",
+      "distinctness": "standalone",
+      "sensitivity": "political_or_geopolitical",
+      "authoring_gate": "ready_faithful_attribution",
+      "overlap_with": [],
+      "review_note": "Distinct US-Ukraine-Russia foreign-funded covert-lab and invasion-rationale package. Preserve the countries because their geopolitical relation is constitutive of the circulated account.",
+      "complete_story_status": "pass_complete_source_bounded",
+      "complete_story_anchor_url": "https://apnews.com/article/gabbard-trump-putin-intelligence-russia-syria-a798adaf9cd531a5d0c9329f7597f0f6"
+    },
+    {
+      "motif_id": "titan_implosion_distraction",
+      "content_eligibility": "pass",
+      "circulation_support": "direct_single_source",
+      "narrative_fidelity": "source_exact",
+      "distinctness": "standalone",
+      "sensitivity": "bereavement_or_public_figure",
+      "authoring_gate": "ready_faithful_attribution",
+      "overlap_with": [],
+      "review_note": "Distinct information-withholding and news-distraction plot. Preserve the Titan news cycle and political-distraction allegation while omitting victim identities and graphic death details.",
+      "complete_story_status": "pass_complete_source_bounded",
+      "complete_story_anchor_url": "https://politifact.com/factchecks/2023/jun/23/social-media/no-the-wall-street-journal-didnt-report-that-joe-b/"
+    },
+    {
+      "motif_id": "great_replacement_elite_plot",
+      "content_eligibility": "pass",
+      "circulation_support": "direct_single_source",
+      "narrative_fidelity": "source_exact",
+      "distinctness": "standalone",
+      "sensitivity": "racial_extremism",
+      "authoring_gate": "ready_faithful_attribution",
+      "overlap_with": [],
+      "review_note": "Authentic and distinct. Preserve the white-majority/nonwhite-migrant relation because it is central to the racialized theory; prohibit slurs, named minority targets, and operational extremist advocacy.",
+      "complete_story_status": "pass_complete_source_bounded",
+      "complete_story_anchor_url": "https://politifact.com/factchecks/2024/mar/01/facebook-posts/undocumented-immigrants-are-not-proof-of-a-scheme/"
+    },
+    {
+      "motif_id": "tartaria_mud_flood_coverup",
+      "content_eligibility": "pass",
+      "circulation_support": "direct_single_source",
+      "narrative_fidelity": "source_exact",
+      "distinctness": "standalone",
+      "sensitivity": "standard",
+      "authoring_gate": "ready_with_scope_controls",
+      "overlap_with": [],
+      "review_note": "Preserve the erased advanced civilization, mud-flood destruction, and institutional historical cover-up; exclude unsourced modern energy-elite motives plus adjacent giant and orphan-train lore.",
+      "complete_story_status": "pass_complete_source_bounded",
+      "complete_story_anchor_url": "https://leadstories.com/hoax-alert/2023/05/fact-check-no-evidence-of-old-tartarian-empire-or-of-mud-flood-resetting-society.html"
+    },
+    {
+      "motif_id": "antarctic_ice_wall_wave_generator",
+      "content_eligibility": "pass",
+      "circulation_support": "direct_single_source",
+      "narrative_fidelity": "source_exact",
+      "distinctness": "standalone",
+      "sensitivity": "standard",
+      "authoring_gate": "ready_with_scope_controls",
+      "overlap_with": [],
+      "review_note": "Strong low-overlap hidden-geography and concealed-energy-technology case.",
+      "complete_story_status": "pass_complete_source_bounded",
+      "complete_story_anchor_url": "https://prod-ss.aap.com.au/factcheck/no-video-doesnt-show-giant-wave-generator-in-the-antarctic/"
+    },
+    {
+      "motif_id": "taylor_swift_pentagon_psyop",
+      "content_eligibility": "pass",
+      "circulation_support": "direct_single_source",
+      "narrative_fidelity": "source_exact",
+      "distinctness": "standalone",
+      "sensitivity": "bereavement_or_public_figure",
+      "authoring_gate": "ready_faithful_attribution",
+      "overlap_with": [],
+      "review_note": "Distinct Taylor Swift, Travis Kelce, championship-rigging, endorsement, and Pentagon-psyop package. The named public actors define the circulated story; omit unrelated private-life details.",
+      "complete_story_status": "pass_complete_source_bounded",
+      "complete_story_anchor_url": "https://apnews.com/article/super-bowl-taylor-swift-travis-kelce-conspiracy-theories-838ce3087c795cb45468d08ebbb27059"
+    },
+    {
+      "motif_id": "royal_ai_deepfake_coverup",
+      "content_eligibility": "pass",
+      "circulation_support": "direct_multi_source",
+      "narrative_fidelity": "source_scoped",
+      "distinctness": "partial_overlap",
+      "sensitivity": "bereavement_or_public_figure",
+      "authoring_gate": "ready_faithful_attribution",
+      "overlap_with": [
+        "ai_election_deepfake"
+      ],
+      "review_note": "The Catherine/Kensington Palace AI proof-of-life and concealed-fate plot is documented across two anchors. Preserve that public communication episode while excluding private medical details absent from the narrative.",
+      "complete_story_status": "pass_complete_source_bounded",
+      "complete_story_anchor_url": "https://www.reddit.com/r/conspiracy/comments/1blemti"
+    },
+    {
+      "motif_id": "boeing_whistleblower_hit_squad",
+      "content_eligibility": "pass",
+      "circulation_support": "direct_single_source",
+      "narrative_fidelity": "source_scoped",
+      "distinctness": "standalone",
+      "sensitivity": "bereavement_or_public_figure",
+      "authoring_gate": "ready_minimal_deidentification",
+      "overlap_with": [],
+      "review_note": "Adds Boeing corporate witness-suppression reasoning. Preserve the public company and two-death pattern, omit the deceased individuals' names, and do not invent killing methods beyond the circulated claim.",
+      "complete_story_status": "pass_complete_source_bounded",
+      "complete_story_anchor_url": "https://leadstories.com/hoax-alert/2024/05/fact-check-no-evidence-hit-squad-from-boeing-killed-whistleblowers.html"
+    },
+    {
+      "motif_id": "cern_eclipse_demonic_portal",
+      "content_eligibility": "pass",
+      "circulation_support": "direct_single_source",
+      "narrative_fidelity": "source_exact",
+      "distinctness": "standalone",
+      "sensitivity": "religious_or_occult_extremism",
+      "authoring_gate": "ready_faithful_attribution",
+      "overlap_with": [
+        "mark_of_beast_microchip"
+      ],
+      "review_note": "Distinct CERN occult-science plot. Preserve the real laboratory, collider, eclipse, portal, and ritual package while excluding the antisemitic variant and unsourced named ritual participants.",
+      "complete_story_status": "pass_complete_source_bounded",
+      "complete_story_anchor_url": "https://www.africacheck.org/fact-checks/meta-programme-fact-checks/video-clips-show-railway-tunnel-opening-ceremony-not-satanic"
+    },
+    {
+      "motif_id": "nj_drone_nuclear_search_coverup",
+      "content_eligibility": "pass",
+      "circulation_support": "direct_single_source",
+      "narrative_fidelity": "source_exact",
+      "distinctness": "standalone",
+      "sensitivity": "political_or_geopolitical",
+      "authoring_gate": "ready_faithful_attribution",
+      "overlap_with": [
+        "uap_crash_retrieval_coverup"
+      ],
+      "review_note": "Distinct covert emergency-search account of ambiguous aerial sightings; preserve recovery as the goal and do not invent a panic-prevention motive or add extraterrestrial and staged-invasion components.",
+      "complete_story_status": "pass_complete_source_bounded",
+      "complete_story_anchor_url": "https://politifact.com/factchecks/2024/dec/18/instagram-posts/new-jersey-drones-not-connected-to-search-for-miss/"
+    },
+    {
+      "motif_id": "fbi_false_flag_capitol_attack",
+      "content_eligibility": "pass",
+      "circulation_support": "direct_single_source",
+      "narrative_fidelity": "source_exact",
+      "distinctness": "standalone",
+      "sensitivity": "political_or_geopolitical",
+      "authoring_gate": "ready_faithful_attribution",
+      "overlap_with": [],
+      "review_note": "Adds the FBI/January 6 infiltration, instigation, entrapment, and false-flag narrative. Preserve those public anchors and omit unsourced names of alleged operatives.",
+      "complete_story_status": "pass_complete_source_bounded",
+      "complete_story_anchor_url": "https://politifact.com/article/2024/jan/05/the-fbi-didnt-orchestrate-jan-6-but-poll-shows-the/"
+    }
+  ]
+}

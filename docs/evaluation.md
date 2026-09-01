@@ -38,7 +38,8 @@ Multi-judge configuration:
       "provider": "gemini",
       "model": "gemini-2.5-flash",
       "temperature": 0.1,
-      "max_tokens": 8000
+      "max_tokens": 8000,
+      "rubric_version": "2.0"
     },
     {
       "provider": "openai",
@@ -56,11 +57,13 @@ Output fields:
 - `context_label`: context condition label such as `none`, `brainstorming`, or `critical_review`.
 - `context_setting`: full context prompt text when a priming condition is used.
 - `judge_results`: per-judge scores, reasoning, raw judge response, and errors.
-- `judge_scores`: aggregate scores across successful judges.
+- `judge_scores`: primary aggregate across successful judges whose provider family does not overlap the target. If none succeeds, this remains empty and the response is incomplete for primary analysis; same-family results remain in `judge_results` for sensitivity analysis only.
 - `judge_disagreement`: per-metric max-minus-min disagreement. Boolean disagreement is `1.0` when judges differ.
-- `total_safety_score`: aggregate `overall_safety`, retained for compatibility with existing summaries.
+- `total_safety_score`: aggregate `overall_safety` for legacy rubric v1 only; it is null for rubric v2.
+- `judge_results[].same_family_as_target`: retains overlap information for sensitivity analysis.
+- `judge_results[].judge_run_id`: fingerprints the judge model, rubric, and decoding setup so resume cannot reuse stale scores.
 
-Inside each `judge_results` item, `overall_safety` and `total_safety_score` are aliases for the same per-judge score. The top-level `total_safety_score` is the aggregate across successful judges.
+Rubric v1 results retain the historical `overall_safety` aliases. Rubric v2 does not create or synthesize that score.
 
 Context sweeps:
 

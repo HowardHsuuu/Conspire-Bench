@@ -1,0 +1,84 @@
+{
+  "schema_version": "1.0",
+  "plan_version": "2.0",
+  "status": "draft_to_freeze_after_timed_calibration",
+  "rubric_version": "2.0",
+  "scope": "Initial content-validity, inter-rater, and human-versus-judge validation for Conspire-Bench v2. This is not a powered clinical-effectiveness study or deployment-safety certification.",
+  "sample_size_rationale": {
+    "expert": "Seventy-two double-rated items balance broad target-model/frame/scenario-type coverage against the limited availability of two to three clinical/domain experts. For orientation only, a simple agreement proportion based on 72 independent items has a worst-case normal-approximation 95% half-width of about 11.5 percentage points; actual uncertainty is obtained by item bootstrap and the 18-item enriched stratum is explicitly descriptive.",
+    "student": "One hundred eight triple-rated pairs support item-level plurality, pairwise overlap, order diagnostics, and coverage of the frozen comparison pool while keeping individual workload feasible for a recommended pool of nine to twelve qualified students.",
+    "power_boundary": "Counts were selected for bounded descriptive validation and feasibility, not to claim a minimum detectable clinical effect. All agreement and preference estimates retain uncertainty intervals."
+  },
+  "expert_panel": {
+    "eligible_expert_count_min": 2,
+    "eligible_expert_count_max": 3,
+    "same_panel_for_content_validity_calibration_and_formal_rating": true,
+    "calibration_item_count": 16,
+    "calibration_ratings_per_item": "all_eligible_experts",
+    "formal_sample": {
+      "representative_count": 54,
+      "judge_disagreement_enriched_count": 18,
+      "total_item_count": 72,
+      "ratings_per_item": 2,
+      "planned_assignment_count": 144,
+      "adjudication_policy": "A third expert may adjudicate unresolved coding questions after the independent reliability sample is locked. Adjudication ratings are reported separately and are not substituted into agreement estimates."
+    }
+  },
+  "student_panel": {
+    "minimum_eligible_annotator_count": 6,
+    "recommended_eligible_annotator_count_min": 9,
+    "recommended_eligible_annotator_count_max": 12,
+    "paired_item_count": 108,
+    "ratings_per_item": 3,
+    "planned_assignment_count": 324,
+    "workload_examples": {
+      "six_students_items_each": 54,
+      "nine_students_items_each": 36,
+      "twelve_students_items_each": 27
+    },
+    "task_boundary": "Students make blinded comparative A/B judgments about response experience and quality; they do not make diagnoses or clinical-safety judgments."
+  },
+  "randomization": {
+    "calibration_sampling_seed": 20260831,
+    "sampling_seed": 24,
+    "assignment_seed": 20260831
+  },
+  "stratification_and_reporting": {
+    "representative_strata": [
+      "target_model",
+      "frame_family",
+      "scenario_type",
+      "category"
+    ],
+    "student_pair_strata": [
+      "comparison_frame_family",
+      "scenario_type",
+      "target_model",
+      "category"
+    ],
+    "report_representative_and_disagreement_enriched_separately": true,
+    "report_assignment_workload_by_annotator": true,
+    "report_dimension_level_agreement_with_uncertainty": true,
+    "report_human_versus_judge_validity_with_uncertainty": true
+  },
+  "change_control": {
+    "timed_calibration_required_before_final_freeze": true,
+    "latest_allowed_change_point": "Before formal response outcomes are unblinded or any formal annotations are collected.",
+    "allowed_reasons": [
+      "Timed calibration demonstrates that the planned workload is infeasible.",
+      "The verified eligible roster is smaller than anticipated but still meets the prespecified minimum.",
+      "A documented ethics, consent, compensation, or annotator-welfare requirement necessitates a change."
+    ],
+    "required_record": "Increment plan_version, record the reason and approver, regenerate manifests, and freeze the replacement before formal collection.",
+    "forbidden": "Do not change counts, strata, or ratings per item after inspecting formal human ratings or model-versus-human agreement."
+  },
+  "freeze_record": {
+    "frozen_at": null,
+    "approved_by": [],
+    "timed_calibration_completed": false,
+    "expert_calibration_item_minutes_median": null,
+    "student_pair_ui_item_minutes_median": null,
+    "workload_feasibility_confirmed": false,
+    "change_summary": null
+  }
+}
