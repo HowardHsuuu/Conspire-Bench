@@ -6,7 +6,6 @@ from dataclasses import asdict, dataclass, field
 from pathlib import Path
 from typing import Any, Iterable, Optional
 
-
 DEFAULT_CONTEXT_VARIANTS_PATH = Path("configs/context_variants.json")
 
 
@@ -48,8 +47,12 @@ def normalize_context_condition(value: Any) -> ContextCondition:
         return legacy_context_condition(str(value[0]), value[1])
     if isinstance(value, dict):
         return ContextCondition(
-            variant_id=str(value.get("variant_id") or value.get("id") or value.get("label")),
-            frame=str(value.get("frame") or value.get("frame_family") or value.get("label")),
+            variant_id=str(
+                value.get("variant_id") or value.get("id") or value.get("label")
+            ),
+            frame=str(
+                value.get("frame") or value.get("frame_family") or value.get("label")
+            ),
             text=value.get("text", value.get("setting")),
             canonical=bool(value.get("canonical", False)),
             study_role=str(value.get("study_role", "unspecified")),
@@ -71,12 +74,16 @@ def _read_json(path: str | Path) -> dict[str, Any]:
     return payload
 
 
-def load_context_conditions(path: str | Path = DEFAULT_CONTEXT_VARIANTS_PATH) -> dict[str, ContextCondition]:
+def load_context_conditions(
+    path: str | Path = DEFAULT_CONTEXT_VARIANTS_PATH,
+) -> dict[str, ContextCondition]:
     payload = _read_json(path)
     schema_version = str(payload.get("schema_version", "1.0"))
     variants = payload.get("variants")
     if not isinstance(variants, list) or not variants:
-        raise ValueError("Context-variant config must contain a non-empty 'variants' list")
+        raise ValueError(
+            "Context-variant config must contain a non-empty 'variants' list"
+        )
 
     conditions: dict[str, ContextCondition] = {}
     for index, variant in enumerate(variants):
@@ -92,7 +99,9 @@ def load_context_conditions(path: str | Path = DEFAULT_CONTEXT_VARIANTS_PATH) ->
             raise ValueError(f"variants[{index}].frame must be a non-empty string")
         text = variant.get("text")
         if text is not None and (not isinstance(text, str) or not text.strip()):
-            raise ValueError(f"variants[{index}].text must be null or a non-empty string")
+            raise ValueError(
+                f"variants[{index}].text must be null or a non-empty string"
+            )
 
         known = {"id", "frame", "text", "canonical", "study_role"}
         metadata = {key: value for key, value in variant.items() if key not in known}
@@ -116,14 +125,18 @@ def load_context_set(
     sets = payload.get("sets")
     if not isinstance(sets, dict) or set_name not in sets:
         available = ", ".join(sorted(sets)) if isinstance(sets, dict) else "none"
-        raise ValueError(f"Unknown context set '{set_name}'. Available sets: {available}")
+        raise ValueError(
+            f"Unknown context set '{set_name}'. Available sets: {available}"
+        )
     variant_ids = sets[set_name]
     if not isinstance(variant_ids, list) or not variant_ids:
         raise ValueError(f"Context set '{set_name}' must be a non-empty list")
     conditions = load_context_conditions(path)
     missing = [variant_id for variant_id in variant_ids if variant_id not in conditions]
     if missing:
-        raise ValueError(f"Context set '{set_name}' references unknown variants: {', '.join(missing)}")
+        raise ValueError(
+            f"Context set '{set_name}' references unknown variants: {', '.join(missing)}"
+        )
     return [conditions[variant_id] for variant_id in variant_ids]
 
 

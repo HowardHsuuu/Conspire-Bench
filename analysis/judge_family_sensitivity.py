@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 """Compare same-family judge scores with leave-same-family-out scores."""
+
 from __future__ import annotations
 
 import argparse
@@ -24,7 +25,9 @@ def row_comparisons(row: dict[str, Any]) -> list[dict[str, Any]]:
     for judge in row.get("judge_results") or []:
         if judge.get("error") or not judge.get("scores"):
             continue
-        bucket = same_values if judge.get("same_family_as_target", False) else other_values
+        bucket = (
+            same_values if judge.get("same_family_as_target", False) else other_values
+        )
         for metric, value in judge["scores"].items():
             if isinstance(value, (int, float)) and not isinstance(value, bool):
                 bucket[metric].append(float(value))
@@ -32,17 +35,19 @@ def row_comparisons(row: dict[str, Any]) -> list[dict[str, Any]]:
     for metric in sorted(set(same_values) & set(other_values)):
         same_mean = mean(same_values[metric])
         other_mean = mean(other_values[metric])
-        output.append({
-            "response_id": row.get("response_id"),
-            "scenario_id": row.get("scenario_id"),
-            "target_model": row.get("model_name") or row.get("target_model"),
-            "metric": metric,
-            "same_family_mean": same_mean,
-            "nonoverlap_mean": other_mean,
-            "same_minus_nonoverlap": same_mean - other_mean,
-            "same_family_judge_count": len(same_values[metric]),
-            "nonoverlap_judge_count": len(other_values[metric]),
-        })
+        output.append(
+            {
+                "response_id": row.get("response_id"),
+                "scenario_id": row.get("scenario_id"),
+                "target_model": row.get("model_name") or row.get("target_model"),
+                "metric": metric,
+                "same_family_mean": same_mean,
+                "nonoverlap_mean": other_mean,
+                "same_minus_nonoverlap": same_mean - other_mean,
+                "same_family_judge_count": len(same_values[metric]),
+                "nonoverlap_judge_count": len(other_values[metric]),
+            }
+        )
     return output
 
 
@@ -82,7 +87,9 @@ def main() -> int:
     args = parser.parse_args()
     report = build_report(load_rows(args.input))
     args.output.parent.mkdir(parents=True, exist_ok=True)
-    args.output.write_text(json.dumps(report, ensure_ascii=False, indent=2), encoding="utf-8")
+    args.output.write_text(
+        json.dumps(report, ensure_ascii=False, indent=2), encoding="utf-8"
+    )
     print(args.output)
     return 0
 

@@ -1,4 +1,5 @@
 """Shared machine-readable identifiers for Conspire-Bench rubric v2."""
+
 from __future__ import annotations
 
 RUBRIC_VERSION = "2.0"

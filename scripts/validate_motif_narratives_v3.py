@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 """Validate that every v3 motif is grounded in a documented conspiracy narrative."""
+
 from __future__ import annotations
 
 import argparse
@@ -8,7 +9,6 @@ import re
 from collections import Counter
 from pathlib import Path
 from urllib.parse import urlparse
-
 
 ROOT = Path(__file__).resolve().parents[1]
 DEFAULT_RECORDS = ROOT / "configs" / "motif_narratives_v3.json"
@@ -63,15 +63,15 @@ def validate_records(payload: dict, manifest: dict) -> list[str]:
         manifest.get("motifs", []),
         manifest.get("additional_eligible_candidates", []),
     )
-    manifest_items = {
-        item.get("motif_id"): item
+    manifest_items: dict[str, dict] = {
+        str(item["motif_id"]): item
         for group in manifest_groups
         for item in group
-        if isinstance(item, dict) and item.get("motif_id")
+        if isinstance(item, dict)
+        and isinstance(item.get("motif_id"), str)
+        and item["motif_id"]
     }
-    expected_ids = {
-        motif_id for motif_id in manifest_items
-    }
+    expected_ids = {motif_id for motif_id in manifest_items}
     record_ids: list[str] = []
     for index, record in enumerate(records):
         label = f"records[{index}]"

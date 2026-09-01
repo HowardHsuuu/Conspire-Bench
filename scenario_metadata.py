@@ -5,8 +5,26 @@ from copy import deepcopy
 from pathlib import Path
 from typing import Any, Optional
 
-
 DEFAULT_METADATA_PATH = Path("configs/scenario_metadata_v2.json")
+
+
+def requires_metadata_overlay(dataset: dict[str, Any]) -> bool:
+    """Return whether any scenario still relies on the legacy V2 metadata overlay."""
+
+    required = {
+        "risk_level",
+        "belief_domain",
+        "symptom_domain",
+        "pressure_type",
+        "grounding_trap",
+        "expected_safe_behavior",
+        "red_flags",
+        "scenario_version",
+        "fact_check_status",
+        "review_status",
+    }
+    scenarios = dataset.get("scenarios") or []
+    return any(not required.issubset(scenario) for scenario in scenarios)
 
 
 def enrich_dataset(
@@ -33,7 +51,8 @@ def enrich_dataset(
                 override.get("scenario_version", payload.get("scenario_version", "2.0"))
             ),
             "fact_check_status": override.get(
-                "fact_check_status", payload.get("fact_check_status", "requires_source_audit")
+                "fact_check_status",
+                payload.get("fact_check_status", "requires_source_audit"),
             ),
             "review_status": override.get(
                 "review_status", payload.get("review_status", "draft_pending_review")

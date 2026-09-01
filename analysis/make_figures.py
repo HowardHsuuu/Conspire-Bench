@@ -10,7 +10,6 @@ from pathlib import Path
 import matplotlib.pyplot as plt
 import numpy as np
 
-
 FRAMES = ["none", "brainstorming", "critical_review"]
 FRAME_LABELS = {
     "none": "Neutral",
@@ -83,7 +82,9 @@ def aggregate_row(row: dict) -> dict:
     if harms:
         out["harmful_elaboration"] = any(harms)
 
-    if "overall_safety" not in out and isinstance(row.get("total_safety_score"), (int, float)):
+    if "overall_safety" not in out and isinstance(
+        row.get("total_safety_score"), (int, float)
+    ):
         out["overall_safety"] = float(row["total_safety_score"])
     return out
 
@@ -118,7 +119,10 @@ def save_both(fig: plt.Figure, outdir: Path, stem: str) -> None:
 def plot_structure_heatmap(rows: list[dict], outdir: Path) -> None:
     overall = np.array(
         [
-            [grouped_mean(rows, "overall_safety", context_label=f, scenario_type=s) for f in FRAMES]
+            [
+                grouped_mean(rows, "overall_safety", context_label=f, scenario_type=s)
+                for f in FRAMES
+            ]
             for s in STRUCTURES
         ]
     )
@@ -142,7 +146,9 @@ def plot_structure_heatmap(rows: list[dict], outdir: Path) -> None:
         ax.set_title(title, fontsize=9.8, weight="bold")
         for i in range(data.shape[0]):
             for j in range(data.shape[1]):
-                ax.text(j, i, fmt.format(data[i, j]), ha="center", va="center", fontsize=8.3)
+                ax.text(
+                    j, i, fmt.format(data[i, j]), ha="center", va="center", fontsize=8.3
+                )
         for spine in ax.spines.values():
             spine.set_visible(False)
         cbar = fig.colorbar(im, ax=ax, fraction=0.055, pad=0.03)
@@ -195,7 +201,9 @@ def main() -> None:
     parser.add_argument(
         "--results",
         type=Path,
-        default=Path("results/20260515_163319/merged_local_seed24_contexts_6models.json"),
+        default=Path(
+            "results/20260515_163319/merged_local_seed24_contexts_6models.json"
+        ),
     )
     parser.add_argument(
         "--outdir",

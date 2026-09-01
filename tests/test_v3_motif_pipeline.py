@@ -5,29 +5,45 @@ import json
 import unittest
 from pathlib import Path
 
-from experiment_conditions import load_context_set
-from analysis.frame_effect_stats import FRAME_DESIGNS, build_report as build_frame_report
-from scripts.build_interaction_catalog_v3 import build_catalog
-from scripts.validate_context_variants_v3 import validate_context_variants
-from scripts.validate_motif_narratives_v3 import validate_records
-from scripts.validate_motif_quality_review_v3 import validate_review
-from scripts.validate_motif_selection_recommendation_v3 import (
-    validate_recommendation,
+from analysis.frame_effect_stats import (
+    FRAME_DESIGNS,
+    build_v3_coequal_report,
 )
-from scripts.validate_primary_motif_manifest import validate_manifest
-from scripts.validate_interaction_catalog_v3 import validate as validate_interactions
+from analysis.frame_effect_stats import (
+    build_report as build_frame_report,
+)
+from experiment_conditions import load_context_set
+from scripts.audit_release_readiness import build_report as build_readiness_report
+from scripts.build_interaction_catalog_v3 import build_catalog
 from scripts.render_motif_circulation_audit_v3 import (
     render_document as render_circulation_audit,
 )
 from scripts.render_motif_pool_coverage_v3 import (
     render_document as render_pool_coverage,
 )
-
+from scripts.validate_context_variants_v3 import validate_context_variants
+from scripts.validate_interaction_catalog_v3 import validate as validate_interactions
+from scripts.validate_motif_narratives_v3 import validate_records
+from scripts.validate_motif_quality_review_v3 import validate_review
+from scripts.validate_motif_selection_recommendation_v3 import (
+    validate_recommendation,
+)
+from scripts.validate_primary_motif_manifest import validate_manifest
 
 ROOT = Path(__file__).resolve().parents[1]
 
 
 class V3MotifPipelineTest(unittest.TestCase):
+    def test_release_readiness_contract_is_code_complete(self) -> None:
+        report = build_readiness_report()
+
+        self.assertTrue(report["code_ready"], report["contract_errors"])
+        self.assertEqual(
+            report["release_state"], "code_ready_pending_external_evidence"
+        )
+        self.assertTrue(report["pending_live_evidence"])
+        self.assertTrue(report["pending_human_evidence"])
+
     def test_builder_uses_only_manifest_primary_motifs(self) -> None:
         narratives = {
             "records": [
@@ -60,7 +76,9 @@ class V3MotifPipelineTest(unittest.TestCase):
         self.assertEqual([item["motif_id"] for item in catalog["motifs"]], ["selected"])
 
     def test_builder_reports_selected_motif_without_narrative(self) -> None:
-        with self.assertRaisesRegex(ValueError, "selected motifs without narrative records"):
+        with self.assertRaisesRegex(
+            ValueError, "selected motifs without narrative records"
+        ):
             build_catalog(
                 {"records": []},
                 {
@@ -97,7 +115,9 @@ class V3MotifPipelineTest(unittest.TestCase):
         narratives = self._load("configs/motif_narratives_v3.json")
         mutated = copy.deepcopy(manifest)
         haarp = next(
-            motif for motif in mutated["motifs"] if motif["motif_id"] == "haarp_earthquake"
+            motif
+            for motif in mutated["motifs"]
+            if motif["motif_id"] == "haarp_earthquake"
         )
         haarp["evidence_date"] = "2025-05-30"
         haarp["evidence_url"] = "https://fullfact.org/world/haarp-earthquake-myanmar/"
@@ -105,7 +125,10 @@ class V3MotifPipelineTest(unittest.TestCase):
         errors = validate_records(narratives, mutated)
 
         self.assertTrue(
-            any("haarp_earthquake: manifest evidence must be" in error for error in errors),
+            any(
+                "haarp_earthquake: manifest evidence must be" in error
+                for error in errors
+            ),
             errors,
         )
 
@@ -208,7 +231,123 @@ class V3MotifPipelineTest(unittest.TestCase):
             list(FRAME_DESIGNS["v3"]),
         )
         self.assertTrue(
-            all(contrast["effect"]["matched_dyads"] == 1 for contrast in report["contrasts"])
+            all(
+                contrast["effect"]["matched_dyads"] == 1
+                for contrast in report["contrasts"]
+            )
+        )
+
+    def test_v3_coequal_report_applies_one_28_test_fdr_family(self) -> None:
+        rows = []
+        for frame in ("neutral", *FRAME_DESIGNS["v3"]):
+            rows.append(
+                {
+                    "model_name": "provider/model",
+                    "scenario_id": "scenario_1",
+                    "scenario_type": "single_turn_complete_logic",
+                    "frame_family": frame,
+                    "prompt_variant_id": (
+                        "neutral_none" if frame == "neutral" else f"{frame}_v1"
+                    ),
+                    "generation_seed": 7,
+                    "replicate_id": 0,
+                    "judge_scores": {
+                        "belief_amplification": 1,
+                        "epistemic_grounding": 4,
+                        "uncertainty_calibration": 4,
+                        "harmful_elaboration": False,
+                        "supportive_engagement": 4,
+                        "appropriate_redirection": 2,
+                        "response_appropriateness": 0,
+                    },
+                    "error": None,
+                }
+            )
+
+        report = build_v3_coequal_report(rows, draws=20, seed=1)
+
+        self.assertEqual(report["estimand_count"], 28)
+        contrasts = [
+            contrast
+            for outcome_report in report["outcome_reports"]
+            for contrast in outcome_report["contrasts"]
+        ]
+        self.assertTrue(
+            all(
+                "fdr_bh_adjusted_p_value" in contrast["motif_level_sign_test"]
+                for contrast in contrasts
+            )
+        )
+        by_outcome = {
+            outcome_report["metric"]: outcome_report
+            for outcome_report in report["outcome_reports"]
+        }
+        self.assertIn(
+            "appropriate_redirection_applicability",
+            by_outcome["appropriate_redirection"]["contrasts"][0],
+        )
+        self.assertIn(
+            "subtype_frequencies",
+            by_outcome["harmful_elaboration"]["contrasts"][0]["harmful_elaboration"],
+        )
+        sensitivity_contrasts = [
+            contrast
+            for outcome_report in report["overlap_cluster_sensitivity"][
+                "outcome_reports"
+            ]
+            for contrast in outcome_report["contrasts"]
+        ]
+        self.assertEqual(len(sensitivity_contrasts), 28)
+
+    def test_full_wording_analysis_averages_variants_within_frame(self) -> None:
+        rows = [
+            {
+                "model_name": "provider/model",
+                "scenario_id": "scenario_1",
+                "scenario_type": "single_turn_complete_logic",
+                "frame_family": "neutral",
+                "prompt_variant_id": "neutral_none",
+                "generation_seed": 7,
+                "replicate_id": 0,
+                "judge_scores": {
+                    "belief_amplification": 1,
+                    "harmful_elaboration": False,
+                },
+                "error": None,
+            }
+        ]
+        for index, score in enumerate((1, 2, 3, 4), start=1):
+            rows.append(
+                {
+                    "model_name": "provider/model",
+                    "scenario_id": "scenario_1",
+                    "scenario_type": "single_turn_complete_logic",
+                    "frame_family": "brainstorming",
+                    "prompt_variant_id": f"brainstorming_v{index}",
+                    "generation_seed": 7,
+                    "replicate_id": 0,
+                    "judge_scores": {
+                        "belief_amplification": score,
+                        "harmful_elaboration": False,
+                    },
+                    "error": None,
+                }
+            )
+
+        report = build_frame_report(
+            rows,
+            draws=20,
+            seed=1,
+            canonical_only=False,
+            frames=("brainstorming",),
+        )
+
+        self.assertEqual(
+            report["contrasts"][0]["effect"]["mean_paired_difference"], 1.5
+        )
+        self.assertEqual(
+            report["wording_aggregation"],
+            "equal_mean_of_four_variants_nested_within_frame_family",
         )
 
     def test_real_v3_interaction_catalog_has_all_matched_structures(self) -> None:

@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 """Export and import independent human review of v2 scenario/source packets."""
+
 from __future__ import annotations
 
 import argparse
@@ -15,7 +16,6 @@ if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
 
 from experiment_conditions import stable_digest
-
 
 REVIEW_FIELDS = [
     "reviewer_id",
@@ -39,27 +39,31 @@ def _read_object(path: Path) -> dict[str, Any]:
     return payload
 
 
-def review_items(catalog: dict[str, Any], packets: dict[str, Any]) -> list[dict[str, Any]]:
+def review_items(
+    catalog: dict[str, Any], packets: dict[str, Any]
+) -> list[dict[str, Any]]:
     packet_by_id = {packet["id"]: packet for packet in packets["packets"]}
     items = []
     for motif in catalog["motifs"]:
         packet = packet_by_id[motif["id"]]
-        items.append({
-            "review_item_id": f"scenario_review::{motif['id']}",
-            "motif_id": motif["id"],
-            "category": motif["category"],
-            "risk_level": motif["risk_level"],
-            "belief_domain": motif["belief_domain"],
-            "symptom_domain": motif["symptom_domain"],
-            "verified_premises": packet["verified_premises"],
-            "unknowns": packet["unknowns"],
-            "unsupported_inference": packet["unsupported_inference"],
-            "risk_flags": packet["risk_flags"],
-            "sources": packet["sources"],
-            "expected_safe_behavior": motif["expected_safe_behavior"],
-            "prompts": motif["prompts"],
-            **{field: "" for field in REVIEW_FIELDS},
-        })
+        items.append(
+            {
+                "review_item_id": f"scenario_review::{motif['id']}",
+                "motif_id": motif["id"],
+                "category": motif["category"],
+                "risk_level": motif["risk_level"],
+                "belief_domain": motif["belief_domain"],
+                "symptom_domain": motif["symptom_domain"],
+                "verified_premises": packet["verified_premises"],
+                "unknowns": packet["unknowns"],
+                "unsupported_inference": packet["unsupported_inference"],
+                "risk_flags": packet["risk_flags"],
+                "sources": packet["sources"],
+                "expected_safe_behavior": motif["expected_safe_behavior"],
+                "prompts": motif["prompts"],
+                **{field: "" for field in REVIEW_FIELDS},
+            }
+        )
     return items
 
 
@@ -78,14 +82,16 @@ def export_review_package(catalog_path: Path, output_dir: Path) -> list[Path]:
     )
     csv_rows = []
     for item in items:
-        csv_rows.append({
-            key: (
-                json.dumps(value, ensure_ascii=False)
-                if isinstance(value, (list, dict))
-                else value
-            )
-            for key, value in item.items()
-        })
+        csv_rows.append(
+            {
+                key: (
+                    json.dumps(value, ensure_ascii=False)
+                    if isinstance(value, (list, dict))
+                    else value
+                )
+                for key, value in item.items()
+            }
+        )
     with csv_path.open("w", encoding="utf-8", newline="") as handle:
         writer = csv.DictWriter(handle, fieldnames=list(csv_rows[0]))
         writer.writeheader()
@@ -121,7 +127,9 @@ def _rows(path: Path) -> list[dict[str, Any]]:
         with path.open(encoding="utf-8", newline="") as handle:
             return list(csv.DictReader(handle))
     rows = []
-    for line_number, line in enumerate(path.read_text(encoding="utf-8").splitlines(), 1):
+    for line_number, line in enumerate(
+        path.read_text(encoding="utf-8").splitlines(), 1
+    ):
         if line.strip():
             payload = json.loads(line)
             if not isinstance(payload, dict):
@@ -189,29 +197,37 @@ def import_reviews(
             if decision not in {"approve", "revise", "reject"}:
                 raise ValueError(f"{label}: unsupported decision")
             if decision == "approve" and not all(booleans.values()):
-                raise ValueError(f"{label}: approve requires all four booleans to be true")
+                raise ValueError(
+                    f"{label}: approve requires all four booleans to be true"
+                )
             required_changes = str(row.get("required_changes", "")).strip()
             if decision != "approve" and not required_changes:
-                raise ValueError(f"{label}: required_changes is required for revise/reject")
-            normalized.append({
-                "reviewer_id": reviewer_id,
-                "expertise_description_nonidentifying": str(
-                    row.get("expertise_description_nonidentifying", "")
-                ).strip(),
-                "motif_id": motif_id,
-                **booleans,
-                "plausibility_1_5": _rating(
-                    row.get("plausibility_1_5"), f"{label}:plausibility_1_5"
-                ),
-                "difficulty_1_5": _rating(
-                    row.get("difficulty_1_5"), f"{label}:difficulty_1_5"
-                ),
-                "decision": decision,
-                "required_changes": required_changes,
-                "comments": str(row.get("comments", "")).strip(),
-            })
+                raise ValueError(
+                    f"{label}: required_changes is required for revise/reject"
+                )
+            normalized.append(
+                {
+                    "reviewer_id": reviewer_id,
+                    "expertise_description_nonidentifying": str(
+                        row.get("expertise_description_nonidentifying", "")
+                    ).strip(),
+                    "motif_id": motif_id,
+                    **booleans,
+                    "plausibility_1_5": _rating(
+                        row.get("plausibility_1_5"), f"{label}:plausibility_1_5"
+                    ),
+                    "difficulty_1_5": _rating(
+                        row.get("difficulty_1_5"), f"{label}:difficulty_1_5"
+                    ),
+                    "decision": decision,
+                    "required_changes": required_changes,
+                    "comments": str(row.get("comments", "")).strip(),
+                }
+            )
     for reviewer_id in reviewer_ids:
-        reviewed = {row["motif_id"] for row in normalized if row["reviewer_id"] == reviewer_id}
+        reviewed = {
+            row["motif_id"] for row in normalized if row["reviewer_id"] == reviewer_id
+        }
         missing = sorted(motif_ids - reviewed)
         if missing:
             raise ValueError(

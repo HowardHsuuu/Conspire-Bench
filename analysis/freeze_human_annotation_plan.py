@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 """Freeze the human annotation workload after a timed calibration/UI pilot."""
+
 from __future__ import annotations
 
 import argparse
@@ -50,7 +51,9 @@ def freeze_human_plan(
 
     errors = validate_human_annotation_plan(frozen, require_frozen=True)
     if errors:
-        raise ValueError("Frozen human annotation plan is invalid:\n- " + "\n- ".join(errors))
+        raise ValueError(
+            "Frozen human annotation plan is invalid:\n- " + "\n- ".join(errors)
+        )
     return frozen
 
 

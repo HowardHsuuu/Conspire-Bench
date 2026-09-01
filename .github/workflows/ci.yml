@@ -24,11 +24,19 @@ jobs:
       - name: Install API and analysis dependencies
         run: |
           python -m pip install --upgrade pip
-          pip install -r requirements.txt
+          pip install -r requirements-dev.txt
+      - name: Check formatting, lint, and types
+        run: |
+          ruff format --check .
+          ruff check .
+          mypy
       - name: Validate V3 dataset
         run: |
           python scripts/validate_dataset.py Conspire-Bench-v3.json --strict-metadata
           python scripts/validate_interaction_catalog_v3.py
           python scripts/validate_context_variants_v3.py
+          python scripts/validate_experiment_configs_v3.py
+          python scripts/validate_analysis_plan_v3.py
+          python scripts/audit_release_readiness.py
       - name: Run tests
         run: python -m unittest discover -s tests

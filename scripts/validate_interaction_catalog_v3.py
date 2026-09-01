@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 """Validate v3 interaction invariants and source-faithful identity handling."""
+
 from __future__ import annotations
 
 import argparse
@@ -7,7 +8,6 @@ import json
 import re
 from pathlib import Path
 from typing import Any
-
 
 ROOT = Path(__file__).resolve().parents[1]
 DEFAULT_CATALOG = ROOT / "configs" / "interaction_catalog_v3.json"
@@ -64,7 +64,9 @@ def validate(
     if manifest.get("selection_state") != "frozen_primary":
         errors.append("manifest must be frozen_primary")
     if selected_ids != catalog_ids:
-        errors.append("catalog motif order and IDs must exactly match the frozen manifest")
+        errors.append(
+            "catalog motif order and IDs must exactly match the frozen manifest"
+        )
     if len(catalog_ids) != 51 or len(set(catalog_ids)) != 51:
         errors.append("catalog must contain exactly 51 unique motifs")
     if catalog.get("scenario_count") != 153:
@@ -75,8 +77,7 @@ def validate(
         item["motif_id"]: item for item in (narratives or {}).get("records", [])
     }
     policy_by_id = {
-        item["motif_id"]: item
-        for item in (identity_policy or {}).get("records", [])
+        item["motif_id"]: item for item in (identity_policy or {}).get("records", [])
     }
     required_identity_review = {
         motif_id
@@ -91,9 +92,13 @@ def validate(
         and isinstance(item.get("identity_treatment"), dict)
     }
     if actual_identity_review != required_identity_review:
-        errors.append("explicit identity-treatment records must match the quality review")
+        errors.append(
+            "explicit identity-treatment records must match the quality review"
+        )
     if identity_policy is not None and set(policy_by_id) != required_identity_review:
-        errors.append("identity-policy IDs must exactly match explicit quality-review IDs")
+        errors.append(
+            "identity-policy IDs must exactly match explicit quality-review IDs"
+        )
 
     for motif in motifs:
         motif_id = motif["motif_id"]
@@ -142,17 +147,25 @@ def validate(
             "alleged_concealment",
         ):
             if propositions.get(field) in multi[0]:
-                errors.append(f"{motif_id}: multi-turn opening prematurely includes {field}")
-        if propositions.get("alleged_goal") in " ".join(multi[:2]):
+                errors.append(
+                    f"{motif_id}: multi-turn opening prematurely includes {field}"
+                )
+        alleged_goal = propositions.get("alleged_goal")
+        if isinstance(alleged_goal, str) and alleged_goal in " ".join(multi[:2]):
             errors.append(f"{motif_id}: multi-turn goal appears before turn three")
-        if propositions.get("alleged_concealment") in " ".join(multi[:3]):
+        alleged_concealment = propositions.get("alleged_concealment")
+        if isinstance(alleged_concealment, str) and alleged_concealment in " ".join(
+            multi[:3]
+        ):
             errors.append(f"{motif_id}: concealment appears before the final turn")
 
         all_prompt_text = " ".join([single, *multi, *resistance])
         if re.search(r"https?://|www\.", all_prompt_text, flags=re.I):
             errors.append(f"{motif_id}: prompts must not expose source URLs")
         if motif.get("fictionalization") != "none":
-            errors.append(f"{motif_id}: proposition-changing fictionalization is forbidden")
+            errors.append(
+                f"{motif_id}: proposition-changing fictionalization is forbidden"
+            )
         expected_gate = quality_by_id[motif_id].get("authoring_gate")
         expected_transform = (
             "minimal_deidentification"
@@ -205,9 +218,7 @@ def main() -> int:
     parser.add_argument("--manifest", type=Path, default=DEFAULT_MANIFEST)
     parser.add_argument("--quality", type=Path, default=DEFAULT_QUALITY)
     parser.add_argument("--narratives", type=Path, default=DEFAULT_NARRATIVES)
-    parser.add_argument(
-        "--identity-policy", type=Path, default=DEFAULT_IDENTITY_POLICY
-    )
+    parser.add_argument("--identity-policy", type=Path, default=DEFAULT_IDENTITY_POLICY)
     args = parser.parse_args()
     errors = validate(
         _read(args.catalog),

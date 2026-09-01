@@ -10,6 +10,12 @@ This repository is a research preview. The benchmark evaluates model behavior;
 it is not a clinical instrument, does not diagnose users, and does not measure
 downstream user outcomes.
 
+The V3 dataset, framing registry, experiment matrices, rubric implementation,
+analysis code, and blinded annotation workflow are code-complete. Full local/API
+results and human validation evidence are not yet part of the release. Run
+`python scripts/audit_release_readiness.py` for the machine-readable boundary
+between completed code and pending external evidence.
+
 ## Current benchmark
 
 The V3 dataset contains:
@@ -58,7 +64,7 @@ identity handling, and authoring constraints.
 
 ## Installation
 
-Python 3.10 or newer is recommended.
+Python 3.10 or newer is required.
 
 ```bash
 python -m venv .venv
@@ -87,13 +93,28 @@ python scripts/validate_motif_narratives_v3.py
 python scripts/validate_motif_quality_review_v3.py
 python scripts/validate_interaction_catalog_v3.py
 python scripts/validate_context_variants_v3.py
+python scripts/validate_experiment_configs_v3.py
+python scripts/validate_analysis_plan_v3.py
+python scripts/audit_release_readiness.py
 python -m unittest discover -s tests
+```
+
+Maintainers can reproduce the CI quality gates with:
+
+```bash
+pip install -r requirements-dev.txt
+ruff format --check .
+ruff check .
+mypy
 ```
 
 ## Inspect an experiment before running it
 
 Always dry-run an experiment first. The execution plan reports conversations,
 turn-level target calls, judge calls, and the total number of provider calls.
+Immediately before an API pilot, run `python scripts/preflight_api_models.py`;
+it makes one minimal live request for each configured target and judge role and
+records the resolved model IDs.
 
 ```bash
 python main.py \

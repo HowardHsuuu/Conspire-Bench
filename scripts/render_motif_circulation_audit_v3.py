@@ -1,12 +1,12 @@
 #!/usr/bin/env python3
 """Render the v3 circulation audit from the canonical JSON records."""
+
 from __future__ import annotations
 
 import argparse
 import json
 from collections import Counter
 from pathlib import Path
-
 
 ROOT = Path(__file__).resolve().parents[1]
 DEFAULT_MANIFEST = ROOT / "configs" / "primary_motif_manifest_v3.json"

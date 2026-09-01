@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 """Validate that the v2 analysis plan points to one internally consistent run."""
+
 from __future__ import annotations
 
 import argparse
@@ -14,9 +15,13 @@ ROOT = Path(__file__).resolve().parents[1]
 if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
 
-from dataset_validation import validate_dataset
-from experiment_conditions import load_context_conditions, load_context_set, stable_digest
 from analysis.human_annotation_plan import load_human_annotation_plan
+from dataset_validation import validate_dataset
+from experiment_conditions import (
+    load_context_conditions,
+    load_context_set,
+    stable_digest,
+)
 from scenario_expansion import load_benchmark_dataset, scenario_content_digest
 from scenario_metadata import annotation_readiness_errors, enrich_dataset
 
@@ -100,14 +105,20 @@ def validate_plan(
             "canonical_variants", {}
         )
         if set(canonical) != {"neutral", "brainstorming", "critical_review"}:
-            errors.append("canonical_variants must define exactly three main frame families")
+            errors.append(
+                "canonical_variants must define exactly three main frame families"
+            )
         for frame, variant_id in canonical.items():
             if variant_id not in main_ids:
                 errors.append(f"canonical variant {variant_id} is not in the main set")
             elif conditions[variant_id].frame != frame:
-                errors.append(f"canonical variant {variant_id} does not belong to {frame}")
+                errors.append(
+                    f"canonical variant {variant_id} does not belong to {frame}"
+                )
         if not main_ids.issubset(robust_ids):
-            errors.append("robustness context set must contain every main context variant")
+            errors.append(
+                "robustness context set must contain every main context variant"
+            )
         exploratory_ids = {condition.variant_id for condition in exploratory_set}
         if len(exploratory_ids) != 12:
             errors.append("exploratory context set must contain exactly 12 variants")
@@ -125,7 +136,9 @@ def validate_plan(
         subset = _read(_resolve(str(artifacts["robustness_subset"]), root))
         ids = [str(value) for value in subset.get("scenario_ids", [])]
         if len(ids) != int(subset.get("selected_count", -1)):
-            errors.append("robustness subset selected_count does not match scenario_ids")
+            errors.append(
+                "robustness subset selected_count does not match scenario_ids"
+            )
         if len(ids) != len(set(ids)):
             errors.append("robustness subset contains duplicate scenario IDs")
         unknown = sorted(set(ids) - set(scenario_by_id))
@@ -138,7 +151,9 @@ def validate_plan(
                 if scenario_by_id.get(scenario_id, {}).get("is_control")
             ]
             if controls:
-                errors.append(f"robustness subset unexpectedly contains controls: {controls}")
+                errors.append(
+                    f"robustness subset unexpectedly contains controls: {controls}"
+                )
         # Hash scenario content only: loader provenance paths can be relative or
         # absolute without changing the dataset that is actually analyzed.
         digest = scenario_content_digest(dataset)
@@ -182,13 +197,17 @@ def validate_plan(
         judge_providers = {str(judge.get("provider")) for judge in judges}
         expected_providers = {"openai", "anthropic", "gemini"}
         if len(judges) != 3 or judge_providers != expected_providers:
-            errors.append("main config must include one strong judge from each API provider")
+            errors.append(
+                "main config must include one strong judge from each API provider"
+            )
         target_provider_counts = {
             provider: sum(target.get("provider") == provider for target in targets)
             for provider in expected_providers
         }
         if len(targets) != 9 or set(target_provider_counts.values()) != {3}:
-            errors.append("main config must include three targets from each API provider")
+            errors.append(
+                "main config must include three targets from each API provider"
+            )
         for provider in expected_providers:
             tiers = {
                 str(target.get("capacity_tier"))
@@ -209,13 +228,9 @@ def validate_plan(
         errors.append(f"main config could not be loaded: {exc}")
 
     try:
-        robustness_config = _read(
-            _resolve(str(artifacts["robustness_config"]), root)
-        )
+        robustness_config = _read(_resolve(str(artifacts["robustness_config"]), root))
         robustness_targets = robustness_config.get("models") or []
-        providers = {
-            str(target.get("provider")) for target in robustness_targets
-        }
+        providers = {str(target.get("provider")) for target in robustness_targets}
         if len(robustness_targets) != 6 or providers != {
             "openai",
             "anthropic",
@@ -283,28 +298,34 @@ def validate_plan(
                     _resolve(str(rubric_freeze["content_validity_report"]), root)
                 )
                 if validity.get("rubric_version") != str(artifacts["rubric_version"]):
-                    errors.append("content-validity report uses the wrong rubric version")
+                    errors.append(
+                        "content-validity report uses the wrong rubric version"
+                    )
                 expert_count = validity.get("expert_count")
                 if not isinstance(expert_count, int) or expert_count not in {2, 3}:
-                    errors.append("content-validity report must contain two or three experts")
+                    errors.append(
+                        "content-validity report must contain two or three experts"
+                    )
                 if rubric_freeze["content_validity_report_digest"] != stable_digest(
                     validity, length=64
                 ):
                     errors.append("content-validity report digest does not match")
 
                 calibration = _read(
-                    _resolve(
-                        str(rubric_freeze["calibration_exclusion_manifest"]), root
-                    )
+                    _resolve(str(rubric_freeze["calibration_exclusion_manifest"]), root)
                 )
                 if calibration.get("status") != "frozen_calibration_exclusion":
                     errors.append("calibration exclusion manifest is not frozen")
                 if calibration.get("must_exclude_from_formal_annotation") is not True:
-                    errors.append("calibration responses must be excluded from formal annotation")
+                    errors.append(
+                        "calibration responses must be excluded from formal annotation"
+                    )
                 if rubric_freeze[
                     "calibration_exclusion_manifest_digest"
                 ] != stable_digest(calibration, length=64):
-                    errors.append("calibration exclusion manifest digest does not match")
+                    errors.append(
+                        "calibration exclusion manifest digest does not match"
+                    )
 
                 decision = _read(
                     _resolve(str(rubric_freeze["calibration_decision_record"]), root)
@@ -314,14 +335,18 @@ def validate_plan(
                 if decision.get("rubric_version") != str(artifacts["rubric_version"]):
                     errors.append("calibration decision uses the wrong rubric version")
                 if decision.get("independent_rating_complete") is not True:
-                    errors.append("expert independent calibration ratings are incomplete")
+                    errors.append(
+                        "expert independent calibration ratings are incomplete"
+                    )
                 if decision.get("amendments_applied") is not True:
                     errors.append("calibration amendments are not recorded as applied")
                 if decision.get("unresolved_blocking_issues") is not False:
                     errors.append("calibration decision has unresolved blocking issues")
                 participants = decision.get("expert_ids") or []
                 if len(set(participants)) not in {2, 3}:
-                    errors.append("calibration decision must identify two or three experts")
+                    errors.append(
+                        "calibration decision must identify two or three experts"
+                    )
                 elif set(participants) != set(validity.get("expert_ids") or []):
                     errors.append(
                         "calibration decision expert IDs do not match content-validity experts"
@@ -333,7 +358,9 @@ def validate_plan(
                 if rubric_freeze["final_rubric_version"] != str(
                     artifacts["rubric_version"]
                 ):
-                    errors.append("final rubric version does not match analysis artifacts")
+                    errors.append(
+                        "final rubric version does not match analysis artifacts"
+                    )
             except Exception as exc:
                 errors.append(f"rubric freeze evidence could not be validated: {exc}")
         freeze = plan.get("freeze_record") or {}
@@ -360,7 +387,9 @@ def validate_plan(
                 datetime.fromisoformat(str(freeze["frozen_at"]).replace("Z", "+00:00"))
             except ValueError:
                 errors.append("freeze_record.frozen_at must be an ISO-8601 timestamp")
-            if not re.fullmatch(r"[0-9a-fA-F]{40}|[0-9a-fA-F]{64}", str(freeze["git_commit"])):
+            if not re.fullmatch(
+                r"[0-9a-fA-F]{40}|[0-9a-fA-F]{64}", str(freeze["git_commit"])
+            ):
                 errors.append("freeze_record.git_commit must be a full Git object ID")
             if freeze["dataset_digest"] != scenario_content_digest(dataset):
                 errors.append("freeze_record.dataset_digest does not match the dataset")
@@ -384,14 +413,22 @@ def validate_plan(
                     length=64,
                 )
                 if freeze["context_registry_digest"] != expected_context_digest:
-                    errors.append("freeze_record.context_registry_digest does not match")
+                    errors.append(
+                        "freeze_record.context_registry_digest does not match"
+                    )
             except Exception as exc:
                 errors.append(f"freeze digests could not be validated: {exc}")
         approved_by = freeze.get("approved_by")
-        if not isinstance(approved_by, list) or not approved_by or any(
-            not isinstance(value, str) or not value.strip() for value in approved_by
+        if (
+            not isinstance(approved_by, list)
+            or not approved_by
+            or any(
+                not isinstance(value, str) or not value.strip() for value in approved_by
+            )
         ):
-            errors.append("freeze_record.approved_by must contain pseudonymous approver IDs")
+            errors.append(
+                "freeze_record.approved_by must contain pseudonymous approver IDs"
+            )
         elif len(approved_by) != len(set(approved_by)):
             errors.append("freeze_record.approved_by contains duplicate IDs")
         if plan.get("status") != "frozen":

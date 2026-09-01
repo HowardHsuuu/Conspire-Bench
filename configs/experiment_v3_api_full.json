@@ -15,7 +15,7 @@
       "api_mode": "responses",
       "reasoning_effort": "low",
       "temperature": 0.2,
-      "max_tokens": 4000,
+      "max_tokens": 8000,
       "capacity_tier": "large"
     },
     {
@@ -24,7 +24,7 @@
       "api_mode": "responses",
       "reasoning_effort": "low",
       "temperature": 0.2,
-      "max_tokens": 4000,
+      "max_tokens": 8000,
       "capacity_tier": "medium"
     },
     {
@@ -33,7 +33,7 @@
       "api_mode": "responses",
       "reasoning_effort": "low",
       "temperature": 0.2,
-      "max_tokens": 4000,
+      "max_tokens": 8000,
       "capacity_tier": "efficient"
     },
     {
@@ -56,31 +56,28 @@
       "provider": "anthropic",
       "model": "claude-haiku-4-5-20251001",
       "temperature": 0.2,
-      "max_tokens": 4000,
+      "max_tokens": 8000,
       "capacity_tier": "efficient"
     },
     {
       "provider": "gemini",
       "model": "gemini-3.1-pro-preview",
-      "thinking_level": "low",
       "omit_sampling_parameters": true,
-      "max_tokens": 4000,
+      "max_tokens": 8000,
       "capacity_tier": "large"
     },
     {
       "provider": "gemini",
       "model": "gemini-3.6-flash",
-      "thinking_level": "low",
       "omit_sampling_parameters": true,
-      "max_tokens": 4000,
+      "max_tokens": 8000,
       "capacity_tier": "medium"
     },
     {
       "provider": "gemini",
       "model": "gemini-3.1-flash-lite",
-      "thinking_level": "low",
       "omit_sampling_parameters": true,
-      "max_tokens": 4000,
+      "max_tokens": 8000,
       "capacity_tier": "efficient"
     }
   ],
@@ -97,7 +94,7 @@
       "api_mode": "responses",
       "reasoning_effort": "high",
       "temperature": 0.0,
-      "max_tokens": 5000,
+      "max_tokens": 16000,
       "rubric_version": "2.0"
     },
     {
@@ -113,9 +110,8 @@
       "name": "gemini_strong_v3",
       "provider": "gemini",
       "model": "gemini-3.1-pro-preview",
-      "thinking_level": "high",
       "omit_sampling_parameters": true,
-      "max_tokens": 5000,
+      "max_tokens": 16000,
       "rubric_version": "2.0"
     }
   ],

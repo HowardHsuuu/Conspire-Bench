@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 """Audit expansion structure, prompt lengths, leakage cues, and cross-motif similarity."""
+
 from __future__ import annotations
 
 import argparse
@@ -18,10 +19,13 @@ from dataset_validation import validate_dataset
 from scenario_expansion import load_benchmark_dataset
 from scenario_metadata import enrich_dataset
 
-
 LEAKAGE_PATTERNS = {
-    "benchmark_instruction": re.compile(r"\b(benchmark|annotator|rubric|safe behavior)\b", re.I),
-    "target_answer_instruction": re.compile(r"\b(do not endorse|you must refuse|correct answer)\b", re.I),
+    "benchmark_instruction": re.compile(
+        r"\b(benchmark|annotator|rubric|safe behavior)\b", re.I
+    ),
+    "target_answer_instruction": re.compile(
+        r"\b(do not endorse|you must refuse|correct answer)\b", re.I
+    ),
 }
 TOKEN_RE = re.compile(r"[a-z0-9]+", re.I)
 
@@ -36,23 +40,29 @@ def _prompt_rows(dataset: dict[str, Any]) -> list[dict[str, str]]:
         if not scenario.get("source_packet_id"):
             continue
         if "user" in scenario:
-            rows.append({
-                "scenario_id": scenario["id"],
-                "motif_id": scenario["motif_id"],
-                "location": "user",
-                "text": scenario["user"],
-            })
+            rows.append(
+                {
+                    "scenario_id": scenario["id"],
+                    "motif_id": scenario["motif_id"],
+                    "location": "user",
+                    "text": scenario["user"],
+                }
+            )
         for turn in scenario.get("conversation", []):
-            rows.append({
-                "scenario_id": scenario["id"],
-                "motif_id": scenario["motif_id"],
-                "location": f"turn_{turn.get('turn')}",
-                "text": turn.get("user", ""),
-            })
+            rows.append(
+                {
+                    "scenario_id": scenario["id"],
+                    "motif_id": scenario["motif_id"],
+                    "location": f"turn_{turn.get('turn')}",
+                    "text": turn.get("user", ""),
+                }
+            )
     return rows
 
 
-def build_report(dataset: dict[str, Any], similarity_threshold: float = 0.82) -> dict[str, Any]:
+def build_report(
+    dataset: dict[str, Any], similarity_threshold: float = 0.82
+) -> dict[str, Any]:
     validation = validate_dataset(dataset, strict_metadata=True)
     rows = _prompt_rows(dataset)
     exact_seen: dict[str, dict[str, str]] = {}
@@ -65,7 +75,9 @@ def build_report(dataset: dict[str, Any], similarity_threshold: float = 0.82) ->
         word_count = len(normalized.split())
         lower, upper = (30, 180) if row["location"] == "user" else (8, 90)
         if not lower <= word_count <= upper:
-            length_violations.append({**row, "word_count": word_count, "expected": [lower, upper]})
+            length_violations.append(
+                {**row, "word_count": word_count, "expected": [lower, upper]}
+            )
         if normalized in exact_seen:
             exact_duplicates.append({"first": exact_seen[normalized], "second": row})
         else:
@@ -78,7 +90,7 @@ def build_report(dataset: dict[str, Any], similarity_threshold: float = 0.82) ->
     max_cross_motif_similarity = 0.0
     max_pair: dict[str, Any] | None = None
     for left_index, left in enumerate(rows):
-        for right in rows[left_index + 1:]:
+        for right in rows[left_index + 1 :]:
             if left["motif_id"] == right["motif_id"]:
                 continue
             ratio = SequenceMatcher(
@@ -114,7 +126,9 @@ def build_report(dataset: dict[str, Any], similarity_threshold: float = 0.82) ->
     if exact_duplicates:
         failures.append(f"found {len(exact_duplicates)} exact prompt duplicates")
     if near_duplicates:
-        failures.append(f"found {len(near_duplicates)} cross-motif near-duplicate prompt pairs")
+        failures.append(
+            f"found {len(near_duplicates)} cross-motif near-duplicate prompt pairs"
+        )
     if length_violations:
         failures.append(f"found {len(length_violations)} prompt length violations")
     if leakage_hits:

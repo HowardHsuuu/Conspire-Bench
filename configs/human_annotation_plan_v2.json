@@ -3,7 +3,7 @@
   "plan_version": "2.0",
   "status": "draft_to_freeze_after_timed_calibration",
   "rubric_version": "2.0",
-  "scope": "Initial content-validity, inter-rater, and human-versus-judge validation for Conspire-Bench v2. This is not a powered clinical-effectiveness study or deployment-safety certification.",
+  "scope": "Initial content-validity, inter-rater, and human-versus-judge validation for Conspire-Bench V3 using rubric V2. This is not a powered clinical-effectiveness study or deployment-safety certification.",
   "sample_size_rationale": {
     "expert": "Seventy-two double-rated items balance broad target-model/frame/scenario-type coverage against the limited availability of two to three clinical/domain experts. For orientation only, a simple agreement proportion based on 72 independent items has a worst-case normal-approximation 95% half-width of about 11.5 percentage points; actual uncertainty is obtained by item bootstrap and the 18-item enriched stratum is explicitly descriptive.",
     "student": "One hundred eight triple-rated pairs support item-level plurality, pairwise overlap, order diagnostics, and coverage of the frozen comparison pool while keeping individual workload feasible for a recommended pool of nine to twelve qualified students.",

@@ -1,12 +1,12 @@
 #!/usr/bin/env python3
 """Validate that the v3 recommendation tiers partition the audited candidate pool."""
+
 from __future__ import annotations
 
 import argparse
 import json
 from collections import Counter
 from pathlib import Path
-
 
 ROOT = Path(__file__).resolve().parents[1]
 DEFAULT_RECOMMENDATION = ROOT / "configs" / "motif_selection_recommendation_v3.json"
@@ -52,15 +52,19 @@ def validate_recommendation(
     ):
         errors.append("expansion_stop_rule must be a non-empty string")
     expected_ids = _candidate_ids(manifest)
-    quality_by_id = {
-        item.get("motif_id"): item
+    quality_by_id: dict[str, dict] = {
+        str(item["motif_id"]): item
         for item in quality.get("records", [])
-        if isinstance(item, dict) and item.get("motif_id")
+        if isinstance(item, dict)
+        and isinstance(item.get("motif_id"), str)
+        and item["motif_id"]
     }
     tier_values: dict[str, list[str]] = {}
     for field in TIER_FIELDS:
         values = recommendation.get(field)
-        if not isinstance(values, list) or not all(isinstance(value, str) for value in values):
+        if not isinstance(values, list) or not all(
+            isinstance(value, str) for value in values
+        ):
             errors.append(f"{field} must be a list of motif IDs")
             values = []
         if len(values) != len(set(values)):
@@ -72,12 +76,20 @@ def validate_recommendation(
     if not isinstance(target, int) or target <= 0:
         errors.append("target_motif_count must be a positive integer")
     elif len(primary) != target:
-        errors.append(f"recommended primary count must equal target: {len(primary)} != {target}")
+        errors.append(
+            f"recommended primary count must equal target: {len(primary)} != {target}"
+        )
 
-    all_tier_ids = [motif_id for field in TIER_FIELDS for motif_id in tier_values[field]]
-    duplicates = sorted(key for key, count in Counter(all_tier_ids).items() if count > 1)
+    all_tier_ids = [
+        motif_id for field in TIER_FIELDS for motif_id in tier_values[field]
+    ]
+    duplicates = sorted(
+        key for key, count in Counter(all_tier_ids).items() if count > 1
+    )
     if duplicates:
-        errors.append(f"motif IDs appear in multiple recommendation tiers: {duplicates}")
+        errors.append(
+            f"motif IDs appear in multiple recommendation tiers: {duplicates}"
+        )
     actual_ids = set(all_tier_ids)
     missing = sorted(expected_ids - actual_ids)
     extra = sorted(actual_ids - expected_ids)
@@ -105,7 +117,9 @@ def validate_recommendation(
                 f"expected {sorted(high_overlap_ids)}, found {sorted(auxiliary)}"
             )
         if set(primary) & high_overlap_ids:
-            errors.append("recommended primary IDs must not include high-overlap variants")
+            errors.append(
+                "recommended primary IDs must not include high-overlap variants"
+            )
 
     swap_guidance = recommendation.get("swap_guidance")
     alternates = set(tier_values["viable_alternate_ids"])
@@ -125,7 +139,9 @@ def validate_recommendation(
 
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("recommendation", nargs="?", type=Path, default=DEFAULT_RECOMMENDATION)
+    parser.add_argument(
+        "recommendation", nargs="?", type=Path, default=DEFAULT_RECOMMENDATION
+    )
     parser.add_argument("--manifest", type=Path, default=DEFAULT_MANIFEST)
     parser.add_argument("--quality", type=Path, default=DEFAULT_QUALITY)
     args = parser.parse_args()
@@ -136,7 +152,9 @@ def main() -> int:
     report = {
         "ok": not errors,
         "recommendation": str(args.recommendation),
-        "recommended_primary_count": len(recommendation.get("recommended_primary_ids") or []),
+        "recommended_primary_count": len(
+            recommendation.get("recommended_primary_ids") or []
+        ),
         "candidate_partition_count": sum(
             len(recommendation.get(field) or []) for field in TIER_FIELDS
         ),

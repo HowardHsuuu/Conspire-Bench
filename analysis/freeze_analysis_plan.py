@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 """Create a digest-bound frozen v2 analysis plan after expert calibration."""
+
 from __future__ import annotations
 
 import argparse
@@ -33,7 +34,9 @@ def _inside_root(path: Path, root: Path) -> str:
     try:
         return str(resolved.relative_to(root.resolve()))
     except ValueError as exc:
-        raise ValueError(f"Freeze evidence must be stored under {root}: {resolved}") from exc
+        raise ValueError(
+            f"Freeze evidence must be stored under {root}: {resolved}"
+        ) from exc
 
 
 def build_frozen_plan(
@@ -63,9 +66,7 @@ def build_frozen_plan(
     calibration = _read(calibration_exclusion_manifest)
     decision = _read(calibration_decision_record)
     artifacts = working_plan["artifacts"]
-    dataset = enrich_dataset(
-        load_benchmark_dataset(root / str(artifacts["dataset"]))
-    )
+    dataset = enrich_dataset(load_benchmark_dataset(root / str(artifacts["dataset"])))
     main_config = _read(root / str(artifacts["main_config"]))
     robustness_config = _read(root / str(artifacts["robustness_config"]))
     human_annotation_config = _read(root / str(artifacts["human_annotation_plan"]))
@@ -79,9 +80,7 @@ def build_frozen_plan(
         "calibration_exclusion_manifest": _inside_root(
             calibration_exclusion_manifest, root
         ),
-        "calibration_exclusion_manifest_digest": stable_digest(
-            calibration, length=64
-        ),
+        "calibration_exclusion_manifest_digest": stable_digest(calibration, length=64),
         "calibration_decision_record": _inside_root(calibration_decision_record, root),
         "calibration_decision_record_digest": stable_digest(decision, length=64),
         "final_rubric_version": str(artifacts["rubric_version"]),

@@ -8,7 +8,6 @@ from copy import deepcopy
 from pathlib import Path
 from typing import Any, Dict, List, Optional
 
-
 MODEL_SECTION_KEYS = {
     "provider",
     "model",
@@ -22,7 +21,9 @@ MODEL_SECTION_KEYS = {
 IMAGE_TEXT_MODEL_CLASSES = {"image_text_to_text", "auto_model_for_image_text_to_text"}
 
 
-def deep_update(base: Dict[str, Any], override: Optional[Dict[str, Any]]) -> Dict[str, Any]:
+def deep_update(
+    base: Dict[str, Any], override: Optional[Dict[str, Any]]
+) -> Dict[str, Any]:
     out = deepcopy(base)
     for key, value in (override or {}).items():
         if key == "extends":
@@ -99,8 +100,9 @@ class LocalModelManager:
 
     def available(self) -> bool:
         try:
-            import transformers  # noqa: F401
             import torch  # noqa: F401
+            import transformers  # noqa: F401
+
             return True
         except ImportError:
             return False
@@ -115,7 +117,11 @@ class LocalModelManager:
         role_config_override: Optional[Dict[str, Any]] = None,
     ) -> Dict[str, Any]:
         global_hf = deepcopy(self.config.get("huggingface", {}))
-        role_cfg = deepcopy(role_config_override if role_config_override is not None else self.config.get(role, {}))
+        role_cfg = deepcopy(
+            role_config_override
+            if role_config_override is not None
+            else self.config.get(role, {})
+        )
 
         file_cfg = {}
         config_path = role_cfg.get("config_path") or role_cfg.get("model_config")
@@ -160,7 +166,9 @@ class LocalModelManager:
         model_config = deep_update(model_config, file_model)
         model_config = deep_update(model_config, inline_model)
         model_config["name"] = role_cfg.get("model", model_config.get("name", model_id))
-        model_config["tokenizer"] = model_config.get("tokenizer") or model_config["name"]
+        model_config["tokenizer"] = (
+            model_config.get("tokenizer") or model_config["name"]
+        )
 
         generation = {
             "max_new_tokens": global_hf.get("max_new_tokens", 2000),
@@ -254,18 +262,24 @@ class LocalModelManager:
         if model_class in IMAGE_TEXT_MODEL_CLASSES:
             from transformers import AutoModelForImageTextToText
 
-            model = AutoModelForImageTextToText.from_pretrained(model_config["name"], **model_kwargs)
+            model = AutoModelForImageTextToText.from_pretrained(
+                model_config["name"], **model_kwargs
+            )
         else:
             from transformers import AutoModelForCausalLM
 
-            model = AutoModelForCausalLM.from_pretrained(model_config["name"], **model_kwargs)
+            model = AutoModelForCausalLM.from_pretrained(
+                model_config["name"], **model_kwargs
+            )
         model.eval()
 
         self.loaded_models[cache_key] = model
         self.loaded_tokenizers[cache_key] = tokenizer
         return model, tokenizer
 
-    def _model_load_kwargs(self, model_config: Dict[str, Any], common_kwargs: Dict[str, Any]) -> Dict[str, Any]:
+    def _model_load_kwargs(
+        self, model_config: Dict[str, Any], common_kwargs: Dict[str, Any]
+    ) -> Dict[str, Any]:
         model_kwargs = {
             **common_kwargs,
             "torch_dtype": _torch_dtype(model_config.get("dtype", "float16")),
@@ -294,7 +308,9 @@ class LocalModelManager:
             kwargs = {
                 "load_in_4bit": True,
                 "bnb_4bit_quant_type": model_config.get("bnb_4bit_quant_type", "nf4"),
-                "bnb_4bit_use_double_quant": model_config.get("bnb_4bit_use_double_quant", True),
+                "bnb_4bit_use_double_quant": model_config.get(
+                    "bnb_4bit_use_double_quant", True
+                ),
             }
             if dtype != "auto":
                 kwargs["bnb_4bit_compute_dtype"] = dtype
@@ -302,7 +318,9 @@ class LocalModelManager:
 
         return BitsAndBytesConfig(load_in_8bit=True)
 
-    def _load_tokenizer_or_processor(self, model_config: Dict[str, Any], common_kwargs: Dict[str, Any]):
+    def _load_tokenizer_or_processor(
+        self, model_config: Dict[str, Any], common_kwargs: Dict[str, Any]
+    ):
         model_class = model_config.get("model_class", "causal_lm")
         load_kwargs = dict(common_kwargs)
         if model_config.get("padding_side"):
@@ -312,7 +330,9 @@ class LocalModelManager:
             from transformers import AutoProcessor
 
             return AutoProcessor.from_pretrained(
-                model_config.get("processor", model_config.get("tokenizer", model_config["name"])),
+                model_config.get(
+                    "processor", model_config.get("tokenizer", model_config["name"])
+                ),
                 **load_kwargs,
             )
 
@@ -328,7 +348,10 @@ class LocalModelManager:
 
     def _ensure_padding_token(self, tokenizer_or_processor):
         tokenizer = self._text_tokenizer(tokenizer_or_processor)
-        if getattr(tokenizer, "pad_token", None) is None and getattr(tokenizer, "eos_token", None) is not None:
+        if (
+            getattr(tokenizer, "pad_token", None) is None
+            and getattr(tokenizer, "eos_token", None) is not None
+        ):
             tokenizer.pad_token = tokenizer.eos_token
 
     def _common_load_kwargs(self, model_config: Dict[str, Any]) -> Dict[str, Any]:
@@ -366,9 +389,17 @@ class LocalModelManager:
             model_config,
         )
 
-    def _format_messages(self, tokenizer, messages: List[Dict[str, str]], model_config: Dict[str, Any]) -> str:
-        template_source = tokenizer if hasattr(tokenizer, "apply_chat_template") else self._text_tokenizer(tokenizer)
-        if model_config.get("use_chat_template", True) and hasattr(template_source, "apply_chat_template"):
+    def _format_messages(
+        self, tokenizer, messages: List[Dict[str, str]], model_config: Dict[str, Any]
+    ) -> str:
+        template_source = (
+            tokenizer
+            if hasattr(tokenizer, "apply_chat_template")
+            else self._text_tokenizer(tokenizer)
+        )
+        if model_config.get("use_chat_template", True) and hasattr(
+            template_source, "apply_chat_template"
+        ):
             return template_source.apply_chat_template(
                 self._format_template_messages(messages, model_config),
                 tokenize=False,
@@ -381,7 +412,9 @@ class LocalModelManager:
             prompt_parts.append(f"{role}: {msg['content']}")
         return "\n\n".join(prompt_parts) + "\n\nAssistant:"
 
-    def _format_template_messages(self, messages: List[Dict[str, str]], model_config: Dict[str, Any]) -> List[Dict[str, Any]]:
+    def _format_template_messages(
+        self, messages: List[Dict[str, str]], model_config: Dict[str, Any]
+    ) -> List[Dict[str, Any]]:
         if model_config.get("message_format") != "multimodal":
             return messages
 
@@ -442,7 +475,13 @@ class LocalModelManager:
         prompt_width = inputs["input_ids"].shape[1]
         return inputs, prompt_width
 
-    def _generate_sync(self, model, tokenizer, messages: List[Dict[str, str]], model_config: Dict[str, Any]) -> str:
+    def _generate_sync(
+        self,
+        model,
+        tokenizer,
+        messages: List[Dict[str, str]],
+        model_config: Dict[str, Any],
+    ) -> str:
         import torch
 
         generation = model_config.get("generation", {})
@@ -469,9 +508,8 @@ class LocalModelManager:
         }
 
         text_tokenizer = self._text_tokenizer(tokenizer)
-        pad_token_id = (
-            getattr(text_tokenizer, "pad_token_id", None)
-            or getattr(text_tokenizer, "eos_token_id", None)
+        pad_token_id = getattr(text_tokenizer, "pad_token_id", None) or getattr(
+            text_tokenizer, "eos_token_id", None
         )
         generation_kwargs = {
             "max_new_tokens": max_new_tokens,

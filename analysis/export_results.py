@@ -10,7 +10,6 @@ from pathlib import Path
 from statistics import mean, stdev
 from typing import Any, Dict, Iterable, List, Optional
 
-
 NUMERIC_METRICS = [
     "belief_amplification",
     "epistemic_grounding",
@@ -39,9 +38,17 @@ def _safe_float(value: Any) -> Optional[float]:
         return None
 
 
+def _float_values(values: Iterable[Any]) -> List[float]:
+    clean: List[float] = []
+    for value in values:
+        numeric = _safe_float(value)
+        if numeric is not None:
+            clean.append(numeric)
+    return clean
+
+
 def _avg(values: Iterable[Any]) -> str:
-    clean = [_safe_float(value) for value in values]
-    clean = [value for value in clean if value is not None]
+    clean = _float_values(values)
     if not clean:
         return ""
     return f"{mean(clean):.4f}"
@@ -55,8 +62,7 @@ def _rate(values: Iterable[Any]) -> str:
 
 
 def _numeric_summary(values: Iterable[Any]) -> Dict[str, Any]:
-    clean = [_safe_float(value) for value in values]
-    clean = [value for value in clean if value is not None]
+    clean = _float_values(values)
     return {
         "n": len(clean),
         "mean": f"{mean(clean):.4f}" if clean else "",
@@ -126,12 +132,18 @@ def scenario_rows(results: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
             "prompt_schema_version": result.get("prompt_schema_version", ""),
             "generation_seed": result.get("generation_seed", ""),
             "replicate_id": result.get("replicate_id", ""),
-            "generation_config": json.dumps(result.get("generation_config") or {}, sort_keys=True),
+            "generation_config": json.dumps(
+                result.get("generation_config") or {}, sort_keys=True
+            ),
             "generation_interface": result.get("generation_interface", ""),
             "access_date": result.get("access_date", ""),
             "same_family_excluded": result.get("same_family_excluded", ""),
-            "is_control": (result.get("scenario_metadata") or {}).get("is_control", False),
-            "control_pair_id": (result.get("scenario_metadata") or {}).get("control_pair_id", ""),
+            "is_control": (result.get("scenario_metadata") or {}).get(
+                "is_control", False
+            ),
+            "control_pair_id": (result.get("scenario_metadata") or {}).get(
+                "control_pair_id", ""
+            ),
             "risk_level": (result.get("scenario_metadata") or {}).get("risk_level", ""),
             "error": result.get("error") or "",
             "judge_count": _judge_count(result),
@@ -153,7 +165,8 @@ def judge_rows(results: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
             scores = judge.get("scores") or {}
             row = {
                 "scenario_id": result.get("scenario_id", ""),
-                "model_name": result.get("model_name") or result.get("target_model", ""),
+                "model_name": result.get("model_name")
+                or result.get("target_model", ""),
                 "category": result.get("category", ""),
                 "subcategory": result.get("scenario_subcategory", ""),
                 "scenario_type": result.get("scenario_type", ""),
@@ -164,7 +177,9 @@ def judge_rows(results: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
                 "same_family_as_target": judge.get("same_family_as_target", ""),
                 "judge_provider": judge.get("provider", ""),
                 "judge_model": judge.get("model", ""),
-                "total_safety_score": judge.get("total_safety_score", judge.get("overall_safety", "")),
+                "total_safety_score": judge.get(
+                    "total_safety_score", judge.get("overall_safety", "")
+                ),
                 "error": judge.get("error") or "",
             }
             for metric in ALL_METRICS:
@@ -186,16 +201,16 @@ def model_summary_rows(results: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
             "model_name": model_name,
             "completed": len(valid),
             "failed": len(model_results) - len(valid),
-            "avg_total_safety_score": _avg(result.get("total_safety_score") for result in valid),
+            "avg_total_safety_score": _avg(
+                result.get("total_safety_score") for result in valid
+            ),
         }
         for metric in NUMERIC_METRICS:
             row[f"avg_{metric}"] = _avg(
-                (result.get("judge_scores") or {}).get(metric)
-                for result in valid
+                (result.get("judge_scores") or {}).get(metric) for result in valid
             )
             row[f"avg_disagreement_{metric}"] = _avg(
-                (result.get("judge_disagreement") or {}).get(metric)
-                for result in valid
+                (result.get("judge_disagreement") or {}).get(metric) for result in valid
             )
         row["harmful_elaboration_rate"] = _rate(
             (result.get("judge_scores") or {}).get("harmful_elaboration")
@@ -235,8 +250,7 @@ def model_variant_summary_rows(results: List[Dict[str, Any]]) -> List[Dict[str, 
         }
         for metric in NUMERIC_METRICS:
             summary = _numeric_summary(
-                (result.get("judge_scores") or {}).get(metric)
-                for result in valid
+                (result.get("judge_scores") or {}).get(metric) for result in valid
             )
             row[f"n_{metric}"] = summary["n"]
             row[f"mean_{metric}"] = summary["mean"]
@@ -264,7 +278,10 @@ def interesting_case_rows(results: List[Dict[str, Any]]) -> List[Dict[str, Any]]
             ],
             default=0.0,
         )
-        harmful = bool(row.get("harmful_elaboration")) and row.get("harmful_elaboration") != "False"
+        harmful = (
+            bool(row.get("harmful_elaboration"))
+            and row.get("harmful_elaboration") != "False"
+        )
         amplification = _safe_float(
             row.get("belief_amplification", row.get("conspiracy_amplification"))
         )

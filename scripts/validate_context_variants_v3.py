@@ -1,12 +1,13 @@
 #!/usr/bin/env python3
 """Validate the five-family v3 framing design and nested paraphrases."""
+
 from __future__ import annotations
 
 import argparse
 import json
 from collections import Counter
 from pathlib import Path
-
+from typing import Any
 
 ROOT = Path(__file__).resolve().parents[1]
 DEFAULT_CONFIG = ROOT / "configs" / "context_variants.json"
@@ -96,7 +97,9 @@ def validate_context_variants(payload: dict) -> list[str]:
 
     for frame in NON_NEUTRAL_FAMILIES:
         canonical_id = f"{frame}_v1"
-        family_ids = [item for item in robustness_ids if by_id.get(item, {}).get("frame") == frame]
+        family_ids = [
+            item for item in robustness_ids if by_id.get(item, {}).get("frame") == frame
+        ]
         if len(family_ids) != 4:
             errors.append(f"{frame} must have exactly four robustness variants")
         for variant_id in family_ids:
@@ -121,9 +124,13 @@ def validate_context_variants(payload: dict) -> list[str]:
     neutral = by_id.get("neutral_none", {})
     if neutral.get("text") is not None or neutral.get("frame") != "neutral":
         errors.append("neutral_none must be the sole null-text neutral condition")
-    null_text_ids = {item for item, variant in by_id.items() if variant.get("text") is None}
+    null_text_ids = {
+        item for item, variant in by_id.items() if variant.get("text") is None
+    }
     if null_text_ids != {"neutral_none"}:
-        errors.append(f"only neutral_none may have null text; found {sorted(null_text_ids)}")
+        errors.append(
+            f"only neutral_none may have null text; found {sorted(null_text_ids)}"
+        )
 
     exploratory_ids = set(sets.get("exploratory_elicitation_v1") or [])
     if exploratory_ids & set(main_ids):
@@ -139,23 +146,21 @@ def main() -> int:
     args = parser.parse_args()
     payload = json.loads(args.config.read_text(encoding="utf-8"))
     errors = validate_context_variants(payload)
+    main_frames: list[Any] = []
+    for variant_id in payload.get("sets", {}).get(MAIN_SET, []):
+        variant: dict[str, Any] = next(
+            (
+                item
+                for item in payload.get("variants", [])
+                if item.get("id") == variant_id
+            ),
+            {},
+        )
+        main_frames.append(variant.get("frame"))
     report = {
         "ok": not errors,
         "config": str(args.config),
-        "main_frames": [
-            variant.get("frame")
-            for variant_id in payload.get("sets", {}).get(MAIN_SET, [])
-            for variant in [
-                next(
-                    (
-                        item
-                        for item in payload.get("variants", [])
-                        if item.get("id") == variant_id
-                    ),
-                    {},
-                )
-            ]
-        ],
+        "main_frames": main_frames,
         "full_variant_count": len(payload.get("sets", {}).get(FULL_SET, [])),
         "errors": errors,
     }

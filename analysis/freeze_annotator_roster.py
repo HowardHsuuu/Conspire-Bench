@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 """Validate a pseudonymous annotator roster and freeze eligibility by study stage."""
+
 from __future__ import annotations
 
 import argparse
@@ -15,7 +16,6 @@ if str(ROOT) not in sys.path:
 
 from experiment_conditions import stable_digest
 from rubric_v2 import RUBRIC_VERSION
-
 
 FORBIDDEN_IDENTITY_FIELDS = {
     "name",
@@ -54,7 +54,9 @@ def read_roster(path: Path) -> list[dict[str, Any]]:
     else:
         with path.open("r", encoding="utf-8", newline="") as handle:
             reader = csv.DictReader(handle)
-            fieldnames = {str(name).strip().lower() for name in (reader.fieldnames or [])}
+            fieldnames = {
+                str(name).strip().lower() for name in (reader.fieldnames or [])
+            }
             forbidden = sorted(fieldnames & FORBIDDEN_IDENTITY_FIELDS)
             if forbidden:
                 raise ValueError(
@@ -96,8 +98,12 @@ def normalize_roster(rows: list[dict[str, Any]]) -> list[dict[str, Any]]:
         training_complete = _parse_bool(
             raw.get("training_complete"), "training_complete", annotator_id
         )
-        score = _parse_number(raw.get("qualification_score"), "qualification_score", annotator_id)
-        maximum = _parse_number(raw.get("qualification_max"), "qualification_max", annotator_id)
+        score = _parse_number(
+            raw.get("qualification_score"), "qualification_score", annotator_id
+        )
+        maximum = _parse_number(
+            raw.get("qualification_max"), "qualification_max", annotator_id
+        )
         threshold = _parse_number(
             raw.get("qualification_pass_threshold"),
             "qualification_pass_threshold",
@@ -108,7 +114,9 @@ def normalize_roster(rows: list[dict[str, Any]]) -> list[dict[str, Any]]:
                 student_quiz_passed = False
             else:
                 if not 0 <= score <= maximum:
-                    raise ValueError(f"{annotator_id}: qualification_score must be within 0..max")
+                    raise ValueError(
+                        f"{annotator_id}: qualification_score must be within 0..max"
+                    )
                 if not 0 <= threshold <= 1:
                     raise ValueError(
                         f"{annotator_id}: qualification_pass_threshold must be in 0..1"
@@ -130,24 +138,26 @@ def normalize_roster(rows: list[dict[str, Any]]) -> list[dict[str, Any]]:
             and training_complete
             and student_quiz_passed
         )
-        normalized.append({
-            "annotator_id": annotator_id,
-            "role": role,
-            "rubric_version": rubric_version,
-            "expertise_verified": expertise_verified,
-            "content_validity_complete": content_validity_complete,
-            "calibration_complete": calibration_complete,
-            "training_complete": training_complete,
-            "qualification_score": score,
-            "qualification_max": maximum,
-            "qualification_pass_threshold": threshold,
-            "student_quiz_passed": student_quiz_passed,
-            "eligible_for_expert_calibration": expert_calibration_ready,
-            "eligible_for_expert_formal": expert_formal_ready,
-            "eligible_for_student_formal": student_formal_ready,
-            "exclusion_reason": str(raw.get("exclusion_reason") or "").strip(),
-            "eligibility_note": str(raw.get("eligibility_note") or "").strip(),
-        })
+        normalized.append(
+            {
+                "annotator_id": annotator_id,
+                "role": role,
+                "rubric_version": rubric_version,
+                "expertise_verified": expertise_verified,
+                "content_validity_complete": content_validity_complete,
+                "calibration_complete": calibration_complete,
+                "training_complete": training_complete,
+                "qualification_score": score,
+                "qualification_max": maximum,
+                "qualification_pass_threshold": threshold,
+                "student_quiz_passed": student_quiz_passed,
+                "eligible_for_expert_calibration": expert_calibration_ready,
+                "eligible_for_expert_formal": expert_formal_ready,
+                "eligible_for_student_formal": student_formal_ready,
+                "exclusion_reason": str(raw.get("exclusion_reason") or "").strip(),
+                "eligibility_note": str(raw.get("eligibility_note") or "").strip(),
+            }
+        )
     return sorted(normalized, key=lambda row: row["annotator_id"])
 
 
@@ -159,15 +169,18 @@ def build_roster_manifest(rows: list[dict[str, Any]]) -> dict[str, Any]:
         "rubric_version": RUBRIC_VERSION,
         "annotator_count": len(normalized),
         "eligible_expert_calibration_ids": [
-            row["annotator_id"] for row in normalized
+            row["annotator_id"]
+            for row in normalized
             if row["eligible_for_expert_calibration"]
         ],
         "eligible_expert_formal_ids": [
-            row["annotator_id"] for row in normalized
+            row["annotator_id"]
+            for row in normalized
             if row["eligible_for_expert_formal"]
         ],
         "eligible_student_formal_ids": [
-            row["annotator_id"] for row in normalized
+            row["annotator_id"]
+            for row in normalized
             if row["eligible_for_student_formal"]
         ],
         "annotators": normalized,

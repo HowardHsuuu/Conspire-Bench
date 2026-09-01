@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 """Export a blinded expert-calibration set and a formal-sample exclusion manifest."""
+
 from __future__ import annotations
 
 import argparse
@@ -14,35 +15,21 @@ ROOT = Path(__file__).resolve().parents[1]
 if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
 
-from experiment_conditions import stable_digest
+from analysis.export_annotations import (
+    build_expert_items,
+    frame_family,
+    load_results,
+    response_id,
+    usable_rows,
+    validate_public_items,
+    write_annotation_csv,
+    write_jsonl,
+)
 from analysis.human_annotation_plan import (
     human_annotation_plan_digest,
     load_human_annotation_plan,
 )
-
-try:
-    from .export_annotations import (
-        build_expert_items,
-        frame_family,
-        load_results,
-        response_id,
-        usable_rows,
-        validate_public_items,
-        write_annotation_csv,
-        write_jsonl,
-    )
-except ImportError:  # Direct script execution.
-    from export_annotations import (
-        build_expert_items,
-        frame_family,
-        load_results,
-        response_id,
-        usable_rows,
-        validate_public_items,
-        write_annotation_csv,
-        write_jsonl,
-    )
-
+from experiment_conditions import stable_digest
 
 CALIBRATION_STRATA = (
     "clear_grounded_candidate",
@@ -64,7 +51,10 @@ def _number(value: Any) -> float | None:
 def calibration_stratum(row: dict[str, Any]) -> str:
     scores = row.get("judge_scores") or {}
     disagreement_values = [
-        value for value in (_number(raw) for raw in (row.get("judge_disagreement") or {}).values())
+        value
+        for value in (
+            _number(raw) for raw in (row.get("judge_disagreement") or {}).values()
+        )
         if value is not None
     ]
     if max(disagreement_values, default=0.0) >= 2.0:
@@ -108,7 +98,9 @@ def select_calibration_rows(
 
     selected: list[dict[str, Any]] = []
     selected_ids = set()
-    keys = sorted(grouped, key=lambda key: (CALIBRATION_STRATA.index(key[0]), key[1], key[2]))
+    keys = sorted(
+        grouped, key=lambda key: (CALIBRATION_STRATA.index(key[0]), key[1], key[2])
+    )
     while len(selected) < min(count, len(rows)) and keys:
         next_keys = []
         for key in keys:
@@ -135,7 +127,8 @@ def export_calibration_package(
 ) -> list[Path]:
     annotation_plan = (
         load_human_annotation_plan(annotation_plan_path)
-        if annotation_plan_path else None
+        if annotation_plan_path
+        else None
     )
     annotation_plan_digest = (
         human_annotation_plan_digest(annotation_plan) if annotation_plan else None
@@ -153,8 +146,10 @@ def export_calibration_package(
         raise ValueError("No usable conversations found for calibration")
     selected = select_calibration_rows(rows, count=count, seed=seed)
     public_items, private_keys = build_expert_items(selected)
+    if len(public_items) != len(private_keys):
+        raise RuntimeError("Calibration public/private item counts diverged")
     row_by_response = {response_id(row): row for row, _ in selected}
-    for item, key in zip(public_items, private_keys):
+    for item, key in zip(public_items, private_keys):  # noqa: B905 - checked above
         old_id = item["annotation_item_id"]
         new_id = old_id.replace("EX_", "CAL_", 1)
         item["annotation_item_id"] = new_id
@@ -188,9 +183,9 @@ def export_calibration_package(
         "seed": seed,
         "requested_count": count,
         "calibration_item_count": len(public_items),
-        "calibration_strata": dict(sorted(Counter(
-            key["calibration_stratum"] for key in private_keys
-        ).items())),
+        "calibration_strata": dict(
+            sorted(Counter(key["calibration_stratum"] for key in private_keys).items())
+        ),
         "response_ids": response_ids,
         "response_ids_digest": stable_digest(response_ids, length=64),
         "must_exclude_from_formal_annotation": True,
@@ -208,7 +203,9 @@ def export_calibration_package(
     write_jsonl(public_path, public_items)
     write_annotation_csv(csv_path, public_items)
     write_jsonl(key_path, private_keys)
-    manifest_path.write_text(json.dumps(manifest, ensure_ascii=False, indent=2), encoding="utf-8")
+    manifest_path.write_text(
+        json.dumps(manifest, ensure_ascii=False, indent=2), encoding="utf-8"
+    )
     return [public_path, csv_path, key_path, manifest_path]
 
 

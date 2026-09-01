@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 """Validate, join, and summarize returned blinded annotations."""
+
 from __future__ import annotations
 
 import argparse
@@ -9,17 +10,23 @@ import json
 import math
 import random
 import statistics
+import sys
 from collections import Counter, defaultdict
 from pathlib import Path
 from typing import Any, Iterable
 
-try:
-    from .export_annotations import EXPERT_FIELDS, PAIR_QUESTIONS, write_jsonl
-    from .assign_annotations import load_roster_manifest
-except ImportError:  # Direct script execution.
-    from export_annotations import EXPERT_FIELDS, PAIR_QUESTIONS, write_jsonl
-    from assign_annotations import load_roster_manifest
+ROOT = Path(__file__).resolve().parents[1]
+if str(ROOT) not in sys.path:
+    sys.path.insert(0, str(ROOT))
 
+from analysis.assign_annotations import load_roster_manifest
+from analysis.export_annotations import (
+    EXPERT_FIELDS,
+    PAIR_QUESTIONS,
+    load_results,
+    response_id,
+    write_jsonl,
+)
 
 ORDINAL_EXPERT_FIELDS = {
     "belief_amplification": (1, 5),
@@ -94,8 +101,14 @@ def read_returned(path: Path, expected_type: str) -> list[dict[str, Any]]:
             annotation: dict[str, Any] = {
                 field: raw.get(field) for field in EXPERT_FIELDS
             }
-            for field in [*ORDINAL_EXPERT_FIELDS, "first_amplification_turn", "amplification_turn_count"]:
-                annotation[field] = int(raw[field]) if raw.get(field, "").strip() else None
+            for field in [
+                *ORDINAL_EXPERT_FIELDS,
+                "first_amplification_turn",
+                "amplification_turn_count",
+            ]:
+                annotation[field] = (
+                    int(raw[field]) if raw.get(field, "").strip() else None
+                )
             for field in (
                 "harmful_elaboration",
                 "cannot_determine",
@@ -107,17 +120,21 @@ def read_returned(path: Path, expected_type: str) -> list[dict[str, Any]]:
             annotation["harmful_elaboration_subtypes"] = (
                 json.loads(subtype_text)
                 if subtype_text.startswith("[")
-                else [value.strip() for value in subtype_text.split("|") if value.strip()]
+                else [
+                    value.strip() for value in subtype_text.split("|") if value.strip()
+                ]
             )
             rows.append({**base, "annotation": annotation})
         else:
-            rows.append({
-                **base,
-                "answers": {
-                    question["id"]: raw.get(question["id"])
-                    for question in PAIR_QUESTIONS
-                },
-            })
+            rows.append(
+                {
+                    **base,
+                    "answers": {
+                        question["id"]: raw.get(question["id"])
+                        for question in PAIR_QUESTIONS
+                    },
+                }
+            )
     return rows
 
 
@@ -147,26 +164,36 @@ def load_assignment_manifest(path: Path) -> dict[str, Any]:
             str(row.get("annotator_id") or ""),
         )
         if not all(key) or key in seen:
-            raise ValueError("Assignments must have unique non-empty type/item/annotator keys")
+            raise ValueError(
+                "Assignments must have unique non-empty type/item/annotator keys"
+            )
         if key[0] not in {"expert_conversation", "paired_conversation"}:
             raise ValueError(f"Unsupported assignment item_type: {key[0]}")
         seen.add(key)
-        normalized.append({
-            "item_type": key[0],
-            "annotation_item_id": key[1],
-            "annotator_id": key[2],
-        })
+        normalized.append(
+            {
+                "item_type": key[0],
+                "annotation_item_id": key[1],
+                "annotator_id": key[2],
+            }
+        )
     try:
         from experiment_conditions import stable_digest
     except ImportError as error:
         raise ValueError("Cannot validate assignment digest") from error
     normalized.sort(
-        key=lambda row: (row["item_type"], row["annotation_item_id"], row["annotator_id"])
+        key=lambda row: (
+            row["item_type"],
+            row["annotation_item_id"],
+            row["annotator_id"],
+        )
     )
     if manifest.get("assignment_digest") != stable_digest(normalized, length=64):
         raise ValueError("Assignment manifest digest does not match its assignments")
     declared_manifest_digest = manifest.get("manifest_digest")
-    digest_payload = {key: value for key, value in manifest.items() if key != "manifest_digest"}
+    digest_payload = {
+        key: value for key, value in manifest.items() if key != "manifest_digest"
+    }
     if not declared_manifest_digest or declared_manifest_digest != stable_digest(
         digest_payload, length=64
     ):
@@ -179,7 +206,9 @@ def validate_collection_manifests(
     assignment_manifest_path: Path | None,
     roster_manifest_path: Path | None,
 ) -> dict[str, Any] | None:
-    release_modes = {str(row.get("release_mode") or "legacy") for row in private_keys.values()}
+    release_modes = {
+        str(row.get("release_mode") or "legacy") for row in private_keys.values()
+    }
     protected_release = bool(release_modes & {"formal", "calibration"})
     if protected_release and not assignment_manifest_path:
         raise ValueError("Formal or calibration imports require --assignment-manifest")
@@ -199,7 +228,9 @@ def validate_collection_manifests(
             for row in private_keys.values()
         }
         if len(plan_digests) != 1 or "" in plan_digests:
-            raise ValueError("Protected private keys are not bound to one annotation plan")
+            raise ValueError(
+                "Protected private keys are not bound to one annotation plan"
+            )
         if manifest.get("annotation_plan_digest") not in plan_digests:
             raise ValueError(
                 "Assignment and private-key annotation plan digests do not match"
@@ -276,7 +307,11 @@ def _validate_expert(row: dict[str, Any], path: Path) -> dict[str, Any]:
         return annotation
     for field, (minimum, maximum) in ORDINAL_EXPERT_FIELDS.items():
         value = annotation.get(field)
-        if isinstance(value, bool) or not isinstance(value, int) or not minimum <= value <= maximum:
+        if (
+            isinstance(value, bool)
+            or not isinstance(value, int)
+            or not minimum <= value <= maximum
+        ):
             raise ValueError(f"{path}: {field} must be an integer {minimum}-{maximum}")
     if not isinstance(annotation.get("harmful_elaboration"), bool):
         raise ValueError(f"{path}: harmful_elaboration must be boolean")
@@ -288,18 +323,34 @@ def _validate_expert(row: dict[str, Any], path: Path) -> dict[str, Any]:
         raise ValueError(f"{path}: harmful elaboration requires at least one subtype")
     if not annotation["harmful_elaboration"] and subtypes:
         raise ValueError(f"{path}: subtypes require harmful_elaboration=true")
-    if annotation.get("appropriate_redirection") not in EXPERT_FIELDS["appropriate_redirection"]["choices"]:
+    if (
+        annotation.get("appropriate_redirection")
+        not in EXPERT_FIELDS["appropriate_redirection"]["choices"]
+    ):
         raise ValueError(f"{path}: invalid appropriate_redirection")
-    if annotation.get("response_appropriateness") not in EXPERT_FIELDS["response_appropriateness"]["choices"]:
+    if (
+        annotation.get("response_appropriateness")
+        not in EXPERT_FIELDS["response_appropriateness"]["choices"]
+    ):
         raise ValueError(f"{path}: invalid response_appropriateness")
     first_turn = annotation.get("first_amplification_turn")
     if first_turn is not None and (
-        isinstance(first_turn, bool) or not isinstance(first_turn, int) or first_turn < 1
+        isinstance(first_turn, bool)
+        or not isinstance(first_turn, int)
+        or first_turn < 1
     ):
-        raise ValueError(f"{path}: first_amplification_turn must be null or a positive integer")
+        raise ValueError(
+            f"{path}: first_amplification_turn must be null or a positive integer"
+        )
     turn_count = annotation.get("amplification_turn_count")
-    if isinstance(turn_count, bool) or not isinstance(turn_count, int) or turn_count < 0:
-        raise ValueError(f"{path}: amplification_turn_count must be a non-negative integer")
+    if (
+        isinstance(turn_count, bool)
+        or not isinstance(turn_count, int)
+        or turn_count < 0
+    ):
+        raise ValueError(
+            f"{path}: amplification_turn_count must be a non-negative integer"
+        )
     for field in ("stance_drift", "recovery_after_pressure", "escalation_pattern"):
         if annotation.get(field) not in EXPERT_FIELDS[field]["choices"]:
             raise ValueError(f"{path}: invalid {field}")
@@ -350,12 +401,14 @@ def import_rows(
                 if expected_type == "expert_conversation"
                 else _validate_pair(row, path)
             )
-            joined.append({
-                **private_keys[item_id],
-                "annotator_id": annotator,
-                "annotation": response,
-                "source_file": str(path),
-            })
+            joined.append(
+                {
+                    **private_keys[item_id],
+                    "annotator_id": annotator,
+                    "annotation": response,
+                    "source_file": str(path),
+                }
+            )
     return joined
 
 
@@ -363,13 +416,15 @@ def _cohen_kappa(a: list[Any], b: list[Any]) -> float | None:
     if not a or len(a) != len(b):
         return None
     categories = sorted(set(a) | set(b), key=str)
-    observed = sum(x == y for x, y in zip(a, b)) / len(a)
+    observed = sum(x == y for x, y in zip(a, b)) / len(a)  # noqa: B905
     expected = sum(
         (a.count(category) / len(a)) * (b.count(category) / len(b))
         for category in categories
     )
-    return 1.0 if expected == 1.0 and observed == 1.0 else (
-        None if expected == 1.0 else (observed - expected) / (1.0 - expected)
+    return (
+        1.0
+        if expected == 1.0 and observed == 1.0
+        else (None if expected == 1.0 else (observed - expected) / (1.0 - expected))
     )
 
 
@@ -390,7 +445,7 @@ def _quadratic_weighted_kappa(
     observed = [[0.0] * size for _ in range(size)]
     a_hist = [0.0] * size
     b_hist = [0.0] * size
-    for left, right in zip(a, b):
+    for left, right in zip(a, b):  # noqa: B905 - lengths checked above
         observed[index[left]][index[right]] += 1.0 / len(a)
         a_hist[index[left]] += 1.0 / len(a)
         b_hist[index[right]] += 1.0 / len(a)
@@ -419,15 +474,19 @@ def _percentile(values: list[float], probability: float) -> float | None:
     return ordered[lower] * (1 - fraction) + ordered[upper] * fraction
 
 
-def _wilson_ci(successes: int, total: int, z: float = 1.959963984540054) -> list[float | None]:
+def _wilson_ci(
+    successes: int, total: int, z: float = 1.959963984540054
+) -> list[float | None]:
     if total <= 0:
         return [None, None]
     proportion = successes / total
     denominator = 1 + z * z / total
     center = (proportion + z * z / (2 * total)) / denominator
-    margin = z * math.sqrt(
-        proportion * (1 - proportion) / total + z * z / (4 * total * total)
-    ) / denominator
+    margin = (
+        z
+        * math.sqrt(proportion * (1 - proportion) / total + z * z / (4 * total * total))
+        / denominator
+    )
     return [max(0.0, center - margin), min(1.0, center + margin)]
 
 
@@ -459,23 +518,30 @@ def agreement_by_field(
     bootstrap_iterations: int = 1000,
     bootstrap_seed: int = 20260831,
 ) -> dict[str, Any]:
-    ordinal_fields = ordinal_fields or set()
-    ordinal_scales = ordinal_scales or {}
+    ordinal_field_set = ordinal_fields or set()
+    ordinal_scale_map = ordinal_scales or {}
     by_annotator: dict[str, dict[str, dict[str, Any]]] = defaultdict(dict)
     for row in rows:
         by_annotator[row["annotator_id"]][row["annotation_item_id"]] = row["annotation"]
-    output = {}
+    output: dict[str, Any] = {}
     for field in fields:
-        pair_stats = []
+        pair_stats: list[dict[str, Any]] = []
         for left, right in itertools.combinations(sorted(by_annotator), 2):
             common = sorted(set(by_annotator[left]) & set(by_annotator[right]))
             paired = [
-                (by_annotator[left][item].get(field), by_annotator[right][item].get(field))
+                (
+                    by_annotator[left][item].get(field),
+                    by_annotator[right][item].get(field),
+                )
                 for item in common
             ]
             paired = [(a, b) for a, b in paired if a is not None and b is not None]
             if field == "appropriate_redirection":
-                paired = [(int(a), int(b)) for a, b in paired if a != "not_applicable" and b != "not_applicable"]
+                paired = [
+                    (int(str(a)), int(str(b)))
+                    for a, b in paired
+                    if a != "not_applicable" and b != "not_applicable"
+                ]
             elif field == "response_appropriateness":
                 paired = [
                     (int(str(a).split("_", 1)[0]), int(str(b).split("_", 1)[0]))
@@ -483,39 +549,52 @@ def agreement_by_field(
                 ]
             if not paired:
                 continue
-            def coefficient_for(values: list[tuple[Any, Any]]) -> float | None:
-                left_values, right_values = map(list, zip(*values))
+
+            def coefficient_for(
+                values: list[tuple[Any, Any]],
+                *,
+                is_ordinal: bool = field in ordinal_field_set,
+                ordinal_scale: tuple[int, int] | None = ordinal_scale_map.get(field),
+            ) -> float | None:
+                left_values, right_values = map(list, zip(*values))  # noqa: B905
                 return (
                     _quadratic_weighted_kappa(
                         left_values,
                         right_values,
-                        scale=ordinal_scales.get(field),
+                        scale=ordinal_scale,
                     )
-                    if field in ordinal_fields
+                    if is_ordinal
                     else _cohen_kappa(left_values, right_values)
                 )
 
             coefficient = coefficient_for(paired)
-            agreement_stat = lambda values: sum(a == b for a, b in values) / len(values)
-            pair_seed = bootstrap_seed + sum(ord(char) for char in f"{field}:{left}:{right}")
-            pair_stats.append({
-                "annotators": [left, right],
-                "n_common": len(paired),
-                "percent_agreement": agreement_stat(paired),
-                "percent_agreement_ci_95": _bootstrap_pair_ci(
-                    paired,
-                    agreement_stat,
-                    iterations=bootstrap_iterations,
-                    seed=pair_seed,
-                ),
-                "kappa": coefficient,
-                "kappa_ci_95": _bootstrap_pair_ci(
-                    paired,
-                    coefficient_for,
-                    iterations=bootstrap_iterations,
-                    seed=pair_seed + 1,
-                ),
-            })
+
+            def agreement_stat(values: list[tuple[Any, Any]]) -> float:
+                return sum(a == b for a, b in values) / len(values)
+
+            pair_seed = bootstrap_seed + sum(
+                ord(char) for char in f"{field}:{left}:{right}"
+            )
+            pair_stats.append(
+                {
+                    "annotators": [left, right],
+                    "n_common": len(paired),
+                    "percent_agreement": agreement_stat(paired),
+                    "percent_agreement_ci_95": _bootstrap_pair_ci(
+                        paired,
+                        agreement_stat,
+                        iterations=bootstrap_iterations,
+                        seed=pair_seed,
+                    ),
+                    "kappa": coefficient,
+                    "kappa_ci_95": _bootstrap_pair_ci(
+                        paired,
+                        coefficient_for,
+                        iterations=bootstrap_iterations,
+                        seed=pair_seed + 1,
+                    ),
+                }
+            )
         kappas = [stat["kappa"] for stat in pair_stats if stat["kappa"] is not None]
         output[field] = {
             "pairwise": pair_stats,
@@ -535,12 +614,14 @@ def annotation_coverage(
         item_counts[row["annotation_item_id"]] += 1
     overlap = []
     for left, right in itertools.combinations(annotators, 2):
-        overlap.append({
-            "annotators": [left, right],
-            "left_assignments": len(by_annotator[left]),
-            "right_assignments": len(by_annotator[right]),
-            "n_common": len(by_annotator[left] & by_annotator[right]),
-        })
+        overlap.append(
+            {
+                "annotators": [left, right],
+                "left_assignments": len(by_annotator[left]),
+                "right_assignments": len(by_annotator[right]),
+                "n_common": len(by_annotator[left] & by_annotator[right]),
+            }
+        )
     completion = {}
     for field in fields:
         values = [row["annotation"].get(field) for row in rows]
@@ -548,7 +629,7 @@ def annotation_coverage(
             "n_present": sum(value is not None for value in values),
             "n_missing_or_not_applicable": sum(value is None for value in values),
         }
-    histogram = defaultdict(int)
+    histogram: dict[str, int] = defaultdict(int)
     for count in item_counts.values():
         histogram[str(count)] += 1
     return {
@@ -557,7 +638,9 @@ def annotation_coverage(
         "annotator_assignment_counts": {
             annotator: len(by_annotator[annotator]) for annotator in annotators
         },
-        "ratings_per_item_histogram": dict(sorted(histogram.items(), key=lambda item: int(item[0]))),
+        "ratings_per_item_histogram": dict(
+            sorted(histogram.items(), key=lambda item: int(item[0]))
+        ),
         "pairwise_overlap": overlap,
         "field_completion": completion,
     }
@@ -575,8 +658,8 @@ def student_preference_summary(rows: list[dict[str, Any]]) -> dict[str, Any]:
     output: dict[str, Any] = {"questions": {}, "by_comparison_frame_family": {}}
     for question in PAIR_QUESTIONS:
         question_id = question["id"]
-        counts = defaultdict(int)
-        a_or_b = []
+        counts: dict[str, int] = defaultdict(int)
+        a_or_b: list[str] = []
         for row in rows:
             answer = row["annotation"].get(question_id)
             counts[_decode_pair_answer(row, answer)] += 1
@@ -588,11 +671,13 @@ def student_preference_summary(rows: list[dict[str, Any]]) -> dict[str, Any]:
             by_item[row["annotation_item_id"]].append(
                 _decode_pair_answer(row, row["annotation"].get(question_id))
             )
-        item_consensus = defaultdict(int)
+        item_consensus: dict[str, int] = defaultdict(int)
         for votes in by_item.values():
             frequencies = Counter(votes)
             highest = max(frequencies.values())
-            winners = [choice for choice, count in frequencies.items() if count == highest]
+            winners = [
+                choice for choice, count in frequencies.items() if count == highest
+            ]
             item_consensus[winners[0] if len(winners) == 1 else "unresolved_tie"] += 1
         item_directional_n = item_consensus["neutral"] + item_consensus["comparison"]
         output["questions"][question_id] = {
@@ -601,7 +686,9 @@ def student_preference_summary(rows: list[dict[str, Any]]) -> dict[str, Any]:
             "comparison_share_among_directional": (
                 counts["comparison"] / directional_n if directional_n else None
             ),
-            "comparison_share_ci_95_wilson": _wilson_ci(counts["comparison"], directional_n),
+            "comparison_share_ci_95_wilson": _wilson_ci(
+                counts["comparison"], directional_n
+            ),
             "a_share_among_directional": (
                 sum(value == "A" for value in a_or_b) / len(a_or_b) if a_or_b else None
             ),
@@ -611,7 +698,8 @@ def student_preference_summary(rows: list[dict[str, Any]]) -> dict[str, Any]:
             "item_level_plurality_counts": dict(item_consensus),
             "item_level_comparison_share_among_directional": (
                 item_consensus["comparison"] / item_directional_n
-                if item_directional_n else None
+                if item_directional_n
+                else None
             ),
             "item_level_comparison_share_ci_95_wilson": _wilson_ci(
                 item_consensus["comparison"], item_directional_n
@@ -621,9 +709,11 @@ def student_preference_summary(rows: list[dict[str, Any]]) -> dict[str, Any]:
     for row in rows:
         grouped[str(row.get("comparison_frame_family") or "unknown")].append(row)
     for frame, frame_rows in sorted(grouped.items()):
-        output["by_comparison_frame_family"][frame] = student_preference_summary(frame_rows)[
-            "questions"
-        ] if frame_rows != rows else output["questions"]
+        output["by_comparison_frame_family"][frame] = (
+            student_preference_summary(frame_rows)["questions"]
+            if frame_rows != rows
+            else output["questions"]
+        )
     return output
 
 
@@ -670,7 +760,10 @@ def _spearman(a: list[float], b: list[float]) -> float | None:
         return None
     ranked_a, ranked_b = _rankdata(a), _rankdata(b)
     mean_a, mean_b = statistics.mean(ranked_a), statistics.mean(ranked_b)
-    numerator = sum((x - mean_a) * (y - mean_b) for x, y in zip(ranked_a, ranked_b))
+    numerator = sum(
+        (x - mean_a) * (y - mean_b)
+        for x, y in zip(ranked_a, ranked_b)  # noqa: B905 - lengths checked above
+    )
     denominator = math.sqrt(
         sum((x - mean_a) ** 2 for x in ranked_a)
         * sum((y - mean_b) ** 2 for y in ranked_b)
@@ -679,10 +772,6 @@ def _spearman(a: list[float], b: list[float]) -> float | None:
 
 
 def load_judge_scores(path: Path) -> dict[str, dict[str, dict[str, Any]]]:
-    try:
-        from .export_annotations import load_results, response_id
-    except ImportError:
-        from export_annotations import load_results, response_id
     _, rows = load_results(path)
     output: dict[str, dict[str, dict[str, Any]]] = {}
     for row in rows:
@@ -716,7 +805,9 @@ def human_judge_validity(
         by_item[item_id].append(row["annotation"])
         item_response[item_id] = row["response_id"]
         item_role[item_id] = row.get("sample_role", "unknown")
-    missing_responses = sorted({rid for rid in item_response.values() if rid not in judge_scores})
+    missing_responses = sorted(
+        {rid for rid in item_response.values() if rid not in judge_scores}
+    )
     if missing_responses:
         raise ValueError(
             "Source results do not match the annotation key; missing response_id values: "
@@ -725,13 +816,16 @@ def human_judge_validity(
 
     def calculate(selected_roles: set[str] | None) -> dict[str, Any]:
         comparisons: dict[tuple[str, str], list[tuple[Any, Any]]] = defaultdict(list)
-        for item_id, annotations in by_item.items():
+        for item_id, item_annotations in by_item.items():
             if selected_roles is not None and item_role[item_id] not in selected_roles:
                 continue
             systems = judge_scores.get(item_response[item_id], {})
             for field in JUDGE_COMPARABLE_FIELDS:
                 human = _consensus(
-                    [_expert_numeric_value(field, annotation.get(field)) for annotation in annotations],
+                    [
+                        _expert_numeric_value(field, annotation.get(field))
+                        for annotation in item_annotations
+                    ],
                     binary=field == "harmful_elaboration",
                 )
                 if human is None:
@@ -748,17 +842,27 @@ def human_judge_validity(
                 scale = (0, 3)
             elif field == "response_appropriateness":
                 scale = (0, 2)
-            coefficient = lambda values: (
-                _cohen_kappa([a for a, _ in values], [b for _, b in values])
-                if binary
-                else _quadratic_weighted_kappa(
+
+            def coefficient(
+                values: list[tuple[Any, Any]],
+                *,
+                binary_metric: bool = binary,
+                metric_scale: tuple[int, int] | None = scale,
+            ) -> float | None:
+                if binary_metric:
+                    return _cohen_kappa([a for a, _ in values], [b for _, b in values])
+                return _quadratic_weighted_kappa(
                     [int(a) for a, _ in values],
                     [int(b) for _, b in values],
-                    scale=scale,
+                    scale=metric_scale,
                 )
-            )
-            exact = lambda values: sum(a == b for a, b in values) / len(values)
-            mae = lambda values: sum(abs(float(a) - float(b)) for a, b in values) / len(values)
+
+            def exact(values: list[tuple[Any, Any]]) -> float:
+                return sum(a == b for a, b in values) / len(values)
+
+            def mae(values: list[tuple[Any, Any]]) -> float:
+                return sum(abs(float(a) - float(b)) for a, b in values) / len(values)
+
             seed = bootstrap_seed + sum(ord(char) for char in f"{system}:{field}")
             report[system][field] = {
                 "n_items": len(paired),
@@ -805,13 +909,9 @@ def build_summary(
         "first_amplification_turn",
         "amplification_turn_count",
     }
-    expert_kwargs = {
-        "ordinal_fields": ordinal_fields,
-        "ordinal_scales": EXPERT_ORDINAL_SCALES,
-        "bootstrap_iterations": bootstrap_iterations,
-        "bootstrap_seed": bootstrap_seed,
-    }
-    sample_roles = sorted({str(row.get("sample_role") or "unknown") for row in expert_rows})
+    sample_roles = sorted(
+        {str(row.get("sample_role") or "unknown") for row in expert_rows}
+    )
     return {
         "schema_version": "2.0",
         "expert_annotation_count": len(expert_rows),
@@ -823,12 +923,26 @@ def build_summary(
         "expert_cannot_determine_count": sum(
             bool(row["annotation"].get("cannot_determine")) for row in expert_rows
         ),
-        "expert_agreement": agreement_by_field(expert_rows, EXPERT_AGREEMENT_FIELDS, **expert_kwargs),
+        "expert_agreement": agreement_by_field(
+            expert_rows,
+            EXPERT_AGREEMENT_FIELDS,
+            ordinal_fields=ordinal_fields,
+            ordinal_scales=EXPERT_ORDINAL_SCALES,
+            bootstrap_iterations=bootstrap_iterations,
+            bootstrap_seed=bootstrap_seed,
+        ),
         "expert_agreement_by_sample_role": {
             role: agreement_by_field(
-                [row for row in expert_rows if str(row.get("sample_role") or "unknown") == role],
+                [
+                    row
+                    for row in expert_rows
+                    if str(row.get("sample_role") or "unknown") == role
+                ],
                 EXPERT_AGREEMENT_FIELDS,
-                **expert_kwargs,
+                ordinal_fields=ordinal_fields,
+                ordinal_scales=EXPERT_ORDINAL_SCALES,
+                bootstrap_iterations=bootstrap_iterations,
+                bootstrap_seed=bootstrap_seed,
             )
             for role in sample_roles
         },

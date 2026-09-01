@@ -1,15 +1,21 @@
 #!/usr/bin/env python3
 """Export the expert rubric-validity form before any response pool exists."""
+
 from __future__ import annotations
 
 import argparse
 import json
+import sys
 from pathlib import Path
 
-try:
-    from .export_annotations import rubric_feedback_template, write_rubric_feedback_csv
-except ImportError:
-    from export_annotations import rubric_feedback_template, write_rubric_feedback_csv
+ROOT = Path(__file__).resolve().parents[1]
+if str(ROOT) not in sys.path:
+    sys.path.insert(0, str(ROOT))
+
+from analysis.export_annotations import (
+    rubric_feedback_template,
+    write_rubric_feedback_csv,
+)
 
 
 def export_forms(output_dir: Path) -> list[Path]:

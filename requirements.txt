@@ -1,4 +1,4 @@
-openai>=3.6.0
-anthropic
-google-genai
-PyYAML
+openai>=2,<3
+anthropic>=0.70,<1
+google-genai>=1.47,<2
+PyYAML>=6,<7

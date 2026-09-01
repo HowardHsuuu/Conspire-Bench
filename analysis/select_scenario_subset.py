@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 """Select a deterministic, stratified scenario subset for robustness sweeps."""
+
 from __future__ import annotations
 
 import argparse
@@ -14,8 +15,8 @@ ROOT = Path(__file__).resolve().parents[1]
 if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
 
-from scenario_metadata import enrich_dataset
 from scenario_expansion import load_benchmark_dataset, scenario_content_digest
+from scenario_metadata import enrich_dataset
 
 
 def select_subset(
@@ -31,7 +32,7 @@ def select_subset(
         if scenario.get("is_control") and not include_controls:
             continue
         raw_groups[str(scenario.get("category"))].append(scenario)
-    selected = []
+    selected: list[dict[str, Any]] = []
     type_counts: dict[str, int] = defaultdict(int)
     active = sorted(raw_groups)
     while active and len(selected) < count:
@@ -125,7 +126,9 @@ def main() -> int:
         purpose=args.purpose,
     )
     args.output.parent.mkdir(parents=True, exist_ok=True)
-    args.output.write_text(json.dumps(manifest, ensure_ascii=False, indent=2), encoding="utf-8")
+    args.output.write_text(
+        json.dumps(manifest, ensure_ascii=False, indent=2), encoding="utf-8"
+    )
     print(args.output)
     print(manifest["cli_argument"])
     return 0

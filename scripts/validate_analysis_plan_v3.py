@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 """Validate the executable v3 design and its coequal outcome contract."""
+
 from __future__ import annotations
 
 import argparse
@@ -7,7 +8,6 @@ import json
 import sys
 from pathlib import Path
 from typing import Any
-
 
 ROOT = Path(__file__).resolve().parents[1]
 if str(ROOT) not in sys.path:
@@ -91,17 +91,60 @@ def validate(plan: dict[str, Any]) -> list[str]:
     grid = plan.get("estimand_grid") or {}
     expected_contrasts = [[frame, "neutral"] for frame in FRAME_FAMILIES[1:]]
     if grid.get("contrasts") != expected_contrasts:
-        errors.append("estimand grid must contain all four frame-minus-neutral contrasts")
+        errors.append(
+            "estimand grid must contain all four frame-minus-neutral contrasts"
+        )
     if grid.get("outcomes") != list(RUBRIC_DIMENSIONS):
         errors.append("estimand grid must contain all seven outcomes")
-    if grid.get("status") != "coequal" or grid.get(
-        "total_frame_by_outcome_estimands"
-    ) != 28:
+    if (
+        grid.get("status") != "coequal"
+        or grid.get("total_frame_by_outcome_estimands") != 28
+    ):
         errors.append("estimand grid must declare 28 coequal estimands")
     if (plan.get("wording_aggregation") or {}).get(
         "canonical_variant_privilege"
     ) is not False:
         errors.append("canonical wording must not be privileged in the full analysis")
+
+    overlap_plan = (plan.get("uncertainty_and_multiplicity") or {}).get(
+        "overlap_sensitivity"
+    ) or {}
+    overlap_groups = overlap_plan.get("cluster_groups") or {}
+    manifest_ids = {item.get("motif_id") for item in manifest.get("motifs", [])}
+    high_overlap_records = [
+        item
+        for item in quality.get("records", [])
+        if item.get("distinctness") == "high_overlap"
+    ]
+    grouped_children: list[str] = []
+    for record in high_overlap_records:
+        motif_id = str(record.get("motif_id"))
+        matching_groups = [
+            members
+            for members in overlap_groups.values()
+            if isinstance(members, list) and motif_id in members
+        ]
+        if len(matching_groups) != 1:
+            errors.append(
+                f"high-overlap motif {motif_id} must occur in exactly one overlap cluster"
+            )
+            continue
+        grouped_children.append(motif_id)
+        expected_members = {motif_id, *(record.get("overlap_with") or [])}
+        if set(matching_groups[0]) != expected_members:
+            errors.append(
+                f"overlap cluster for {motif_id} must equal its audited overlap_with family"
+            )
+    overlap_members = {
+        member
+        for members in overlap_groups.values()
+        if isinstance(members, list)
+        for member in members
+    }
+    if not overlap_members.issubset(manifest_ids):
+        errors.append("overlap clusters may reference only frozen primary motifs")
+    if len(grouped_children) != 3:
+        errors.append("overlap sensitivity must cover all three high-overlap motifs")
 
     for field in ("local_config", "api_config", "human_annotation_plan"):
         if not _resolve(artifacts[field]).exists():

@@ -1,11 +1,11 @@
 #!/usr/bin/env python3
 """Build the frozen v3 interaction catalog from circulation-grounded narratives."""
+
 from __future__ import annotations
 
 import argparse
 import json
 from pathlib import Path
-
 
 ROOT = Path(__file__).resolve().parents[1]
 DEFAULT_NARRATIVES = ROOT / "configs" / "motif_narratives_v3.json"
@@ -133,7 +133,11 @@ def build_catalog(
                 "identity-policy records must exactly match motifs requiring explicit identity review: "
                 f"expected {sorted(required_identity_review)}, found {sorted(identity_by_id)}"
             )
-    missing = [motif["motif_id"] for motif in selected if motif["motif_id"] not in records_by_id]
+    missing = [
+        motif["motif_id"]
+        for motif in selected
+        if motif["motif_id"] not in records_by_id
+    ]
     if missing:
         raise ValueError(f"selected motifs without narrative records: {missing}")
     motifs = []
@@ -144,7 +148,9 @@ def build_catalog(
             field for field in PROPOSITION_FIELDS if not record.get(field)
         ]
         if missing_fields:
-            raise ValueError(f"{motif_id} is missing prompt propositions: {missing_fields}")
+            raise ValueError(
+                f"{motif_id} is missing prompt propositions: {missing_fields}"
+            )
         identity = identity_by_id.get(motif_id)
         if identity is None:
             identity_treatment = {
@@ -168,7 +174,9 @@ def build_catalog(
                 "category": motif_meta["category"],
                 "narrative_record_id": motif_id,
                 "shared_proposition_fields": [
-                    field for field in PROPOSITION_FIELDS if field != "narrative_summary"
+                    field
+                    for field in PROPOSITION_FIELDS
+                    if field != "narrative_summary"
                 ],
                 "prompt_propositions": {
                     field: record[field] for field in PROPOSITION_FIELDS
@@ -204,9 +212,7 @@ def build_catalog(
 
 
 def build_dataset(catalog: dict, quality: dict) -> dict:
-    quality_by_id = {
-        item["motif_id"]: item for item in quality.get("records", [])
-    }
+    quality_by_id = {item["motif_id"]: item for item in quality.get("records", [])}
     scenarios = []
     for motif in catalog["motifs"]:
         motif_id = motif["motif_id"]
@@ -317,9 +323,7 @@ def main() -> int:
     parser.add_argument("--narratives", type=Path, default=DEFAULT_NARRATIVES)
     parser.add_argument("--manifest", type=Path, default=DEFAULT_MANIFEST)
     parser.add_argument("--quality", type=Path, default=DEFAULT_QUALITY)
-    parser.add_argument(
-        "--identity-policy", type=Path, default=DEFAULT_IDENTITY_POLICY
-    )
+    parser.add_argument("--identity-policy", type=Path, default=DEFAULT_IDENTITY_POLICY)
     parser.add_argument("--check", action="store_true")
     parser.add_argument(
         "--allow-draft",
@@ -358,7 +362,9 @@ def main() -> int:
     if args.check:
         expected_path = args.output or DEFAULT_OUTPUT
         if not expected_path.exists():
-            print(json.dumps({"ok": False, "error": f"missing {expected_path}"}, indent=2))
+            print(
+                json.dumps({"ok": False, "error": f"missing {expected_path}"}, indent=2)
+            )
             return 1
         matches = expected_path.read_text(encoding="utf-8") == rendered
         dataset_path = args.dataset_output or DEFAULT_DATASET_OUTPUT

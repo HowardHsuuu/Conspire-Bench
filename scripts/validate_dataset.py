@@ -11,12 +11,14 @@ if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
 
 from dataset_validation import format_validation_report, validate_dataset
-from scenario_metadata import enrich_dataset
 from scenario_expansion import load_benchmark_dataset
+from scenario_metadata import enrich_dataset
 
 
 def build_parser() -> argparse.ArgumentParser:
-    parser = argparse.ArgumentParser(description="Validate Conspire-Bench dataset JSON.")
+    parser = argparse.ArgumentParser(
+        description="Validate Conspire-Bench dataset JSON."
+    )
     parser.add_argument(
         "dataset",
         type=Path,
@@ -50,14 +52,20 @@ def main() -> int:
     report = validate_dataset(dataset, strict_metadata=args.strict_metadata)
 
     if args.json:
-        print(json.dumps({
-            "ok": report.ok,
-            "scenario_count": report.scenario_count,
-            "categories": report.categories,
-            "scenario_types": report.scenario_types,
-            "errors": report.errors,
-            "warnings": report.warnings,
-        }, indent=2, ensure_ascii=False))
+        print(
+            json.dumps(
+                {
+                    "ok": report.ok,
+                    "scenario_count": report.scenario_count,
+                    "categories": report.categories,
+                    "scenario_types": report.scenario_types,
+                    "errors": report.errors,
+                    "warnings": report.warnings,
+                },
+                indent=2,
+                ensure_ascii=False,
+            )
+        )
     else:
         print(format_validation_report(report))
 

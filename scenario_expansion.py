@@ -8,7 +8,6 @@ from urllib.parse import urlparse
 
 from experiment_conditions import stable_digest
 
-
 CATALOG_FORMAT = "conspire_expansion_catalog"
 PROMPT_FIELDS = {
     "multi_turn_progression": "multi_turn",
@@ -53,7 +52,11 @@ def validate_source_packets(payload: dict[str, Any]) -> list[str]:
 
     seen: set[str] = set()
     for index, packet in enumerate(packets):
-        label = packet.get("id", f"<packet:{index}>") if isinstance(packet, dict) else f"<packet:{index}>"
+        label = (
+            packet.get("id", f"<packet:{index}>")
+            if isinstance(packet, dict)
+            else f"<packet:{index}>"
+        )
         if not isinstance(packet, dict):
             errors.append(f"{label}: packet must be an object")
             continue
@@ -94,7 +97,9 @@ def validate_source_packets(payload: dict[str, Any]) -> list[str]:
             elif parsed.netloc:
                 source_hosts.add(parsed.netloc.lower())
         if len(source_hosts) < 2:
-            errors.append(f"{label}: sources must include at least two independent hosts")
+            errors.append(
+                f"{label}: sources must include at least two independent hosts"
+            )
     return errors
 
 
@@ -108,7 +113,11 @@ def validate_selection_evidence(
         return ["selection-evidence payload must contain a non-empty 'items' list"]
     seen: set[str] = set()
     for index, item in enumerate(items):
-        label = item.get("motif_id", f"<selection:{index}>") if isinstance(item, dict) else f"<selection:{index}>"
+        label = (
+            item.get("motif_id", f"<selection:{index}>")
+            if isinstance(item, dict)
+            else f"<selection:{index}>"
+        )
         if not isinstance(item, dict):
             errors.append(f"{label}: selection item must be an object")
             continue
@@ -183,9 +192,7 @@ def validate_review_approval(
         errors.append("scenario review approval status must be approved")
     if approval.get("catalog_digest") != stable_digest(catalog, length=64):
         errors.append("scenario review approval catalog_digest does not match")
-    if approval.get("source_packet_digest") != stable_digest(
-        packet_payload, length=64
-    ):
+    if approval.get("source_packet_digest") != stable_digest(packet_payload, length=64):
         errors.append("scenario review approval source_packet_digest does not match")
     motif_ids = {motif.get("id") for motif in catalog.get("motifs", [])}
     reviews = approval.get("reviews")
@@ -202,14 +209,19 @@ def validate_review_approval(
         reviewed = {
             review.get("motif_id")
             for review in reviews
-            if isinstance(review, dict) and str(review.get("reviewer_id")) == reviewer_id
+            if isinstance(review, dict)
+            and str(review.get("reviewer_id")) == reviewer_id
         }
         missing = sorted(motif_ids - reviewed)
         extra = sorted(reviewed - motif_ids)
         if missing:
-            errors.append(f"scenario reviewer {reviewer_id} is missing motifs: {missing}")
+            errors.append(
+                f"scenario reviewer {reviewer_id} is missing motifs: {missing}"
+            )
         if extra:
-            errors.append(f"scenario reviewer {reviewer_id} has unknown motifs: {extra}")
+            errors.append(
+                f"scenario reviewer {reviewer_id} has unknown motifs: {extra}"
+            )
     for index, review in enumerate(reviews):
         label = f"scenario_review[{index}]"
         if not isinstance(review, dict):
@@ -242,7 +254,9 @@ def _scenario_common(
         "symptom_domain": motif["symptom_domain"],
         "grounding_trap": packet["unsupported_inference"],
         "expected_safe_behavior": motif["expected_safe_behavior"],
-        "red_flags": sorted(set(packet["risk_flags"] + motif.get("additional_red_flags", []))),
+        "red_flags": sorted(
+            set(packet["risk_flags"] + motif.get("additional_red_flags", []))
+        ),
         "motif_id": motif["id"],
         "source_packet_id": packet["id"],
         "selection_status": selection["selection_status"],
@@ -325,7 +339,11 @@ def validate_expansion_catalog(
 
     seen: set[str] = set()
     for index, motif in enumerate(motifs):
-        label = motif.get("id", f"<motif:{index}>") if isinstance(motif, dict) else f"<motif:{index}>"
+        label = (
+            motif.get("id", f"<motif:{index}>")
+            if isinstance(motif, dict)
+            else f"<motif:{index}>"
+        )
         if not isinstance(motif, dict):
             errors.append(f"{label}: motif must be an object")
             continue
@@ -364,9 +382,11 @@ def validate_expansion_catalog(
             errors.append(f"{label}: single_turn must be a non-empty string")
         if not isinstance(control, str) or not control.strip():
             errors.append(f"{label}: control must be a non-empty string")
-    extra_packets = sorted(set(packets) - seen)
+    extra_packets = sorted(str(packet_id) for packet_id in set(packets) - seen)
     if extra_packets:
-        errors.append(f"source packets without authored motifs: {', '.join(extra_packets)}")
+        errors.append(
+            f"source packets without authored motifs: {', '.join(extra_packets)}"
+        )
     if selection_payload is not None:
         errors.extend(validate_selection_evidence(selection_payload, seen))
     return errors
@@ -447,9 +467,7 @@ def build_dataset_from_catalog(
         "source_packets": str(packet_path),
         "selection_evidence": str(selection_path),
         "review_approval": str(approval_path) if approval_path else None,
-        "review_approval_applied": bool(
-            effective_catalog.get("review_approval_id")
-        ),
+        "review_approval_applied": bool(effective_catalog.get("review_approval_id")),
         "review_approval_kind": (
             approval.get("review_kind", "independent_human")
             if approval_path and approval_path.exists()

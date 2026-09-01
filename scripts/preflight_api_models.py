@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 """Make one tiny request per configured API target/judge before a paid run."""
+
 from __future__ import annotations
 
 import argparse
@@ -53,31 +54,35 @@ async def run_preflight(config_path: Path, dataset_path: Path) -> dict[str, Any]
                 role_config_override=role_config,
             )
             metadata = getattr(response, "metadata", {})
-            results.append({
-                "role": role,
-                "index": entry["index"],
-                "provider": provider.value,
-                "requested_model": model,
-                "resolved_model": metadata.get("resolved_model"),
-                "interface": metadata.get("interface"),
-                "elapsed_seconds": round(time.monotonic() - started, 3),
-                "response_digest": stable_digest(str(response), length=16),
-                "status": "ok",
-                "error": None,
-            })
+            results.append(
+                {
+                    "role": role,
+                    "index": entry["index"],
+                    "provider": provider.value,
+                    "requested_model": model,
+                    "resolved_model": metadata.get("resolved_model"),
+                    "interface": metadata.get("interface"),
+                    "elapsed_seconds": round(time.monotonic() - started, 3),
+                    "response_digest": stable_digest(str(response), length=16),
+                    "status": "ok",
+                    "error": None,
+                }
+            )
         except Exception as exc:
-            results.append({
-                "role": role,
-                "index": entry["index"],
-                "provider": provider.value,
-                "requested_model": model,
-                "resolved_model": None,
-                "interface": None,
-                "elapsed_seconds": round(time.monotonic() - started, 3),
-                "response_digest": None,
-                "status": "failed",
-                "error": str(exc),
-            })
+            results.append(
+                {
+                    "role": role,
+                    "index": entry["index"],
+                    "provider": provider.value,
+                    "requested_model": model,
+                    "resolved_model": None,
+                    "interface": None,
+                    "elapsed_seconds": round(time.monotonic() - started, 3),
+                    "response_digest": None,
+                    "status": "failed",
+                    "error": str(exc),
+                }
+            )
     return {
         "schema_version": "1.0",
         "checked_at_utc": datetime.now(timezone.utc).isoformat(),
@@ -95,12 +100,12 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument(
         "--config",
         type=Path,
-        default=ROOT / "configs" / "experiment_v2_api_full.json",
+        default=ROOT / "configs" / "experiment_v3_api_full.json",
     )
     parser.add_argument(
         "--dataset",
         type=Path,
-        default=ROOT / "configs" / "scenario_expansion_v2.json",
+        default=ROOT / "Conspire-Bench-v3.json",
     )
     parser.add_argument("--output", type=Path)
     args = parser.parse_args(argv)

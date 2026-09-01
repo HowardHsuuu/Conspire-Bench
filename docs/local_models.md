@@ -58,4 +58,7 @@ Runtime behavior:
 - Set `evaluation.unload_after_judge: true` to release each local judge after it scores a saved conversation.
 - Set `evaluation.unload_after_model: true` if target models should be released from memory after each model run.
 
-For a single-GPU local run, start from `configs/local_5090_config.json`. It uses sequential scenarios and unloads models between target and judge calls to reduce peak VRAM. Use `configs/local_5090_full_matrix_config.json` only after the starter run succeeds.
+For the V3 single-GPU stage, start with a filtered dry run from
+`configs/experiment_v3_local_full.json`, then run the matrix in `phased` mode.
+The legacy `local_5090*.json` files are retained only for replication of earlier
+experiments.

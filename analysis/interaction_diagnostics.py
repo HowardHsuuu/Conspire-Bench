@@ -19,9 +19,8 @@ from pathlib import Path
 import numpy as np
 import pandas as pd
 import statsmodels.formula.api as smf
-from statsmodels.stats.anova import anova_lm
 from scipy import stats
-
+from statsmodels.stats.anova import anova_lm
 
 RESULTS = Path("results/20260515_163319/merged_local_seed24_contexts_6models.json")
 OUTDIR = Path("analysis")
@@ -152,8 +151,9 @@ def moderator_tests(df: pd.DataFrame, draws: int) -> pd.DataFrame:
 
 def model_size_trends(df: pd.DataFrame) -> pd.DataFrame:
     model_means = (
-        df.groupby(["frame", "model_name", "model_short", "model_family", "params_b"])
-        [list(METRICS)]
+        df.groupby(["frame", "model_name", "model_short", "model_family", "params_b"])[
+            list(METRICS)
+        ]
         .mean()
         .reset_index()
     )

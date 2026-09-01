@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 """Create deterministic per-annotator blinded packages and an assignment ledger."""
+
 from __future__ import annotations
 
 import argparse
@@ -14,21 +15,17 @@ ROOT = Path(__file__).resolve().parents[1]
 if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
 
-from experiment_conditions import stable_digest
+from analysis.export_annotations import (
+    validate_public_items,
+    write_annotation_csv,
+    write_jsonl,
+)
 from analysis.human_annotation_plan import (
     human_annotation_plan_digest,
     load_human_annotation_plan,
 )
+from experiment_conditions import stable_digest
 from rubric_v2 import RUBRIC_VERSION
-
-try:
-    from .export_annotations import (
-        validate_public_items,
-        write_annotation_csv,
-        write_jsonl,
-    )
-except ImportError:  # Direct script execution.
-    from export_annotations import validate_public_items, write_annotation_csv, write_jsonl
 
 
 def read_public_items(path: Path, expected_type: str) -> list[dict[str, Any]]:
@@ -44,7 +41,11 @@ def read_public_items(path: Path, expected_type: str) -> list[dict[str, Any]]:
     if not rows:
         raise ValueError(f"{path}: no items")
     validate_public_items(rows)
-    wrong = [row.get("annotation_item_id") for row in rows if row.get("item_type") != expected_type]
+    wrong = [
+        row.get("annotation_item_id")
+        for row in rows
+        if row.get("item_type") != expected_type
+    ]
     if wrong:
         raise ValueError(f"{path}: expected only {expected_type} items")
     return rows
@@ -65,26 +66,33 @@ def load_roster_manifest(path: Path) -> dict[str, Any]:
     if not isinstance(rows, list):
         raise ValueError("Annotator roster manifest has no annotators list")
     if manifest.get("rubric_version") != RUBRIC_VERSION:
-        raise ValueError("Annotator roster rubric_version does not match the current rubric")
+        raise ValueError(
+            "Annotator roster rubric_version does not match the current rubric"
+        )
     if manifest.get("roster_digest") != stable_digest(rows, length=64):
         raise ValueError("Annotator roster digest does not match its annotators")
     derived = {
         "eligible_expert_calibration_ids": sorted(
-            str(row["annotator_id"]) for row in rows
+            str(row["annotator_id"])
+            for row in rows
             if row.get("eligible_for_expert_calibration") is True
         ),
         "eligible_expert_formal_ids": sorted(
-            str(row["annotator_id"]) for row in rows
+            str(row["annotator_id"])
+            for row in rows
             if row.get("eligible_for_expert_formal") is True
         ),
         "eligible_student_formal_ids": sorted(
-            str(row["annotator_id"]) for row in rows
+            str(row["annotator_id"])
+            for row in rows
             if row.get("eligible_for_student_formal") is True
         ),
     }
     for field, expected in derived.items():
         if sorted(manifest.get(field) or []) != expected:
-            raise ValueError(f"Annotator roster {field} does not match its annotator records")
+            raise ValueError(
+                f"Annotator roster {field} does not match its annotator records"
+            )
     return manifest
 
 
@@ -125,9 +133,7 @@ def balanced_assignments(
 ) -> dict[str, list[dict[str, Any]]]:
     annotator_ids = _validate_ids(annotator_ids, "Annotator")
     if not 1 <= ratings_per_item <= len(annotator_ids):
-        raise ValueError(
-            f"ratings_per_item must be between 1 and {len(annotator_ids)}"
-        )
+        raise ValueError(f"ratings_per_item must be between 1 and {len(annotator_ids)}")
     shuffled = list(items)
     random.Random(seed).shuffle(shuffled)
     output: dict[str, list[dict[str, Any]]] = defaultdict(list)
@@ -170,31 +176,40 @@ def build_assignment_manifest(
     roster_manifest: dict[str, Any] | None = None,
     annotation_plan: dict[str, Any] | None = None,
 ) -> dict[str, Any]:
-    assignment_rows = []
+    assignment_rows: list[dict[str, Any]] = []
     for study, assignments in (
         ("expert_conversation", expert_assignments),
         ("paired_conversation", student_assignments),
     ):
         for annotator, items in sorted(assignments.items()):
-            assignment_rows.extend({
-                "item_type": study,
-                "annotation_item_id": item["annotation_item_id"],
-                "annotator_id": annotator,
-            } for item in items)
+            assignment_rows.extend(
+                {
+                    "item_type": study,
+                    "annotation_item_id": item["annotation_item_id"],
+                    "annotator_id": annotator,
+                }
+                for item in items
+            )
     assignment_rows.sort(
-        key=lambda row: (row["item_type"], row["annotation_item_id"], row["annotator_id"])
+        key=lambda row: (
+            row["item_type"],
+            row["annotation_item_id"],
+            row["annotator_id"],
+        )
     )
     type_counts = Counter(row["item_type"] for row in assignment_rows)
     annotator_counts = Counter(row["annotator_id"] for row in assignment_rows)
     all_annotators = sorted({*expert_assignments, *student_assignments})
-    rubric_versions = sorted({
-        str(item.get("rubric_version")) for item in [*expert_items, *student_items]
-    })
+    rubric_versions = sorted(
+        {str(item.get("rubric_version")) for item in [*expert_items, *student_items]}
+    )
     manifest = {
         "schema_version": "1.1",
         "assignment_status": "frozen",
         "release_mode": release_mode,
-        "roster_digest": roster_manifest.get("roster_digest") if roster_manifest else None,
+        "roster_digest": roster_manifest.get("roster_digest")
+        if roster_manifest
+        else None,
         "annotation_plan_version": (
             annotation_plan.get("plan_version") if annotation_plan else None
         ),
@@ -203,8 +218,12 @@ def build_assignment_manifest(
         ),
         "seed": seed,
         "rubric_versions": rubric_versions,
-        "expert_item_digest": stable_digest(expert_items, length=64) if expert_items else None,
-        "student_item_digest": stable_digest(student_items, length=64) if student_items else None,
+        "expert_item_digest": stable_digest(expert_items, length=64)
+        if expert_items
+        else None,
+        "student_item_digest": stable_digest(student_items, length=64)
+        if student_items
+        else None,
         "expert_item_count": len(expert_items),
         "student_item_count": len(student_items),
         "expert_annotator_ids": sorted(expert_assignments),
@@ -213,7 +232,8 @@ def build_assignment_manifest(
         "student_ratings_per_item": student_ratings_per_item if student_items else 0,
         "assignment_counts_by_type": dict(sorted(type_counts.items())),
         "assignment_counts_by_annotator": {
-            annotator: annotator_counts.get(annotator, 0) for annotator in all_annotators
+            annotator: annotator_counts.get(annotator, 0)
+            for annotator in all_annotators
         },
         "assignments": assignment_rows,
     }
@@ -236,8 +256,12 @@ def assign_package(
     roster_manifest_path: Path | None = None,
     annotation_plan_path: Path | None = None,
 ) -> list[Path]:
-    expert_items = read_public_items(expert_path, "expert_conversation") if expert_path else []
-    student_items = read_public_items(student_path, "paired_conversation") if student_path else []
+    expert_items = (
+        read_public_items(expert_path, "expert_conversation") if expert_path else []
+    )
+    student_items = (
+        read_public_items(student_path, "paired_conversation") if student_path else []
+    )
     if not expert_items and not student_items:
         raise ValueError("Provide --expert-items and/or --student-items")
     if expert_items and not expert_ids:
@@ -258,7 +282,8 @@ def assign_package(
         load_human_annotation_plan(
             annotation_plan_path, require_frozen=release_mode == "formal"
         )
-        if annotation_plan_path else None
+        if annotation_plan_path
+        else None
     )
     if annotation_plan:
         plan_digest = human_annotation_plan_digest(annotation_plan)
@@ -279,23 +304,49 @@ def assign_package(
             expert_formal = annotation_plan["expert_panel"]["formal_sample"]
             student_plan = annotation_plan["student_panel"]
             if expert_items and len(expert_items) != expert_formal["total_item_count"]:
-                raise ValueError("Expert item count does not match the frozen annotation plan")
-            if student_items and len(student_items) != student_plan["paired_item_count"]:
-                raise ValueError("Student pair count does not match the frozen annotation plan")
-            if expert_items and expert_ratings_per_item != expert_formal["ratings_per_item"]:
-                raise ValueError("Expert ratings per item do not match the frozen annotation plan")
-            if student_items and student_ratings_per_item != student_plan["ratings_per_item"]:
-                raise ValueError("Student ratings per item do not match the frozen annotation plan")
+                raise ValueError(
+                    "Expert item count does not match the frozen annotation plan"
+                )
+            if (
+                student_items
+                and len(student_items) != student_plan["paired_item_count"]
+            ):
+                raise ValueError(
+                    "Student pair count does not match the frozen annotation plan"
+                )
+            if (
+                expert_items
+                and expert_ratings_per_item != expert_formal["ratings_per_item"]
+            ):
+                raise ValueError(
+                    "Expert ratings per item do not match the frozen annotation plan"
+                )
+            if (
+                student_items
+                and student_ratings_per_item != student_plan["ratings_per_item"]
+            ):
+                raise ValueError(
+                    "Student ratings per item do not match the frozen annotation plan"
+                )
             if expert_items and not 2 <= len(expert_ids) <= 3:
-                raise ValueError("Formal expert roster must contain two or three experts")
-            if student_items and len(student_ids) < student_plan["minimum_eligible_annotator_count"]:
-                raise ValueError("Formal student roster is smaller than the prespecified minimum")
+                raise ValueError(
+                    "Formal expert roster must contain two or three experts"
+                )
+            if (
+                student_items
+                and len(student_ids) < student_plan["minimum_eligible_annotator_count"]
+            ):
+                raise ValueError(
+                    "Formal student roster is smaller than the prespecified minimum"
+                )
         elif release_mode == "calibration":
             expert_plan = annotation_plan["expert_panel"]
             if student_items:
                 raise ValueError("Calibration mode cannot assign student items")
             if len(expert_items) != expert_plan["calibration_item_count"]:
-                raise ValueError("Calibration item count does not match the annotation plan")
+                raise ValueError(
+                    "Calibration item count does not match the annotation plan"
+                )
             if not 2 <= len(expert_ids) <= 3:
                 raise ValueError("Calibration requires two or three eligible experts")
             if expert_ratings_per_item != len(expert_ids):
@@ -308,12 +359,20 @@ def assign_package(
             roster_manifest, expert_ids, student_ids, release_mode=release_mode
         )
 
-    expert_assignments = balanced_assignments(
-        expert_items, expert_ids, expert_ratings_per_item, seed=seed
-    ) if expert_items else {}
-    student_assignments = balanced_assignments(
-        student_items, student_ids, student_ratings_per_item, seed=seed + 1
-    ) if student_items else {}
+    expert_assignments = (
+        balanced_assignments(
+            expert_items, expert_ids, expert_ratings_per_item, seed=seed
+        )
+        if expert_items
+        else {}
+    )
+    student_assignments = (
+        balanced_assignments(
+            student_items, student_ids, student_ratings_per_item, seed=seed + 1
+        )
+        if student_items
+        else {}
+    )
     written = []
     if expert_assignments:
         written.extend(_write_packages(output_dir / "expert", expert_assignments))
@@ -362,11 +421,13 @@ def main() -> int:
         load_human_annotation_plan(
             annotation_plan_path, require_frozen=args.release_mode == "formal"
         )
-        if annotation_plan_path else None
+        if annotation_plan_path
+        else None
     )
     assignment_seed = (
         annotation_plan["randomization"]["assignment_seed"]
-        if annotation_plan and args.seed == 20260831 else args.seed
+        if annotation_plan and args.seed == 20260831
+        else args.seed
     )
     for path in assign_package(
         expert_path=args.expert_items,

@@ -1,12 +1,12 @@
 #!/usr/bin/env python3
 """Freeze every audited, circulation-grounded v3 motif into the main pool."""
+
 from __future__ import annotations
 
 import argparse
 import json
 from pathlib import Path
 from typing import Any
-
 
 ROOT = Path(__file__).resolve().parents[1]
 DEFAULT_MANIFEST = ROOT / "configs" / "primary_motif_manifest_v3.json"
@@ -110,12 +110,15 @@ def main() -> int:
             and manifest.get("target_motif_count") == 51
             and len(manifest.get("motifs", [])) == 51
             and not manifest.get("additional_eligible_candidates")
-            and recommendation.get("selection_state")
-            == "all_eligible_motifs_frozen"
+            and recommendation.get("selection_state") == "all_eligible_motifs_frozen"
             and recommendation.get("recommended_primary_ids")
             == [item["motif_id"] for item in manifest.get("motifs", [])]
         )
-        print(json.dumps({"ok": ok, "motif_count": len(manifest.get("motifs", []))}, indent=2))
+        print(
+            json.dumps(
+                {"ok": ok, "motif_count": len(manifest.get("motifs", []))}, indent=2
+            )
+        )
         return 0 if ok else 1
 
     args.manifest.write_text(

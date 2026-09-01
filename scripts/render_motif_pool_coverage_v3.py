@@ -1,12 +1,12 @@
 #!/usr/bin/env python3
 """Render v3 motif-pool coverage and experiment-size projections."""
+
 from __future__ import annotations
 
 import argparse
 import json
 from collections import Counter, defaultdict
 from pathlib import Path
-
 
 ROOT = Path(__file__).resolve().parents[1]
 DEFAULT_MANIFEST = ROOT / "configs" / "primary_motif_manifest_v3.json"
@@ -35,9 +35,7 @@ def render_document(
         *manifest.get("additional_eligible_candidates", []),
     ]
     candidate_by_id = {item["motif_id"]: item for item in candidates}
-    quality_by_id = {
-        item["motif_id"]: item for item in quality.get("records", [])
-    }
+    quality_by_id = {item["motif_id"]: item for item in quality.get("records", [])}
     primary_ids = recommendation["recommended_primary_ids"]
     primary = [candidate_by_id[motif_id] for motif_id in primary_ids]
 

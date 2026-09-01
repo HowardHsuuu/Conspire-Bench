@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 """Quantify within-frame prompt variance for the rephrasing robustness sweep."""
+
 from __future__ import annotations
 
 import argparse
@@ -36,9 +37,11 @@ def build_report(rows: list[dict[str, Any]], metric: str) -> dict[str, Any]:
                     str(row.get("scenario_id")),
                     family(row),
                 )
-            ][str(row.get("prompt_variant_id") or row.get("context_label"))] = float(value)
+            ][str(row.get("prompt_variant_id") or row.get("context_label"))] = float(
+                value
+            )
 
-    within = []
+    within: list[dict[str, Any]] = []
     variant_values: dict[tuple[str, str], list[float]] = defaultdict(list)
     for (model, scenario, frame), variants in sorted(grouped.items()):
         for variant, value in variants.items():
@@ -46,17 +49,19 @@ def build_report(rows: list[dict[str, Any]], metric: str) -> dict[str, Any]:
         if frame == "neutral" or len(variants) < 2:
             continue
         values = list(variants.values())
-        within.append({
-            "model_name": model,
-            "scenario_id": scenario,
-            "frame_family": frame,
-            "variant_count": len(values),
-            "within_family_mean": mean(values),
-            "within_family_sd": pstdev(values),
-            "within_family_range": max(values) - min(values),
-        })
+        within.append(
+            {
+                "model_name": model,
+                "scenario_id": scenario,
+                "frame_family": frame,
+                "variant_count": len(values),
+                "within_family_mean": mean(values),
+                "within_family_sd": pstdev(values),
+                "within_family_range": max(values) - min(values),
+            }
+        )
 
-    variant_summary = [
+    variant_summary: list[dict[str, Any]] = [
         {
             "frame_family": frame,
             "prompt_variant_id": variant,
@@ -68,19 +73,27 @@ def build_report(rows: list[dict[str, Any]], metric: str) -> dict[str, Any]:
     ]
     by_family: dict[str, list[dict[str, Any]]] = defaultdict(list)
     for row in within:
-        by_family[row["frame_family"]].append(row)
-    family_summary = []
-    for frame, values in sorted(by_family.items()):
-        variant_means = [
-            item["mean"] for item in variant_summary if item["frame_family"] == frame
+        by_family[str(row["frame_family"])].append(row)
+    family_summary: list[dict[str, Any]] = []
+    for frame, family_rows in sorted(by_family.items()):
+        variant_means: list[float] = [
+            float(item["mean"])
+            for item in variant_summary
+            if item["frame_family"] == frame
         ]
-        family_summary.append({
-            "frame_family": frame,
-            "paired_model_scenario_count": len(values),
-            "mean_within_family_sd": mean(item["within_family_sd"] for item in values),
-            "mean_within_family_range": mean(item["within_family_range"] for item in values),
-            "range_of_variant_means": max(variant_means) - min(variant_means),
-        })
+        family_summary.append(
+            {
+                "frame_family": frame,
+                "paired_model_scenario_count": len(family_rows),
+                "mean_within_family_sd": mean(
+                    float(item["within_family_sd"]) for item in family_rows
+                ),
+                "mean_within_family_range": mean(
+                    float(item["within_family_range"]) for item in family_rows
+                ),
+                "range_of_variant_means": max(variant_means) - min(variant_means),
+            }
+        )
     return {
         "schema_version": "1.0",
         "metric": metric,
@@ -102,7 +115,9 @@ def main() -> int:
     args = parser.parse_args()
     report = build_report(load_rows(args.input), args.metric)
     args.output.parent.mkdir(parents=True, exist_ok=True)
-    args.output.write_text(json.dumps(report, ensure_ascii=False, indent=2), encoding="utf-8")
+    args.output.write_text(
+        json.dumps(report, ensure_ascii=False, indent=2), encoding="utf-8"
+    )
     print(args.output)
     return 0
 

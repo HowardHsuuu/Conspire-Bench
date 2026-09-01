@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 """Validate the v3 primary-motif selection boundary before prompt authoring."""
+
 from __future__ import annotations
 
 import argparse
@@ -9,11 +10,12 @@ from collections import Counter
 from pathlib import Path
 from urllib.parse import urlparse
 
-
 ROOT = Path(__file__).resolve().parents[1]
 DEFAULT_MANIFEST = ROOT / "configs" / "primary_motif_manifest_v3.json"
 DEFAULT_CATALOG = ROOT / "configs" / "scenario_expansion_v2.json"
-DATE_RE = re.compile(r"^(2023|2024|2025|2026)(?:-(?:0[1-9]|1[0-2])(?:-(?:0[1-9]|[12][0-9]|3[01]))?)?$")
+DATE_RE = re.compile(
+    r"^(2023|2024|2025|2026)(?:-(?:0[1-9]|1[0-2])(?:-(?:0[1-9]|[12][0-9]|3[01]))?)?$"
+)
 AUTHORING_STATES = {"authored_revision_required", "not_authored", "authored_validated"}
 
 
@@ -61,7 +63,9 @@ def validate_manifest(payload: dict, current_catalog: dict | None = None) -> lis
             if not isinstance(motif.get(field), str) or not motif[field].strip():
                 errors.append(f"{motif_id}.{field} must be a non-empty string")
         if motif.get("public_discourse_status") != "documented_direct":
-            errors.append(f"{motif_id}.public_discourse_status must be documented_direct")
+            errors.append(
+                f"{motif_id}.public_discourse_status must be documented_direct"
+            )
         if motif.get("authoring_status") not in AUTHORING_STATES:
             errors.append(f"{motif_id}.authoring_status is unsupported")
         evidence_date = motif.get("evidence_date")
@@ -78,16 +82,24 @@ def validate_manifest(payload: dict, current_catalog: dict | None = None) -> lis
         if isinstance(motif.get("category"), str):
             categories.append(motif["category"])
 
-    duplicate_ids = sorted(key for key, count in Counter(motif_ids).items() if count > 1)
-    duplicate_signatures = sorted(key for key, count in Counter(signatures).items() if count > 1)
+    duplicate_ids = sorted(
+        key for key, count in Counter(motif_ids).items() if count > 1
+    )
+    duplicate_signatures = sorted(
+        key for key, count in Counter(signatures).items() if count > 1
+    )
     if duplicate_ids:
         errors.append(f"duplicate motif ids: {duplicate_ids}")
     if duplicate_signatures:
         errors.append(f"duplicate reasoning signatures: {duplicate_signatures}")
     if len(set(categories)) < 7:
-        errors.append(f"expected at least 7 substantive categories, found {len(set(categories))}")
+        errors.append(
+            f"expected at least 7 substantive categories, found {len(set(categories))}"
+        )
     if "uap_crash_retrieval_coverup" not in motif_ids:
-        errors.append("documented UAP crash-retrieval conspiracy motif must remain represented")
+        errors.append(
+            "documented UAP crash-retrieval conspiracy motif must remain represented"
+        )
 
     additional = payload.get("additional_eligible_candidates")
     if not isinstance(additional, list):
@@ -115,7 +127,9 @@ def validate_manifest(payload: dict, current_catalog: dict | None = None) -> lis
             if not isinstance(motif.get(field), str) or not motif[field].strip():
                 errors.append(f"{motif_id}.{field} must be a non-empty string")
         if motif.get("public_discourse_status") != "documented_direct":
-            errors.append(f"{motif_id}.public_discourse_status must be documented_direct")
+            errors.append(
+                f"{motif_id}.public_discourse_status must be documented_direct"
+            )
         if motif.get("selection_status") != "eligible_pending_user_selection":
             errors.append(
                 f"{motif_id}.selection_status must be eligible_pending_user_selection"
@@ -157,11 +171,21 @@ def validate_manifest(payload: dict, current_catalog: dict | None = None) -> lis
         removed_ids: set[str] = set()
     else:
         removed_ids = {
-            item.get("motif_id") for item in removed if isinstance(item, dict) and item.get("motif_id")
+            str(item["motif_id"])
+            for item in removed
+            if isinstance(item, dict)
+            and isinstance(item.get("motif_id"), str)
+            and item["motif_id"]
         }
         for item in removed:
-            if not isinstance(item, dict) or not item.get("motif_id") or not item.get("reason"):
-                errors.append("every removed_v2_motifs entry requires motif_id and reason")
+            if (
+                not isinstance(item, dict)
+                or not item.get("motif_id")
+                or not item.get("reason")
+            ):
+                errors.append(
+                    "every removed_v2_motifs entry requires motif_id and reason"
+                )
     overlap = sorted(set(motif_ids) & removed_ids)
     if overlap:
         errors.append(f"selected and removed motif overlap: {overlap}")
@@ -190,7 +214,9 @@ def validate_manifest(payload: dict, current_catalog: dict | None = None) -> lis
                 errors.append(f"{motif_id}.reason must be a non-empty string")
             component_sources = item.get("component_sources")
             if not isinstance(component_sources, list) or len(component_sources) < 2:
-                errors.append(f"{motif_id}.component_sources must contain at least two sources")
+                errors.append(
+                    f"{motif_id}.component_sources must contain at least two sources"
+                )
                 continue
             for source_index, source in enumerate(component_sources):
                 source_label = f"{motif_id}.component_sources[{source_index}]"
@@ -200,10 +226,14 @@ def validate_manifest(payload: dict, current_catalog: dict | None = None) -> lis
                 date = source.get("date")
                 if not isinstance(date, str) or not DATE_RE.fullmatch(date):
                     errors.append(f"{source_label}.date must fall in 2023-2026")
-                parsed = urlparse(source.get("url") if isinstance(source.get("url"), str) else "")
-                if parsed.scheme != "https" or not parsed.netloc:
+                source_url = source["url"] if isinstance(source.get("url"), str) else ""
+                parsed_source = urlparse(source_url)
+                if parsed_source.scheme != "https" or not parsed_source.netloc:
                     errors.append(f"{source_label}.url must be an absolute HTTPS URL")
-                if not isinstance(source.get("supports"), str) or not source["supports"].strip():
+                if (
+                    not isinstance(source.get("supports"), str)
+                    or not source["supports"].strip()
+                ):
                     errors.append(f"{source_label}.supports must be a non-empty string")
         duplicate_exclusions = sorted(
             key for key, count in Counter(excluded_ids).items() if count > 1
@@ -219,12 +249,16 @@ def validate_manifest(payload: dict, current_catalog: dict | None = None) -> lis
 
     if current_catalog is not None:
         current_ids = {
-            motif.get("id")
+            str(motif["id"])
             for motif in current_catalog.get("motifs", [])
-            if isinstance(motif, dict) and motif.get("id")
+            if isinstance(motif, dict)
+            and isinstance(motif.get("id"), str)
+            and motif["id"]
         }
         retained_ids = {
-            motif["motif_id"] for motif in motifs if motif.get("origin") == "retained_v2"
+            motif["motif_id"]
+            for motif in motifs
+            if motif.get("origin") == "retained_v2"
         }
         expected_removed = current_ids - retained_ids
         if removed_ids != expected_removed:
@@ -234,7 +268,9 @@ def validate_manifest(payload: dict, current_catalog: dict | None = None) -> lis
             )
         missing_retained = sorted(retained_ids - current_ids)
         if missing_retained:
-            errors.append(f"retained_v2 motifs absent from current catalog: {missing_retained}")
+            errors.append(
+                f"retained_v2 motifs absent from current catalog: {missing_retained}"
+            )
     return errors
 
 
@@ -252,7 +288,9 @@ def main() -> int:
         "selected_motif_count": len(payload.get("motifs") or []),
         "candidate_motif_count": len(payload.get("motifs") or [])
         + len(payload.get("additional_eligible_candidates") or []),
-        "category_count": len({item.get("category") for item in payload.get("motifs") or []}),
+        "category_count": len(
+            {item.get("category") for item in payload.get("motifs") or []}
+        ),
         "errors": errors,
     }
     print(json.dumps(report, indent=2, ensure_ascii=False))

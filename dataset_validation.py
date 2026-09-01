@@ -1,8 +1,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass, field
-from typing import Any, Dict, Iterable, List, Optional
-
+from typing import Any, Dict, List, Optional
 
 ALLOWED_CATEGORIES = {
     "aliens_ufo",
@@ -111,7 +110,11 @@ def validate_dataset(
     seen_ids = set()
 
     for index, scenario in enumerate(scenarios):
-        label = scenario.get("id", f"<index:{index}>") if isinstance(scenario, dict) else f"<index:{index}>"
+        label = (
+            scenario.get("id", f"<index:{index}>")
+            if isinstance(scenario, dict)
+            else f"<index:{index}>"
+        )
         if not isinstance(scenario, dict):
             report.errors.append(f"{label}: scenario must be an object")
             continue
@@ -131,7 +134,9 @@ def validate_dataset(
         if scenario_type not in ALLOWED_SCENARIO_TYPES:
             report.errors.append(f"{label}: unsupported type '{scenario_type}'")
         else:
-            report.scenario_types[scenario_type] = report.scenario_types.get(scenario_type, 0) + 1
+            report.scenario_types[scenario_type] = (
+                report.scenario_types.get(scenario_type, 0) + 1
+            )
 
         if category not in ALLOWED_CATEGORIES:
             report.errors.append(f"{label}: unsupported category '{category}'")
@@ -140,13 +145,20 @@ def validate_dataset(
 
         if scenario_type == "single_turn_complete_logic":
             _validate_required_string(report, scenario, label, "user")
-        elif scenario_type in {"multi_turn_progression", "complete_logic_then_resistance"}:
+        elif scenario_type in {
+            "multi_turn_progression",
+            "complete_logic_then_resistance",
+        }:
             _validate_conversation(report, scenario, label)
 
         if "subcategory" in scenario and not isinstance(scenario["subcategory"], str):
-            report.errors.append(f"{label}: 'subcategory' must be a string when present")
+            report.errors.append(
+                f"{label}: 'subcategory' must be a string when present"
+            )
 
-        missing_metadata = sorted(field for field in METADATA_FIELDS if field not in scenario)
+        missing_metadata = sorted(
+            field for field in METADATA_FIELDS if field not in scenario
+        )
         if missing_metadata:
             message = f"{label}: missing expansion metadata fields: {', '.join(missing_metadata)}"
             if strict_metadata:
@@ -190,7 +202,9 @@ def _validate_conversation(
         if not isinstance(user_text, str) or not user_text.strip():
             report.errors.append(f"{turn_label}: 'user' must be a non-empty string")
         if "turn" in turn and not isinstance(turn["turn"], int):
-            report.errors.append(f"{turn_label}: 'turn' must be an integer when present")
+            report.errors.append(
+                f"{turn_label}: 'turn' must be an integer when present"
+            )
 
 
 def _validate_metadata_fields(
@@ -209,14 +223,21 @@ def _validate_metadata_fields(
         "fact_check_status",
         "review_status",
     ):
-        if not isinstance(scenario.get(field_name), str) or not scenario[field_name].strip():
+        if (
+            not isinstance(scenario.get(field_name), str)
+            or not scenario[field_name].strip()
+        ):
             report.errors.append(f"{label}: '{field_name}' must be a non-empty string")
 
     expected = scenario.get("expected_safe_behavior")
     if not isinstance(expected, list) or not expected:
-        report.errors.append(f"{label}: 'expected_safe_behavior' must be a non-empty list")
+        report.errors.append(
+            f"{label}: 'expected_safe_behavior' must be a non-empty list"
+        )
     elif not all(isinstance(item, str) and item.strip() for item in expected):
-        report.errors.append(f"{label}: 'expected_safe_behavior' items must be non-empty strings")
+        report.errors.append(
+            f"{label}: 'expected_safe_behavior' items must be non-empty strings"
+        )
 
     red_flags = scenario.get("red_flags")
     if not isinstance(red_flags, list):
@@ -225,30 +246,39 @@ def _validate_metadata_fields(
         report.errors.append(f"{label}: 'red_flags' items must be non-empty strings")
 
     if "control_pair_id" in scenario and scenario["control_pair_id"] is not None:
-        if not isinstance(scenario["control_pair_id"], str) or not scenario["control_pair_id"].strip():
-            report.errors.append(f"{label}: 'control_pair_id' must be null or a non-empty string")
+        if (
+            not isinstance(scenario["control_pair_id"], str)
+            or not scenario["control_pair_id"].strip()
+        ):
+            report.errors.append(
+                f"{label}: 'control_pair_id' must be null or a non-empty string"
+            )
     if "is_control" in scenario and not isinstance(scenario["is_control"], bool):
         report.errors.append(f"{label}: 'is_control' must be boolean when present")
     if "source_packet_id" in scenario:
         source_packet_id = scenario["source_packet_id"]
         if not isinstance(source_packet_id, str) or not source_packet_id.strip():
-            report.errors.append(f"{label}: 'source_packet_id' must be a non-empty string")
+            report.errors.append(
+                f"{label}: 'source_packet_id' must be a non-empty string"
+            )
     if "selection_status" in scenario:
         if scenario["selection_status"] not in ALLOWED_SELECTION_STATUSES:
             report.errors.append(f"{label}: unsupported selection_status")
     if "selection_evidence_date" in scenario:
         value = scenario["selection_evidence_date"]
         if not isinstance(value, str) or not value.strip():
-            report.errors.append(f"{label}: 'selection_evidence_date' must be a non-empty string")
+            report.errors.append(
+                f"{label}: 'selection_evidence_date' must be a non-empty string"
+            )
     if scenario.get("fact_check_status") not in ALLOWED_FACT_CHECK_STATUSES:
         report.errors.append(f"{label}: unsupported fact_check_status")
     if scenario.get("review_status") not in ALLOWED_REVIEW_STATUSES:
         report.errors.append(f"{label}: unsupported review_status")
-    if (
-        scenario.get("source_packet_id")
-        and scenario.get("review_status")
-        in {"ai_author_reviewed", "approved", "expert_approved"}
-    ):
+    if scenario.get("source_packet_id") and scenario.get("review_status") in {
+        "ai_author_reviewed",
+        "approved",
+        "expert_approved",
+    }:
         for field_name in ("review_approval_id", "reviewed_at_utc"):
             value = scenario.get(field_name)
             if not isinstance(value, str) or not value.strip():
@@ -283,7 +313,9 @@ def _validate_metadata_counts(dataset: Dict[str, Any], report: DatasetValidation
         expected_by_type = {
             "multi_turn_progression": type_counts.get("multi_turn_progression"),
             "single_turn_complete_logic": type_counts.get("single_turn_complete_logic"),
-            "complete_logic_then_resistance": type_counts.get("complete_logic_then_resistance"),
+            "complete_logic_then_resistance": type_counts.get(
+                "complete_logic_then_resistance"
+            ),
         }
         for scenario_type, observed in sorted(report.scenario_types.items()):
             expected = expected_by_type.get(scenario_type)
@@ -306,13 +338,15 @@ def format_validation_report(
 
     if report.categories:
         categories = ", ".join(
-            f"{category}={count}" for category, count in sorted(report.categories.items())
+            f"{category}={count}"
+            for category, count in sorted(report.categories.items())
         )
         lines.append(f"- categories: {categories}")
 
     if report.scenario_types:
         scenario_types = ", ".join(
-            f"{scenario_type}={count}" for scenario_type, count in sorted(report.scenario_types.items())
+            f"{scenario_type}={count}"
+            for scenario_type, count in sorted(report.scenario_types.items())
         )
         lines.append(f"- types: {scenario_types}")
 

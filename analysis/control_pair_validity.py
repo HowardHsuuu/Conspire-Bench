@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 """Evaluate rubric discriminant validity on matched conspiratorial/control scenarios."""
+
 from __future__ import annotations
 
 import argparse
@@ -9,7 +10,6 @@ import statistics
 from collections import defaultdict
 from pathlib import Path
 from typing import Any, Iterable
-
 
 DEFAULT_METRICS = (
     "belief_amplification",
@@ -59,19 +59,23 @@ def matched_pairs(rows: Iterable[dict[str, Any]]) -> list[dict[str, Any]]:
     for identity, sides in sorted(buckets.items(), key=lambda item: str(item[0])):
         if True not in sides or False not in sides:
             continue
-        pairs.append({
-            "pair_id": identity[0],
-            "model_name": identity[1],
-            "prompt_variant_id": identity[2],
-            "replicate_id": identity[3],
-            "generation_seed": identity[4],
-            "conspiracy": sides[False],
-            "control": sides[True],
-        })
+        pairs.append(
+            {
+                "pair_id": identity[0],
+                "model_name": identity[1],
+                "prompt_variant_id": identity[2],
+                "replicate_id": identity[3],
+                "generation_seed": identity[4],
+                "conspiracy": sides[False],
+                "control": sides[True],
+            }
+        )
     return pairs
 
 
-def _bootstrap_ci(values: list[float], seed: int, draws: int = 2000) -> list[float] | None:
+def _bootstrap_ci(
+    values: list[float], seed: int, draws: int = 2000
+) -> list[float] | None:
     if not values:
         return None
     if len(values) == 1:
@@ -91,7 +95,9 @@ def _metric_summary(values: list[float], seed: int) -> dict[str, Any]:
     return {
         "pair_count": len(values),
         "mean_conspiracy_minus_control": statistics.fmean(values) if values else None,
-        "median_conspiracy_minus_control": statistics.median(values) if values else None,
+        "median_conspiracy_minus_control": statistics.median(values)
+        if values
+        else None,
         "bootstrap_95_ci": _bootstrap_ci(values, seed),
         "conspiracy_higher_rate": greater / len(values) if values else None,
         "tie_rate": equal / len(values) if values else None,
@@ -118,20 +124,34 @@ def build_report(
         for metric in metrics:
             left = conspiracy_scores.get(metric)
             right = control_scores.get(metric)
-            if isinstance(left, (int, float)) and not isinstance(left, bool) and isinstance(right, (int, float)) and not isinstance(right, bool):
+            if (
+                isinstance(left, (int, float))
+                and not isinstance(left, bool)
+                and isinstance(right, (int, float))
+                and not isinstance(right, bool)
+            ):
                 difference = float(left) - float(right)
                 differences[metric] = difference
                 metric_differences[metric].append(difference)
                 by_model[str(pair["model_name"])][metric].append(difference)
                 by_frame[str(pair["prompt_variant_id"])][metric].append(difference)
-        pair_rows.append({
-            key: pair[key]
-            for key in ("pair_id", "model_name", "prompt_variant_id", "replicate_id", "generation_seed")
-        } | {
-            "conspiracy_scenario_id": pair["conspiracy"].get("scenario_id"),
-            "control_scenario_id": pair["control"].get("scenario_id"),
-            "differences": differences,
-        })
+        pair_rows.append(
+            {
+                key: pair[key]
+                for key in (
+                    "pair_id",
+                    "model_name",
+                    "prompt_variant_id",
+                    "replicate_id",
+                    "generation_seed",
+                )
+            }
+            | {
+                "conspiracy_scenario_id": pair["conspiracy"].get("scenario_id"),
+                "control_scenario_id": pair["control"].get("scenario_id"),
+                "differences": differences,
+            }
+        )
 
     possible_pair_buckets = {
         identity
@@ -149,7 +169,9 @@ def build_report(
         ),
         "matched_pair_count": len(pairs),
         "possible_pair_bucket_count": len(possible_pair_buckets),
-        "pair_coverage": len(pairs) / len(possible_pair_buckets) if possible_pair_buckets else None,
+        "pair_coverage": len(pairs) / len(possible_pair_buckets)
+        if possible_pair_buckets
+        else None,
         "metrics": {
             metric: _metric_summary(metric_differences.get(metric, []), seed + index)
             for index, metric in enumerate(metrics)

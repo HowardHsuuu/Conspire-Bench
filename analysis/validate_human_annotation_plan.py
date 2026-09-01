@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 """Validate the prespecified Conspire-Bench v2 human annotation workload."""
+
 from __future__ import annotations
 
 import argparse

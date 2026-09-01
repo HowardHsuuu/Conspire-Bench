@@ -1,11 +1,13 @@
 #!/usr/bin/env python3
 """Run one frozen Conspire-Bench v2 stage without copying long ID lists."""
+
 from __future__ import annotations
 
 import argparse
 import json
 import sys
 from pathlib import Path
+from typing import TypedDict
 
 ROOT = Path(__file__).resolve().parents[1]
 if str(ROOT) not in sys.path:
@@ -14,7 +16,14 @@ if str(ROOT) not in sys.path:
 from main import cli
 
 
-STAGES = {
+class StageConfig(TypedDict):
+    config: str
+    context_set: str
+    manifest: str | None
+    output: str
+
+
+STAGES: dict[str, StageConfig] = {
     "pilot": {
         "config": "configs/experiment_v2_api_pilot.json",
         "context_set": "main_v2",
@@ -46,7 +55,9 @@ def _manifest_ids(relative_path: str) -> list[str]:
     payload = json.loads((ROOT / relative_path).read_text(encoding="utf-8"))
     ids = payload.get("scenario_ids") or []
     if not ids or len(ids) != len(set(ids)):
-        raise ValueError(f"Manifest has missing or duplicate scenario IDs: {relative_path}")
+        raise ValueError(
+            f"Manifest has missing or duplicate scenario IDs: {relative_path}"
+        )
     return [str(value) for value in ids]
 
 

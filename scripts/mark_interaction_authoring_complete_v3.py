@@ -1,11 +1,11 @@
 #!/usr/bin/env python3
 """Record validated v3 interaction authoring in the frozen motif manifest."""
+
 from __future__ import annotations
 
 import argparse
 import json
 from pathlib import Path
-
 
 ROOT = Path(__file__).resolve().parents[1]
 DEFAULT_MANIFEST = ROOT / "configs" / "primary_motif_manifest_v3.json"
@@ -25,10 +25,14 @@ def main() -> int:
     if catalog_ids != manifest_ids or len(catalog_ids) != 51:
         raise ValueError("validated catalog must exactly match the 51-item manifest")
     if args.check:
-        ok = all(
-            item.get("authoring_status") == "authored_validated"
-            for item in manifest.get("motifs", [])
-        ) and manifest.get("interaction_catalog") == "configs/interaction_catalog_v3.json"
+        ok = (
+            all(
+                item.get("authoring_status") == "authored_validated"
+                for item in manifest.get("motifs", [])
+            )
+            and manifest.get("interaction_catalog")
+            == "configs/interaction_catalog_v3.json"
+        )
         print(json.dumps({"ok": ok, "motif_count": len(manifest_ids)}, indent=2))
         return 0 if ok else 1
     for item in manifest["motifs"]:
