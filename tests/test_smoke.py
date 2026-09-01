@@ -22,7 +22,7 @@ from analysis.export_calibration import export_calibration_package
 from analysis.export_results import export_results
 from analysis.export_rubric_feedback import export_forms as export_rubric_feedback_forms
 from analysis.frame_effect_stats import build_report as build_frame_effect_report
-from analysis.freeze_analysis_plan import build_frozen_plan
+from analysis.freeze_analysis_plan_v3 import build_frozen_plan
 from analysis.freeze_annotator_roster import freeze_roster
 from analysis.freeze_human_annotation_plan import freeze_human_plan
 from analysis.human_annotation_plan import human_annotation_plan_digest
@@ -47,7 +47,6 @@ from analysis.paraphrase_robustness import build_report as build_paraphrase_repo
 from analysis.rubric_consistency_audit import build_report as build_consistency_report
 from analysis.scenario_review import export_review_package, import_reviews
 from analysis.select_scenario_subset import build_manifest as build_subset_manifest
-from analysis.validate_analysis_plan import validate_plan
 from bench_runner import ConspireBenchmarkRunner
 from benchmark_types import JudgeMetrics, ScenarioType, resolve_api_key
 from dataset_validation import validate_dataset
@@ -67,7 +66,6 @@ from main import (
 )
 from rubric_v2 import HARMFUL_ELABORATION_SUBTYPES, RUBRIC_VERSION
 from scenario_expansion import (
-    load_benchmark_dataset,
     validate_expansion_catalog,
     validate_selection_evidence,
     validate_source_packets,
@@ -76,6 +74,7 @@ from scenario_metadata import annotation_readiness_errors
 from scripts.preflight_api_models import role_entries as preflight_role_entries
 from scripts.run_v2_stage import build_parser as build_stage_parser
 from scripts.run_v2_stage import build_stage_args
+from scripts.validate_analysis_plan_v3 import validate as validate_plan
 
 ROOT = Path(__file__).resolve().parents[1]
 
@@ -521,39 +520,27 @@ class SmokeTests(unittest.TestCase):
         self.assertEqual(len(selections["items"]), 21)
         self.assertEqual(len(catalog["motifs"]), 21)
 
-    def test_independent_scenario_review_ledger_unlocks_approved_metadata(self):
-        source_catalog = json.loads(
-            (ROOT / "configs" / "scenario_expansion_v2.json").read_text(
-                encoding="utf-8"
-            )
-        )
+    def test_independent_v3_scenario_review_is_digest_bound(self):
         with tempfile.TemporaryDirectory() as tmp:
             tmp_path = Path(tmp)
-            catalog = dict(source_catalog)
-            catalog["base_dataset"] = str(ROOT / "CONSPIRE-Bench.json")
-            catalog["source_packets"] = str(
-                ROOT / "configs" / "scenario_source_packets_v2.json"
-            )
-            catalog["selection_evidence"] = str(
-                ROOT / "configs" / "motif_selection_evidence_v2.json"
-            )
-            catalog["review_approval"] = "approval.json"
-            catalog_path = tmp_path / "catalog.json"
-            catalog_path.write_text(json.dumps(catalog), encoding="utf-8")
             review_dir = tmp_path / "review"
-            export_review_package(catalog_path, review_dir)
+            export_review_package(review_dir)
             completed = []
-            for line in (review_dir / "scenario_review.jsonl").read_text().splitlines():
+            for line in (
+                (review_dir / "scenario_review_v3.jsonl").read_text().splitlines()
+            ):
                 row = json.loads(line)
                 row.update(
                     {
                         "reviewer_id": "reviewer_01",
                         "expertise_description_nonidentifying": "domain reviewer",
                         "independent_of_scenario_authoring": True,
-                        "fact_boundary_accurate": True,
+                        "circulation_match_accurate": True,
+                        "narrative_fidelity_accurate": True,
                         "prompts_construct_aligned": True,
-                        "matched_control_valid": True,
-                        "plausibility_1_5": 4,
+                        "interaction_structures_matched": True,
+                        "identity_treatment_appropriate": True,
+                        "prompt_plausibility_1_5": 4,
                         "difficulty_1_5": 4,
                         "decision": "approve",
                         "required_changes": "",
@@ -566,19 +553,15 @@ class SmokeTests(unittest.TestCase):
                 "".join(json.dumps(row) + "\n" for row in completed),
                 encoding="utf-8",
             )
-            ledger = import_reviews(catalog_path, [returned_path])
-            (tmp_path / "approval.json").write_text(
-                json.dumps(ledger), encoding="utf-8"
-            )
+            ledger = import_reviews([returned_path])
 
-            dataset = load_benchmark_dataset(catalog_path)
-
-        expansion = [row for row in dataset["scenarios"] if row.get("source_packet_id")]
         self.assertEqual(ledger["status"], "approved")
-        self.assertEqual(len(expansion), 84)
-        self.assertEqual({row["review_status"] for row in expansion}, {"approved"})
-        self.assertEqual({row["fact_check_status"] for row in expansion}, {"verified"})
-        self.assertTrue(all(row.get("review_approval_id") for row in expansion))
+        self.assertEqual(ledger["motif_count"], 51)
+        self.assertEqual(ledger["truth_adjudication"], "not_part_of_review")
+        self.assertEqual(
+            set(ledger["artifact_digests"]),
+            {"manifest", "narratives", "quality", "catalog", "identity"},
+        )
 
     def test_expansion_catalog_materializes_108_scenarios_with_matched_controls(self):
         dataset = load_dataset(str(ROOT / "configs" / "scenario_expansion_v2.json"))
@@ -695,7 +678,7 @@ class SmokeTests(unittest.TestCase):
 
     def test_analysis_plan_is_internally_consistent_before_freeze(self):
         plan = json.loads(
-            (ROOT / "configs" / "analysis_plan_v2.json").read_text(encoding="utf-8")
+            (ROOT / "configs" / "analysis_plan_v3.json").read_text(encoding="utf-8")
         )
 
         self.assertEqual(validate_plan(plan, root=ROOT), [])
@@ -709,10 +692,13 @@ class SmokeTests(unittest.TestCase):
             "rubric_freeze_record.calibration_decision_record is required",
             frozen_errors,
         )
+        self.assertIn(
+            "scenario_review_record.approval_ledger is required", frozen_errors
+        )
 
     def test_analysis_plan_freezer_binds_expert_and_calibration_evidence(self):
         plan = json.loads(
-            (ROOT / "configs" / "analysis_plan_v2.json").read_text(encoding="utf-8")
+            (ROOT / "configs" / "analysis_plan_v3.json").read_text(encoding="utf-8")
         )
         with tempfile.TemporaryDirectory(dir=ROOT) as tmp:
             temp_path = Path(tmp)
@@ -736,6 +722,7 @@ class SmokeTests(unittest.TestCase):
             validity_path = temp_path / "rubric_content_validity_report.private.json"
             calibration_path = temp_path / "calibration_exclusion_manifest.private.json"
             decision_path = temp_path / "rubric_freeze_decision.private.json"
+            scenario_review_path = temp_path / "scenario_review_approval.private.json"
             validity_path.write_text(
                 json.dumps(
                     {
@@ -772,17 +759,65 @@ class SmokeTests(unittest.TestCase):
                 ),
                 encoding="utf-8",
             )
+            review_dir = temp_path / "scenario_review"
+            export_review_package(review_dir)
+            completed_reviews = []
+            for line in (
+                (review_dir / "scenario_review_v3.jsonl")
+                .read_text(encoding="utf-8")
+                .splitlines()
+            ):
+                row = json.loads(line)
+                row.update(
+                    {
+                        "reviewer_id": "reviewer_01",
+                        "expertise_description_nonidentifying": "domain reviewer",
+                        "independent_of_scenario_authoring": True,
+                        "circulation_match_accurate": True,
+                        "narrative_fidelity_accurate": True,
+                        "prompts_construct_aligned": True,
+                        "interaction_structures_matched": True,
+                        "identity_treatment_appropriate": True,
+                        "prompt_plausibility_1_5": 4,
+                        "difficulty_1_5": 4,
+                        "decision": "approve",
+                        "required_changes": "",
+                        "comments": "",
+                    }
+                )
+                completed_reviews.append(row)
+            returned_review_path = temp_path / "scenario_review_returned.jsonl"
+            returned_review_path.write_text(
+                "".join(json.dumps(row) + "\n" for row in completed_reviews),
+                encoding="utf-8",
+            )
+            scenario_review_path.write_text(
+                json.dumps(import_reviews([returned_review_path])), encoding="utf-8"
+            )
             frozen = build_frozen_plan(
                 plan,
                 root=ROOT,
                 content_validity_report=validity_path,
                 calibration_exclusion_manifest=calibration_path,
                 calibration_decision_record=decision_path,
+                scenario_review_approval=scenario_review_path,
+                human_annotation_plan=human_plan_path,
                 git_commit="a" * 40,
                 approved_by=["pi_01"],
                 frozen_at="2026-08-31T00:00:00Z",
             )
             self.assertEqual(validate_plan(frozen, root=ROOT, require_frozen=True), [])
+            scenario_ledger = json.loads(
+                scenario_review_path.read_text(encoding="utf-8")
+            )
+            scenario_ledger["reviews"][0]["comments"] = "changed after freeze"
+            scenario_review_path.write_text(
+                json.dumps(scenario_ledger), encoding="utf-8"
+            )
+            self.assertIn(
+                "scenario review approval digest does not match",
+                validate_plan(frozen, root=ROOT, require_frozen=True),
+            )
 
         self.assertEqual(frozen["status"], "frozen")
         self.assertEqual(frozen["freeze_record"]["approved_by"], ["pi_01"])
@@ -861,7 +896,7 @@ class SmokeTests(unittest.TestCase):
             exit_code = main(
                 [
                     "--config",
-                    str(ROOT / "configs" / "local_5090_config.json"),
+                    str(ROOT / "legacy" / "v1_configs" / "local_5090_config.json"),
                     "--dataset",
                     str(ROOT / "CONSPIRE-Bench.json"),
                     "--dry-run",
@@ -883,7 +918,7 @@ class SmokeTests(unittest.TestCase):
             exit_code = main(
                 [
                     "--config",
-                    str(ROOT / "configs" / "local_5090_config.json"),
+                    str(ROOT / "legacy" / "v1_configs" / "local_5090_config.json"),
                     "--dataset",
                     str(ROOT / "CONSPIRE-Bench.json"),
                     "--dry-run",
@@ -913,7 +948,7 @@ class SmokeTests(unittest.TestCase):
             exit_code = main(
                 [
                     "--config",
-                    str(ROOT / "configs" / "local_5090_config.json"),
+                    str(ROOT / "legacy" / "v1_configs" / "local_5090_config.json"),
                     "--dataset",
                     str(ROOT / "CONSPIRE-Bench.json"),
                     "--dry-run",
@@ -940,7 +975,7 @@ class SmokeTests(unittest.TestCase):
             exit_code = main(
                 [
                     "--config",
-                    str(ROOT / "configs" / "local_5090_config.json"),
+                    str(ROOT / "legacy" / "v1_configs" / "local_5090_config.json"),
                     "--dry-run",
                     "--execution-mode",
                     "phased",
@@ -1374,11 +1409,18 @@ class SmokeTests(unittest.TestCase):
         self.assertEqual(len(_target_model_configs(config)), 2)
         with redirect_stdout(StringIO()):
             self.assertTrue(
-                validate_setup(str(ROOT / "configs" / "local_5090_config.json"))
+                validate_setup(
+                    str(ROOT / "legacy" / "v1_configs" / "local_5090_config.json")
+                )
             )
             self.assertTrue(
                 validate_setup(
-                    str(ROOT / "configs" / "local_5090_full_matrix_config.json")
+                    str(
+                        ROOT
+                        / "legacy"
+                        / "v1_configs"
+                        / "local_5090_full_matrix_config.json"
+                    )
                 )
             )
 
@@ -1440,7 +1482,7 @@ class SmokeTests(unittest.TestCase):
         self.assertEqual(messages[0]["content"][0]["type"], "text")
 
     def test_local_gemma4_judge_is_deterministic(self):
-        with open(ROOT / "configs" / "local_5090_config.json", "r") as f:
+        with open(ROOT / "legacy" / "v1_configs" / "local_5090_config.json", "r") as f:
             config = json.load(f)
         manager = LocalModelManager(config, logging.getLogger("test"), root_dir=ROOT)
         judge_config = config["judges"][1]
@@ -1460,7 +1502,7 @@ class SmokeTests(unittest.TestCase):
         self.assertEqual(meta["generation"]["cache_implementation"], "static")
 
     def test_local_qwen_judge_uses_long_context(self):
-        with open(ROOT / "configs" / "local_5090_config.json", "r") as f:
+        with open(ROOT / "legacy" / "v1_configs" / "local_5090_config.json", "r") as f:
             config = json.load(f)
         manager = LocalModelManager(config, logging.getLogger("test"), root_dir=ROOT)
         judge_config = config["judges"][0]

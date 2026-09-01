@@ -13,7 +13,19 @@ ROOT = Path(__file__).resolve().parents[1]
 if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
 
+from analysis.api_usage_report import build_report as build_usage_report
+from analysis.export_results import model_variant_summary_rows
 from analysis.frame_effect_stats import build_v3_coequal_report
+from analysis.judge_family_sensitivity import (
+    build_report as build_judge_sensitivity_report,
+)
+from analysis.make_figures import effect_rows as figure_effect_rows
+from analysis.paraphrase_robustness import build_report as build_paraphrase_report
+from analysis.rubric_consistency_audit import (
+    build_report as build_consistency_report,
+)
+from analysis.scenario_review import load_artifacts as load_scenario_review_artifacts
+from analysis.scenario_review import review_items as build_scenario_review_items
 from dataset_validation import validate_dataset
 from scripts.validate_analysis_plan_v3 import validate as validate_analysis_plan
 from scripts.validate_context_variants_v3 import validate_context_variants
@@ -28,11 +40,12 @@ def _read(relative_path: str) -> dict[str, Any]:
 
 
 def _analysis_runtime_contract_errors() -> list[str]:
-    scores = {
+    scores: dict[str, Any] = {
         "belief_amplification": 1,
         "epistemic_grounding": 4,
         "uncertainty_calibration": 4,
         "harmful_elaboration": False,
+        "harmful_elaboration_subtype": "none",
         "supportive_engagement": 4,
         "appropriate_redirection": 2,
         "response_appropriateness": 0,
@@ -60,6 +73,56 @@ def _analysis_runtime_contract_errors() -> list[str]:
             "generation_seed": 1,
             "replicate_id": 0,
             "judge_scores": scores,
+            "response_id": f"contract_{variant}",
+            "conversation_log": [
+                {
+                    "role": "assistant",
+                    "content": "Synthetic contract response.",
+                    "response_metadata": {
+                        "provider": "openai",
+                        "requested_model": "contract-target",
+                        "resolved_model": "contract-target-resolved",
+                        "interface": "responses",
+                        "usage": {
+                            "input_tokens": 10,
+                            "output_tokens": 5,
+                            "total_tokens": 15,
+                        },
+                    },
+                }
+            ],
+            "judge_results": [
+                {
+                    "judge_name": "same-family-contract-judge",
+                    "provider": "openai",
+                    "model": "same-family-judge",
+                    "same_family_as_target": True,
+                    "scores": scores,
+                    "error": None,
+                    "response_metadata": {
+                        "provider": "openai",
+                        "requested_model": "same-family-judge",
+                        "resolved_model": "same-family-judge-resolved",
+                        "interface": "responses",
+                        "usage": {"input_tokens": 20, "output_tokens": 8},
+                    },
+                },
+                {
+                    "judge_name": "cross-family-contract-judge",
+                    "provider": "anthropic",
+                    "model": "cross-family-judge",
+                    "same_family_as_target": False,
+                    "scores": scores,
+                    "error": None,
+                    "response_metadata": {
+                        "provider": "anthropic",
+                        "requested_model": "cross-family-judge",
+                        "resolved_model": "cross-family-judge-resolved",
+                        "interface": "messages_api",
+                        "usage": {"input_tokens": 20, "output_tokens": 8},
+                    },
+                },
+            ],
             "error": None,
         }
         for frame, variant in variants
@@ -95,7 +158,126 @@ def _analysis_runtime_contract_errors() -> list[str]:
     )
     if sensitivity_estimands != 28:
         errors.append("Overlap-cluster sensitivity must repeat all 28 effect summaries")
+    try:
+        if len(figure_effect_rows(report)) != 28:
+            errors.append("V3 figure extraction must preserve all 28 estimands")
+        table_rows = model_variant_summary_rows(rows)
+        if len(table_rows) != 17:
+            errors.append("V3 table export must preserve all 17 wording conditions")
+        elif any("sd_belief_amplification" not in row for row in table_rows):
+            errors.append("V3 descriptive tables must include standard deviations")
+        paraphrase = build_paraphrase_report(rows, "belief_amplification")
+        if len(paraphrase.get("family_summary", [])) != 4:
+            errors.append(
+                "Paraphrase analysis must summarize four non-neutral families"
+            )
+        sensitivity = build_judge_sensitivity_report(rows)
+        if not sensitivity.get("paired_comparisons"):
+            errors.append("Judge-family sensitivity must emit paired comparisons")
+        usage = build_usage_report(rows)
+        if usage.get("request_count") != len(rows) * 3:
+            errors.append("Usage report must retain target and per-judge requests")
+        consistency = build_consistency_report(rows)
+        if not str(consistency.get("policy") or "").startswith("Diagnostic only"):
+            errors.append("Rubric consistency checks must remain post-hoc diagnostics")
+    except Exception as error:
+        errors.append(f"V3 downstream analysis pipeline failed: {error}")
     return errors
+
+
+def _reviewer_revision_coverage() -> list[dict[str, Any]]:
+    """Public traceability from the ARR concerns to V3 evidence boundaries."""
+
+    return [
+        {
+            "issue": "benchmark_size_and_diversity",
+            "status": "implemented_pending_live_evidence",
+            "evidence": [
+                "Conspire-Bench-v3.json: 51 motifs, 153 scenarios, 24 categories",
+                "configs/primary_motif_manifest_v3.json",
+            ],
+        },
+        {
+            "issue": "scenario_construction_quality_control",
+            "status": "implemented_plus_pending_independent_human_qa",
+            "evidence": [
+                "configs/motif_narratives_v3.json",
+                "configs/motif_quality_review_v3.json",
+                "configs/interaction_identity_policy_v3.json",
+                "analysis/scenario_review.py",
+            ],
+        },
+        {
+            "issue": "human_validation_and_human_judge_agreement",
+            "status": "workflow_implemented_pending_human_evidence",
+            "evidence": [
+                "configs/human_annotation_plan_v2.json",
+                "docs/annotation_protocol.md",
+                "analysis/import_annotations.py",
+                "analysis/import_rubric_feedback.py",
+            ],
+        },
+        {
+            "issue": "judge_reliability_size_and_family_bias",
+            "status": "implemented_pending_live_and_human_evidence",
+            "evidence": [
+                "configs/experiment_v3_api_full.json: three provider-diverse judges",
+                "analysis/judge_family_sensitivity.py",
+                "cross-family primary aggregation in bench_runner.py",
+            ],
+        },
+        {
+            "issue": "single_prompt_frame_dependence_and_critical_frame_ambiguity",
+            "status": "implemented_pending_live_evidence",
+            "evidence": [
+                "configs/context_variants.json: 17 conditions",
+                "analysis/paraphrase_robustness.py",
+                "analysis/frame_effect_stats.py: within-family wording aggregation",
+            ],
+        },
+        {
+            "issue": "larger_open_and_deployed_models",
+            "status": "matrices_implemented_pending_live_evidence",
+            "evidence": [
+                "configs/experiment_v3_local_full.json: 13 open models",
+                "configs/experiment_v3_api_full.json: 9 API models",
+                "scripts/preflight_api_models.py",
+            ],
+        },
+        {
+            "issue": "practical_role_motivation_and_adjacent_benchmark_positioning",
+            "status": "documented",
+            "evidence": ["README.md", "docs/rubric.md"],
+        },
+        {
+            "issue": "construction_to_evaluation_running_example",
+            "status": "pipeline_documented_pending_live_response_example",
+            "evidence": ["docs/dataset.md: Running example"],
+        },
+        {
+            "issue": "ambiguous_overall_safety_composite",
+            "status": "resolved",
+            "evidence": [
+                "docs/rubric.md: seven coequal outcomes",
+                "judge_rubric.py",
+                "result_reporting.py",
+            ],
+        },
+        {
+            "issue": "prompt_time_consistency_corrections",
+            "status": "resolved_as_post_hoc_diagnostics",
+            "evidence": ["analysis/rubric_consistency_audit.py"],
+        },
+        {
+            "issue": "variability_confidence_intervals_and_result_figures",
+            "status": "implemented_pending_live_evidence",
+            "evidence": [
+                "analysis/export_results.py",
+                "analysis/frame_effect_stats.py",
+                "analysis/make_figures.py",
+            ],
+        },
+    ]
 
 
 def build_report() -> dict[str, Any]:
@@ -126,6 +308,7 @@ def build_report() -> dict[str, Any]:
         "analysis/rubric_consistency_audit.py",
         "analysis/api_usage_report.py",
         "analysis/export_results.py",
+        "analysis/make_figures.py",
     )
     checks["analysis_implementations"] = [
         f"missing public analysis tool: {path}"
@@ -133,6 +316,19 @@ def build_report() -> dict[str, Any]:
         if not (ROOT / path).is_file()
     ]
     checks["coequal_statistics_runtime"] = _analysis_runtime_contract_errors()
+
+    try:
+        scenario_review_count = len(
+            build_scenario_review_items(load_scenario_review_artifacts())
+        )
+        scenario_review_errors = (
+            []
+            if scenario_review_count == 51
+            else ["V3 independent scenario-review packet must contain 51 motifs"]
+        )
+    except Exception as error:
+        scenario_review_errors = [f"V3 scenario-review workflow failed: {error}"]
+    checks["independent_scenario_review_workflow"] = scenario_review_errors
 
     required_annotation_tools = (
         "analysis/export_rubric_feedback.py",
@@ -143,7 +339,7 @@ def build_report() -> dict[str, Any]:
         "analysis/import_annotations.py",
         "analysis/scenario_review.py",
         "analysis/freeze_human_annotation_plan.py",
-        "analysis/freeze_analysis_plan.py",
+        "analysis/freeze_analysis_plan_v3.py",
     )
     checks["annotation_workflow"] = [
         f"missing annotation workflow tool: {path}"
@@ -175,14 +371,19 @@ def build_report() -> dict[str, Any]:
             for name, errors in checks.items()
         },
         "contract_errors": contract_errors,
+        "reviewer_revision_coverage": _reviewer_revision_coverage(),
+        "unresolved_code_or_design_issues": []
+        if not contract_errors
+        else contract_errors,
         "pending_live_evidence": [
             "Generate the open-source target response matrix and local diagnostic judges.",
             "Preflight current API model IDs, then run the API pilot and full target matrix.",
             "Run the final cross-provider judge panel on the frozen response pool.",
             "Produce result-dependent frame effects, paraphrase robustness, confidence intervals, judge sensitivity, usage, tables, and figures.",
+            "Select a blinded running transcript and update result-dependent manuscript tables, figures, and claims without reviving an overall-safety composite.",
         ],
         "pending_human_evidence": [
-            "Complete independent scenario QA if it will support the manuscript's construction-validity claim.",
+            "Complete independent V3 scenario QA for the construction-validity evidence and final analysis freeze.",
             "Obtain supervisor or ethics-process approval for consent, compensation, data retention, and annotator welfare.",
             "Run expert rubric content validation and timed calibration, then freeze rubric, workload, and analysis plans.",
             "Collect the frozen expert conversation ratings and student paired-frame ratings, then import and analyze them.",

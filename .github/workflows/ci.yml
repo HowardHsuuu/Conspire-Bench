@@ -38,5 +38,12 @@ jobs:
           python scripts/validate_experiment_configs_v3.py
           python scripts/validate_analysis_plan_v3.py
           python scripts/audit_release_readiness.py
+          bash -n scripts/runpod_5090_smoke.sh
+          python main.py \
+            --config configs/experiment_v3_local_smoke.json \
+            --dataset Conspire-Bench-v3.json \
+            --validate-only \
+            --scenario-ids v3_weather_cloud_seeding_single_001 \
+            --context-variants neutral_none
       - name: Run tests
         run: python -m unittest discover -s tests

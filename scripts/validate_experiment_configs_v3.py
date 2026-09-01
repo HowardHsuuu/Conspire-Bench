@@ -51,14 +51,34 @@ def validate(local_config: dict[str, Any], api_config: dict[str, Any]) -> list[s
     _validate_env_keys(api_config, "api", errors)
 
     local_models = local_config.get("models") or []
-    if len(local_models) < 9:
-        errors.append("local.models must retain a multi-family, multi-size matrix")
+    if len(local_models) != 13:
+        errors.append("local.models must contain the frozen 13-model matrix")
+    local_families = {model.get("model_family") for model in local_models}
+    if local_families != {"llama", "qwen", "gemma"}:
+        errors.append("local.models must contain Llama, Qwen, and Gemma families")
+    local_tiers = {model.get("capacity_tier") for model in local_models}
+    if local_tiers != EXPECTED_TIERS:
+        errors.append("local.models must contain efficient, medium, and large tiers")
+    parameter_scales = [
+        model.get("parameter_scale_b")
+        for model in local_models
+        if isinstance(model.get("parameter_scale_b"), (int, float))
+        and not isinstance(model.get("parameter_scale_b"), bool)
+    ]
+    if len(parameter_scales) != len(local_models):
+        errors.append("every local model must declare parameter_scale_b")
+    elif min(parameter_scales) > 1 or max(parameter_scales) < 12:
+        errors.append("local.models must span at least <=1B through >=12B scales")
+    if len({model.get("model") for model in local_models}) != len(local_models):
+        errors.append("local.models may not contain duplicate model IDs")
     for index, model in enumerate(local_models):
         if model.get("provider") != "huggingface":
             errors.append(f"local.models[{index}] must use provider=huggingface")
         config_path = model.get("config_path")
         if not config_path or not (ROOT / config_path).exists():
             errors.append(f"local.models[{index}] has a missing config_path")
+        if model.get("capacity_tier") not in EXPECTED_TIERS:
+            errors.append(f"local.models[{index}] has an invalid capacity_tier")
 
     api_models = api_config.get("models") or []
     provider_tiers = {

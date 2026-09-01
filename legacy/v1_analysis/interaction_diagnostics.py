@@ -23,7 +23,7 @@ from scipy import stats
 from statsmodels.stats.anova import anova_lm
 
 RESULTS = Path("results/20260515_163319/merged_local_seed24_contexts_6models.json")
-OUTDIR = Path("analysis")
+OUTDIR = Path("legacy/v1_analysis")
 
 MODEL_META = {
     "huggingface/meta-llama/Llama-3.2-3B-Instruct": ("Llama", 3.0),

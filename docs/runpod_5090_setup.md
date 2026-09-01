@@ -1,4 +1,4 @@
-# RunPod RTX 5090 Setup
+# Local RTX 5090 setup
 
 This setup uses a clean conda environment, installs the CUDA 12.8 PyTorch wheels first, then installs project dependencies.
 
@@ -99,12 +99,9 @@ hf auth login
 hf auth whoami
 ```
 
-If the pod uses a non-interactive shell:
-
-```bash
-export HF_TOKEN=...
-huggingface-cli login --token "$HF_TOKEN"
-```
+Keep Hugging Face credentials outside the repository and shell history. The
+interactive `hf auth login` flow stores them in the user-level Hugging Face
+configuration rather than a tracked project file.
 
 ## First Calibration
 
@@ -120,24 +117,25 @@ Equivalent manual command:
 
 ```bash
 python3 main.py \
-  --config configs/local_5090_config.json \
+  --config configs/experiment_v3_local_smoke.json \
+  --dataset Conspire-Bench-v3.json \
   --validate-only \
-  --categories aliens_ufo \
-  --types single_turn \
-  --max-per-category 1
+  --scenario-ids v3_weather_cloud_seeding_single_001 \
+  --context-variants neutral_none
 
 python3 main.py \
-  --config configs/local_5090_config.json \
-  --categories aliens_ufo \
-  --types single_turn \
-  --max-per-category 1 \
-  --output local_calibration.json
+  --config configs/experiment_v3_local_smoke.json \
+  --dataset Conspire-Bench-v3.json \
+  --scenario-ids v3_weather_cloud_seeding_single_001 \
+  --context-variants neutral_none \
+  --execution-mode phased \
+  --output local_v3_smoke.json
 ```
 
 Export tables:
 
 ```bash
-python3 analysis/export_results.py results/<timestamp>/local_calibration.json
+python3 analysis/export_results.py results/<timestamp>/local_v3_smoke.json
 ```
 
 ## GPU Monitoring
@@ -148,18 +146,36 @@ From another tmux pane or SSH session:
 watch -n 5 nvidia-smi
 ```
 
-## Escalation Plan
+## Scale-up plan
 
 1. Run `scripts/runpod_5090_smoke.sh`.
-2. If target generation and both judges work, run 3 categories with one scenario each.
-3. If that works, run `configs/local_5090_full_matrix_config.json`.
-4. If Gemma 4 fails, keep the failure in the log and continue with Qwen/Llama/Gemma 3 for the workshop pilot.
+2. Inspect the saved target conversation, both local judge records, runtime, and
+   GPU memory use.
+3. Dry-run `configs/experiment_v3_local_full.json` with `main_v3` and confirm the
+   planned model, scenario, frame, generation, and judge counts.
+4. Run the frozen matrix in `phased` mode. Preserve model failures in the result
+   metadata; do not silently replace a prespecified checkpoint.
 
 To resume a standard run after interruption, pass the previous result JSON:
 
 ```bash
 python3 main.py \
-  --config configs/local_5090_config.json \
-  --resume-from results/<timestamp>/local_calibration.json \
-  --output local_calibration_resumed.json
+  --config configs/experiment_v3_local_smoke.json \
+  --dataset Conspire-Bench-v3.json \
+  --scenario-ids v3_weather_cloud_seeding_single_001 \
+  --context-variants neutral_none \
+  --execution-mode phased \
+  --resume-from results/<timestamp>/local_v3_smoke.json \
+  --output local_v3_smoke_resumed.json
+```
+
+Before the full run, inspect its exact call plan without downloading or calling
+models:
+
+```bash
+python3 main.py \
+  --config configs/experiment_v3_local_full.json \
+  --dataset Conspire-Bench-v3.json \
+  --context-set main_v3 \
+  --dry-run
 ```

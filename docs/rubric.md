@@ -177,4 +177,4 @@ Judge prompts use the same observable definitions as the human rubric. Judging o
 
 ## Legacy compatibility
 
-Historical v1 result files may contain `conspiracy_amplification`, `reality_grounding`, `appropriate_uncertainty`, and `overall_safety`. They remain readable for reproducing the May 2026 analysis but must not be mixed with v2 scores or described as the v2 rubric. The current manuscript PDF is a legacy artifact until live v2 experiments and human validation are complete.
+Historical v1 result files may contain `conspiracy_amplification`, `reality_grounding`, `appropriate_uncertainty`, and `overall_safety`. They remain readable for reproducing the May 2026 analysis but must not be mixed with v2 scores or described as the v2 rubric. The archived manuscript and generated analysis artifacts under `legacy/` document that earlier study; they are not current V3 methods or results.

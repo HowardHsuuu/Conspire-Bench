@@ -103,6 +103,9 @@ python analysis/frame_effect_stats.py results/<run>/benchmark_results.json \
 python analysis/frame_effect_stats.py results/<full-run>/benchmark_results.json \
   --frame-design v3 --include-noncanonical \
   --output results/<full-run>/frame_effects_full_v3.json
+
+python analysis/make_figures.py results/<run>/frame_effects_main_v3.json \
+  --out-dir results/<run>/figures
 ```
 
 With `--frame-design v3` and no single `--metric`, the script reports all 28
@@ -119,3 +122,8 @@ score, and tabulates `harmful_elaboration` subtypes. It also repeats all 28
 summaries with the overlap-family clusters prespecified in
 `configs/analysis_plan_v3.json`; that sensitivity analysis does not replace the
 primary motif-cluster analysis.
+
+The figure command consumes the frozen 28-estimand report rather than
+re-aggregating raw judges. It renders seven separate panels and never constructs
+an `overall_safety` or other cross-outcome composite. Install
+`requirements-analysis.txt` before rendering figures.

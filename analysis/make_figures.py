@@ -1,220 +1,209 @@
 #!/usr/bin/env python3
-"""Generate Conspire-Bench result figures from merged JSON results."""
+"""Render V3 coequal frame-effect figures from the frozen analysis report."""
 
 from __future__ import annotations
 
 import argparse
 import json
+import sys
+from importlib import import_module
 from pathlib import Path
+from typing import Any
 
-import matplotlib.pyplot as plt
-import numpy as np
+ROOT = Path(__file__).resolve().parents[1]
+if str(ROOT) not in sys.path:
+    sys.path.insert(0, str(ROOT))
 
-FRAMES = ["none", "brainstorming", "critical_review"]
+from rubric_v2 import RUBRIC_DIMENSIONS
+
+FRAME_ORDER = (
+    "brainstorming",
+    "critical_review",
+    "sensemaking",
+    "supportive_listening",
+)
 FRAME_LABELS = {
-    "none": "Neutral",
     "brainstorming": "Brainstorming",
     "critical_review": "Critical review",
+    "sensemaking": "Sensemaking",
+    "supportive_listening": "Supportive listening",
 }
-FRAME_LABELS_COMPACT = {
-    "none": "Neutral",
-    "brainstorming": "Brainstorming",
-    "critical_review": "Critical\nreview",
+OUTCOME_LABELS = {
+    "belief_amplification": "Belief amplification",
+    "epistemic_grounding": "Epistemic grounding",
+    "uncertainty_calibration": "Uncertainty calibration",
+    "harmful_elaboration": "Harmful elaboration",
+    "supportive_engagement": "Supportive engagement",
+    "appropriate_redirection": "Appropriate redirection\n(when applicable)",
+    "response_appropriateness": "Response inappropriateness",
 }
-STRUCTURES = [
-    "single_turn_complete_logic",
-    "multi_turn_progression",
-    "complete_logic_then_resistance",
-]
-STRUCTURE_LABELS = {
-    "single_turn_complete_logic": "Single-turn",
-    "multi_turn_progression": "Multi-turn",
-    "complete_logic_then_resistance": "Resistance",
+OUTCOME_DIRECTIONS = {
+    "belief_amplification": "Positive = more amplification",
+    "epistemic_grounding": "Positive = better grounding",
+    "uncertainty_calibration": "Positive = better calibration",
+    "harmful_elaboration": "Positive = higher harmful-elaboration rate",
+    "supportive_engagement": "Positive = better support",
+    "appropriate_redirection": "Positive = better redirection",
+    "response_appropriateness": "Positive = more inappropriate",
 }
 
 
-def short_model(name: str) -> str:
-    return (
-        name.split("/")[-1]
-        .replace("-Instruct", "")
-        .replace("-it", "")
-        .replace("gemma-", "Gemma-")
-    )
+def load_report(path: Path) -> dict[str, Any]:
+    payload = json.loads(path.read_text(encoding="utf-8"))
+    if not isinstance(payload, dict):
+        raise ValueError("Expected one V3 frame-effect report object")
+    validate_report(payload)
+    return payload
 
 
-def load_rows(path: Path) -> list[dict]:
-    data = json.loads(path.read_text())
-    rows = data if isinstance(data, list) else data.get("detailed_results", [])
-    for row in rows:
-        row["_agg"] = aggregate_row(row)
+def validate_report(report: dict[str, Any]) -> None:
+    if report.get("design_version") != "v3":
+        raise ValueError("Figure input must be a V3 frame-effect report")
+    if report.get("outcome_status") != "coequal":
+        raise ValueError("V3 figure input must declare coequal outcomes")
+    if tuple(report.get("outcomes") or ()) != RUBRIC_DIMENSIONS:
+        raise ValueError("Figure input does not contain the seven frozen outcomes")
+    if tuple(report.get("frames") or ()) != FRAME_ORDER:
+        raise ValueError("Figure input does not contain the four frame contrasts")
+    if report.get("estimand_count") != 28:
+        raise ValueError("Figure input must contain exactly 28 estimands")
+
+
+def effect_rows(report: dict[str, Any]) -> list[dict[str, Any]]:
+    """Extract plotting rows without constructing a cross-outcome composite."""
+
+    validate_report(report)
+    rows: list[dict[str, Any]] = []
+    for outcome_report in report.get("outcome_reports") or []:
+        outcome = str(outcome_report.get("metric") or "")
+        if outcome not in RUBRIC_DIMENSIONS:
+            raise ValueError(f"Unexpected outcome report: {outcome or '<missing>'}")
+        contrasts = outcome_report.get("contrasts") or []
+        if len(contrasts) != len(FRAME_ORDER):
+            raise ValueError(f"Outcome {outcome} must contain four contrasts")
+        by_frame = {str(item.get("frame")): item for item in contrasts}
+        if set(by_frame) != set(FRAME_ORDER):
+            raise ValueError(f"Outcome {outcome} has an invalid frame set")
+        for frame in FRAME_ORDER:
+            contrast = by_frame[frame]
+            effect = contrast.get("effect") or {}
+            interval = effect.get("ci_95")
+            estimate = effect.get("mean_paired_difference")
+            if estimate is not None and (
+                not isinstance(interval, list)
+                or len(interval) != 2
+                or any(value is None for value in interval)
+            ):
+                raise ValueError(
+                    f"Outcome {outcome}/{frame} has an estimate without a 95% CI"
+                )
+            sign_test = contrast.get("motif_level_sign_test") or {}
+            rows.append(
+                {
+                    "outcome": outcome,
+                    "frame": frame,
+                    "estimate": estimate,
+                    "ci_95": interval,
+                    "matched_dyads": effect.get("matched_dyads", 0),
+                    "motif_clusters": effect.get("motif_clusters", 0),
+                    "fdr_bh_adjusted_p_value": sign_test.get("fdr_bh_adjusted_p_value"),
+                }
+            )
+    if len(rows) != 28:
+        raise ValueError("Figure extraction must produce exactly 28 rows")
     return rows
 
 
-def aggregate_row(row: dict) -> dict:
-    judges = [
-        judge
-        for judge in row.get("judge_results", [])
-        if not judge.get("error") and judge.get("scores")
-    ]
-    out: dict[str, float | bool] = {}
-    for dim in [
-        "conspiracy_amplification",
-        "reality_grounding",
-        "appropriate_uncertainty",
-        "overall_safety",
-    ]:
-        vals = []
-        for judge in judges:
-            scores = judge.get("scores", {})
-            val = scores.get(dim)
-            if dim == "overall_safety" and val is None:
-                val = judge.get("overall_safety")
-            if isinstance(val, (int, float)):
-                vals.append(float(val))
-        if vals:
-            out[dim] = float(np.mean(vals))
+def render_frame_effect_figure(
+    report: dict[str, Any], out_dir: Path, *, stem: str = "frame_effects_v3"
+) -> list[Path]:
+    """Render one seven-panel forest plot and return its PDF/PNG paths."""
 
-    harms = []
-    for judge in judges:
-        val = judge.get("scores", {}).get("harmful_elaboration")
-        if isinstance(val, bool):
-            harms.append(val)
-    if harms:
-        out["harmful_elaboration"] = any(harms)
+    matplotlib = import_module("matplotlib")
+    matplotlib.use("Agg")
+    plt = import_module("matplotlib.pyplot")
 
-    if "overall_safety" not in out and isinstance(
-        row.get("total_safety_score"), (int, float)
-    ):
-        out["overall_safety"] = float(row["total_safety_score"])
-    return out
+    rows = effect_rows(report)
+    out_dir.mkdir(parents=True, exist_ok=True)
+    fig, axes = plt.subplots(2, 4, figsize=(12.0, 6.5), constrained_layout=True)
+    flat_axes = list(axes.flat)
+    colors = {
+        "brainstorming": "#7c3aed",
+        "critical_review": "#2563eb",
+        "sensemaking": "#059669",
+        "supportive_listening": "#d97706",
+    }
 
-
-def grouped_mean(rows: list[dict], field: str, **filters: str) -> float:
-    vals = []
-    for row in rows:
-        if all(row.get(k) == v for k, v in filters.items()):
-            val = row["_agg"].get(field)
-            if isinstance(val, (int, float)):
-                vals.append(float(val))
-    return float(np.mean(vals))
-
-
-def grouped_harm(rows: list[dict], **filters: str) -> float:
-    vals = []
-    for row in rows:
-        if all(row.get(k) == v for k, v in filters.items()):
-            val = row["_agg"].get("harmful_elaboration")
-            if isinstance(val, bool):
-                vals.append(val)
-    return 100.0 * sum(vals) / len(vals)
-
-
-def save_both(fig: plt.Figure, outdir: Path, stem: str) -> None:
-    outdir.mkdir(parents=True, exist_ok=True)
-    fig.savefig(outdir / f"{stem}.pdf", bbox_inches="tight")
-    fig.savefig(outdir / f"{stem}.png", dpi=240, bbox_inches="tight")
-    plt.close(fig)
-
-
-def plot_structure_heatmap(rows: list[dict], outdir: Path) -> None:
-    overall = np.array(
-        [
-            [
-                grouped_mean(rows, "overall_safety", context_label=f, scenario_type=s)
-                for f in FRAMES
-            ]
-            for s in STRUCTURES
-        ]
-    )
-    harm = np.array(
-        [
-            [grouped_harm(rows, context_label=f, scenario_type=s) for f in FRAMES]
-            for s in STRUCTURES
-        ]
-    )
-
-    fig, axes = plt.subplots(2, 1, figsize=(3.45, 4.55), constrained_layout=True)
-    panels = [
-        (axes[0], overall, "Overall safety", "YlGnBu", 2.7, 3.8, "{:.2f}"),
-        (axes[1], harm, "Harmful elaboration (%)", "OrRd", 0, 90, "{:.0f}"),
-    ]
-    for ax, data, title, cmap, vmin, vmax, fmt in panels:
-        im = ax.imshow(data, cmap=cmap, vmin=vmin, vmax=vmax, aspect="auto")
-        ax.set_xticks(range(len(FRAMES)), [FRAME_LABELS_COMPACT[f] for f in FRAMES])
-        ax.set_yticks(range(len(STRUCTURES)), [STRUCTURE_LABELS[s] for s in STRUCTURES])
-        ax.tick_params(labelsize=8.2)
-        ax.set_title(title, fontsize=9.8, weight="bold")
-        for i in range(data.shape[0]):
-            for j in range(data.shape[1]):
-                ax.text(
-                    j, i, fmt.format(data[i, j]), ha="center", va="center", fontsize=8.3
-                )
-        for spine in ax.spines.values():
-            spine.set_visible(False)
-        cbar = fig.colorbar(im, ax=ax, fraction=0.055, pad=0.03)
-        cbar.ax.tick_params(labelsize=7.5)
-    save_both(fig, outdir, "figA1_structure_heatmap")
-
-
-def plot_model_trajectories(rows: list[dict], outdir: Path) -> None:
-    models = sorted({row["model_name"] for row in rows}, key=short_model)
-    colors = plt.get_cmap("tab10").colors
-    fig, ax = plt.subplots(figsize=(3.45, 3.35))
-    x = np.arange(len(FRAMES))
-    for i, model in enumerate(models):
-        ys = [
-            grouped_mean(rows, "overall_safety", model_name=model, context_label=frame)
-            for frame in FRAMES
-        ]
-        ax.plot(
-            x,
-            ys,
-            marker="o",
-            lw=1.55,
-            ms=3.6,
-            color=colors[i % len(colors)],
-            label=short_model(model),
+    for axis, outcome in zip(flat_axes, RUBRIC_DIMENSIONS):  # noqa: B905
+        outcome_rows = [row for row in rows if row["outcome"] == outcome]
+        axis.axvline(0.0, color="#6b7280", linewidth=0.9, linestyle="--")
+        for position, row in enumerate(outcome_rows):
+            estimate = row["estimate"]
+            interval = row["ci_95"]
+            if estimate is None or interval is None:
+                continue
+            low, high = (float(interval[0]), float(interval[1]))
+            estimate = float(estimate)
+            q_value = row["fdr_bh_adjusted_p_value"]
+            significant = isinstance(q_value, (int, float)) and q_value <= 0.05
+            axis.errorbar(
+                estimate,
+                position,
+                xerr=[[estimate - low], [high - estimate]],
+                fmt="o",
+                color=colors[str(row["frame"])],
+                markeredgecolor="black" if significant else "none",
+                markeredgewidth=0.8,
+                capsize=2.5,
+                linewidth=1.2,
+            )
+        axis.set_yticks(
+            range(len(FRAME_ORDER)), [FRAME_LABELS[frame] for frame in FRAME_ORDER]
         )
-    ax.set_xticks(x, [FRAME_LABELS_COMPACT[f] for f in FRAMES])
-    ax.set_ylabel("Overall safety")
-    ax.set_ylim(2.7, 4.15)
-    ax.set_xlim(-0.08, 2.08)
-    ax.set_title("Model trajectories", loc="left", fontsize=9.8, weight="bold")
-    ax.tick_params(labelsize=8.2)
-    ax.grid(axis="y", color="#e5e7eb", lw=0.8)
-    ax.legend(
-        ncol=2,
-        loc="upper center",
-        bbox_to_anchor=(0.5, -0.18),
-        frameon=False,
-        fontsize=7.1,
-        handlelength=1.55,
-        columnspacing=0.75,
+        axis.set_title(OUTCOME_LABELS[outcome], fontsize=10, weight="bold")
+        axis.set_xlabel(OUTCOME_DIRECTIONS[outcome], fontsize=7.8)
+        axis.grid(axis="x", color="#e5e7eb", linewidth=0.7)
+        axis.tick_params(labelsize=8)
+        for spine in ("top", "right", "left"):
+            axis.spines[spine].set_visible(False)
+
+    flat_axes[-1].axis("off")
+    fig.suptitle(
+        "Conspire-Bench V3: paired frame-minus-neutral effects\n"
+        "Points are motif-cluster estimates; bars are 95% CIs; outlined points have BH-FDR q ≤ .05",
+        fontsize=12,
+        weight="bold",
     )
-    for spine in ["top", "right"]:
-        ax.spines[spine].set_visible(False)
-    save_both(fig, outdir, "figA2_model_trajectories")
+    outputs = [out_dir / f"{stem}.pdf", out_dir / f"{stem}.png"]
+    fig.savefig(outputs[0], bbox_inches="tight")
+    fig.savefig(outputs[1], dpi=240, bbox_inches="tight")
+    plt.close(fig)
+    return outputs
 
 
-def main() -> None:
-    parser = argparse.ArgumentParser()
+def build_parser() -> argparse.ArgumentParser:
+    parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument(
-        "--results",
-        type=Path,
-        default=Path(
-            "results/20260515_163319/merged_local_seed24_contexts_6models.json"
-        ),
+        "report", type=Path, help="V3 JSON report from frame_effect_stats.py"
     )
     parser.add_argument(
-        "--outdir",
+        "--out-dir",
         type=Path,
-        default=Path("ConspireBench_paper/latex/figures"),
+        help="Output directory; defaults to <report-directory>/figures",
     )
-    args = parser.parse_args()
-    rows = load_rows(args.results)
-    plot_structure_heatmap(rows, args.outdir)
-    plot_model_trajectories(rows, args.outdir)
+    parser.add_argument("--stem", default="frame_effects_v3")
+    return parser
+
+
+def main() -> int:
+    args = build_parser().parse_args()
+    out_dir = args.out_dir or args.report.parent / "figures"
+    for path in render_frame_effect_figure(
+        load_report(args.report), out_dir, stem=args.stem
+    ):
+        print(path)
+    return 0
 
 
 if __name__ == "__main__":
-    main()
+    raise SystemExit(main())

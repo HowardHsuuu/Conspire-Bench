@@ -3,67 +3,106 @@
     {
       "provider": "huggingface",
       "model": "meta-llama/Llama-3.2-1B-Instruct",
-      "config_path": "configs/models/llama32_1b_instruct.yaml"
+      "config_path": "configs/models/llama32_1b_instruct.yaml",
+      "model_family": "llama",
+      "parameter_scale_b": 1.0,
+      "capacity_tier": "efficient"
     },
     {
       "provider": "huggingface",
       "model": "meta-llama/Llama-3.2-3B-Instruct",
-      "config_path": "configs/models/llama32_3b_instruct.yaml"
+      "config_path": "configs/models/llama32_3b_instruct.yaml",
+      "model_family": "llama",
+      "parameter_scale_b": 3.0,
+      "capacity_tier": "medium"
     },
     {
       "provider": "huggingface",
       "model": "meta-llama/Llama-3.1-8B-Instruct",
-      "config_path": "configs/models/llama31_8b_instruct.yaml"
+      "config_path": "configs/models/llama31_8b_instruct.yaml",
+      "model_family": "llama",
+      "parameter_scale_b": 8.0,
+      "capacity_tier": "large"
     },
     {
       "provider": "huggingface",
       "model": "Qwen/Qwen2.5-0.5B-Instruct",
-      "config_path": "configs/models/qwen25_0_5b_instruct.yaml"
+      "config_path": "configs/models/qwen25_0_5b_instruct.yaml",
+      "model_family": "qwen",
+      "parameter_scale_b": 0.5,
+      "capacity_tier": "efficient"
     },
     {
       "provider": "huggingface",
       "model": "Qwen/Qwen2.5-1.5B-Instruct",
-      "config_path": "configs/models/qwen25_1_5b_instruct.yaml"
+      "config_path": "configs/models/qwen25_1_5b_instruct.yaml",
+      "model_family": "qwen",
+      "parameter_scale_b": 1.5,
+      "capacity_tier": "efficient"
     },
     {
       "provider": "huggingface",
       "model": "Qwen/Qwen2.5-3B-Instruct",
-      "config_path": "configs/models/qwen25_3b_instruct.yaml"
+      "config_path": "configs/models/qwen25_3b_instruct.yaml",
+      "model_family": "qwen",
+      "parameter_scale_b": 3.0,
+      "capacity_tier": "medium"
     },
     {
       "provider": "huggingface",
       "model": "Qwen/Qwen2.5-7B-Instruct",
-      "config_path": "configs/models/qwen25_7b_instruct.yaml"
+      "config_path": "configs/models/qwen25_7b_instruct.yaml",
+      "model_family": "qwen",
+      "parameter_scale_b": 7.0,
+      "capacity_tier": "medium"
     },
     {
       "provider": "huggingface",
       "model": "Qwen/Qwen2.5-14B-Instruct",
-      "config_path": "configs/models/qwen25_14b_instruct_4bit.yaml"
+      "config_path": "configs/models/qwen25_14b_instruct_4bit.yaml",
+      "model_family": "qwen",
+      "parameter_scale_b": 14.0,
+      "capacity_tier": "large"
     },
     {
       "provider": "huggingface",
       "model": "google/gemma-3-1b-it",
-      "config_path": "configs/models/gemma3_1b_it.yaml"
+      "config_path": "configs/models/gemma3_1b_it.yaml",
+      "model_family": "gemma",
+      "parameter_scale_b": 1.0,
+      "capacity_tier": "efficient"
     },
     {
       "provider": "huggingface",
       "model": "google/gemma-3-4b-it",
-      "config_path": "configs/models/gemma3_4b_it.yaml"
+      "config_path": "configs/models/gemma3_4b_it.yaml",
+      "model_family": "gemma",
+      "parameter_scale_b": 4.0,
+      "capacity_tier": "medium"
     },
     {
       "provider": "huggingface",
       "model": "google/gemma-3-12b-it",
-      "config_path": "configs/models/gemma3_12b_it_4bit.yaml"
+      "config_path": "configs/models/gemma3_12b_it_4bit.yaml",
+      "model_family": "gemma",
+      "parameter_scale_b": 12.0,
+      "capacity_tier": "large"
     },
     {
       "provider": "huggingface",
       "model": "google/gemma-4-E2B-it",
-      "config_path": "configs/models/gemma4_e2b_it.yaml"
+      "config_path": "configs/models/gemma4_e2b_it.yaml",
+      "model_family": "gemma",
+      "parameter_scale_b": 2.0,
+      "capacity_tier": "medium"
     },
     {
       "provider": "huggingface",
       "model": "google/gemma-4-E4B-it",
-      "config_path": "configs/models/gemma4_e4b_it.yaml"
+      "config_path": "configs/models/gemma4_e4b_it.yaml",
+      "model_family": "gemma",
+      "parameter_scale_b": 4.0,
+      "capacity_tier": "large"
     }
   ],
   "api_keys": {

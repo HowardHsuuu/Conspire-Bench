@@ -36,10 +36,27 @@ The three interaction structures are:
 - `complete_logic_then_resistance`: the user presents the account and then
   resists grounding over two follow-up turns.
 
+The frame families represent conversational contracts a user may establish
+before discussing the same account. `brainstorming` requests collaborative
+hypothesis generation; `critical_review` requests evidence stress-testing;
+`sensemaking` requests help organizing a confusing account; and
+`supportive_listening` requests a receptive interpersonal stance. The benchmark
+does not claim these are the most prevalent ways people discuss conspiracy
+narratives. It tests whether an assistant preserves evidence boundaries when a
+plausible collaborative role changes while the narrative is held fixed.
+
 Motif eligibility means that the same or a closely bounded complete conspiracy
 narrative was publicly discussed. It does not mean that the underlying claim is
 true, false, popular, or resolved. See [Dataset](docs/dataset.md) for provenance,
 identity handling, and authoring constraints.
+
+Relative to adjacent benchmarks, Conspire-Bench isolates matched changes in
+the user-established interaction frame. Spiral-Bench emphasizes multi-turn
+sycophancy, escalation, and recovery trajectories, while Psychosis-Bench
+emphasizes responses to delusion-related prompts and safety interventions.
+Conspire-Bench complements them by holding the conspiracy narrative and
+interaction structure constant while varying the requested conversational
+role; it is not a replacement for either benchmark or a clinical evaluation.
 
 ## Repository layout
 
@@ -61,6 +78,8 @@ identity handling, and authoring constraints.
 - `annotation_ui/`: local blinded annotation interface.
 - `tests/`: dataset, experiment, and annotation workflow tests.
 - `CONSPIRE-Bench.json`: frozen legacy dataset retained for replication.
+- `legacy/`: archived V1 paper, generated tables, and analysis code; these are
+  replication artifacts and are not active V3 entry points.
 
 ## Installation
 
@@ -72,6 +91,10 @@ source .venv/bin/activate
 python -m pip install --upgrade pip
 pip install -r requirements.txt
 ```
+
+Install `requirements-analysis.txt` to render result figures. Maintainers can
+install `requirements-dev.txt`, which includes the API, analysis, lint, and type
+checking dependencies used by CI.
 
 For local Hugging Face inference, install the additional dependencies from
 `requirements-local.txt` after selecting the appropriate PyTorch build for the
@@ -87,6 +110,7 @@ configuration file.
 These commands do not call a model provider:
 
 ```bash
+pip install -r requirements-dev.txt
 python scripts/validate_dataset.py Conspire-Bench-v3.json --strict-metadata
 python scripts/validate_primary_motif_manifest.py
 python scripts/validate_motif_narratives_v3.py
@@ -99,10 +123,9 @@ python scripts/audit_release_readiness.py
 python -m unittest discover -s tests
 ```
 
-Maintainers can reproduce the CI quality gates with:
+The static CI quality gates are:
 
 ```bash
-pip install -r requirements-dev.txt
 ruff format --check .
 ruff check .
 mypy
@@ -162,7 +185,7 @@ never substituted for missing cross-family primary evidence. Raw judge output,
 request metadata, parsing errors, and per-judge scores are preserved.
 
 See [Evaluation](docs/evaluation.md), [Rubric](docs/rubric.md), and
-[Annotation protocol](docs/annotation_protocol_v2.md) for the public methods.
+[Annotation protocol](docs/annotation_protocol.md) for the public methods.
 
 ## Safety and responsible use
 

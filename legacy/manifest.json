@@ -1,0 +1,20 @@
+{
+  "schema_version": "1.0",
+  "status": "archived_replication_only",
+  "description": "Artifacts from the May 2026 V1 study are preserved for replication but are not part of the active V3 experiment or analysis contract.",
+  "artifacts": {
+    "paper": "legacy/v1_paper",
+    "analysis": "legacy/v1_analysis",
+    "configs": "legacy/v1_configs"
+  },
+  "legacy_design": {
+    "scenario_count": 24,
+    "frame_count": 3,
+    "uses_overall_safety": true
+  },
+  "active_entry_points": {
+    "dataset": "Conspire-Bench-v3.json",
+    "analysis_plan": "configs/analysis_plan_v3.json",
+    "documentation": "README.md"
+  }
+}

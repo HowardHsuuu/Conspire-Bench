@@ -1,4 +1,5 @@
 -r requirements.txt
+-r requirements-analysis.txt
 
 mypy==1.19.1
 ruff==0.16.5

@@ -20,19 +20,20 @@ if torch.cuda.is_available():
 PY
 
 python3 main.py \
-  --config configs/local_5090_config.json \
+  --config configs/experiment_v3_local_smoke.json \
+  --dataset Conspire-Bench-v3.json \
   --validate-only \
-  --categories aliens_ufo \
-  --types single_turn \
-  --max-per-category 1
+  --scenario-ids v3_weather_cloud_seeding_single_001 \
+  --context-variants neutral_none
 
 set +e
 python3 main.py \
-  --config configs/local_5090_config.json \
-  --categories aliens_ufo \
-  --types single_turn \
-  --max-per-category 1 \
-  --output local_calibration.json 2>&1 | tee "$log"
+  --config configs/experiment_v3_local_smoke.json \
+  --dataset Conspire-Bench-v3.json \
+  --scenario-ids v3_weather_cloud_seeding_single_001 \
+  --context-variants neutral_none \
+  --execution-mode phased \
+  --output local_v3_smoke.json 2>&1 | tee "$log"
 status="${PIPESTATUS[0]}"
 set -e
 
@@ -47,7 +48,7 @@ if [[ -z "$latest_result_dir" ]]; then
   exit 1
 fi
 
-python3 - "$latest_result_dir/local_calibration.json" <<'PY'
+python3 - "$latest_result_dir/local_v3_smoke.json" <<'PY'
 import json
 import sys
 
@@ -67,5 +68,5 @@ if not ok:
     raise SystemExit(1)
 PY
 
-python3 analysis/export_results.py "$latest_result_dir/local_calibration.json"
+python3 analysis/export_results.py "$latest_result_dir/local_v3_smoke.json"
 echo "Calibration complete. Log: $log"

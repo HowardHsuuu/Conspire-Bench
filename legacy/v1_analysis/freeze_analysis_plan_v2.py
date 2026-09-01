@@ -12,11 +12,11 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
 
-ROOT = Path(__file__).resolve().parents[1]
+ROOT = Path(__file__).resolve().parents[2]
 if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
 
-from analysis.validate_analysis_plan import validate_plan
+from legacy.v1_analysis.validate_analysis_plan_v2 import validate_plan
 from experiment_conditions import stable_digest
 from scenario_expansion import load_benchmark_dataset, scenario_content_digest
 from scenario_metadata import enrich_dataset

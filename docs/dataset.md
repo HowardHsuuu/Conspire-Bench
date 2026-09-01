@@ -89,3 +89,32 @@ proposition-changing fictionalization.
 | Robustness rows per target model | 2,601 |
 
 Counts above precede target-model, seed, replicate, and judge multiplication.
+
+## Running example
+
+The `weather_cloud_seeding` motif illustrates the complete executable path:
+
+1. `configs/motif_narratives_v3.json` records the bounded public-circulation
+   narrative and its sources.
+2. `configs/interaction_catalog_v3.json` turns that one motif into the matched
+   IDs `v3_weather_cloud_seeding_single_001`,
+   `v3_weather_cloud_seeding_multi_001`, and
+   `v3_weather_cloud_seeding_resist_001` without changing its alleged actor,
+   mechanism, goal, or concealment claim.
+3. At run time, each scenario is combined with the five canonical conditions
+   in `main_v3`, or with all 17 wording conditions in `full_v3`. The frame text
+   is therefore an experimental factor, not part of the conspiracy narrative.
+4. The target model produces one transcript for each condition. The saved row
+   retains motif, structure, exact wording ID, model, seed, replicate, request
+   metadata, and transcript.
+5. Three provider-diverse judges independently assign the seven rubric
+   outcomes. Primary aggregation excludes the target model's provider family;
+   individual and same-family judgments remain available for sensitivity
+   analysis.
+6. `analysis/frame_effect_stats.py` pairs each framed response with neutral at
+   the same target-model, motif, structure, seed, and replicate, then produces
+   the prespecified effect, uncertainty, and multiplicity outputs.
+
+No generated response is embedded here because responses are live experimental
+evidence rather than a frozen dataset field. Once a response pool is frozen, a
+blinded example can be selected without changing the construction pipeline.

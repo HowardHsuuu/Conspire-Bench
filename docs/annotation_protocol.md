@@ -24,7 +24,17 @@ The 72-item expert sample is a feasibility/coverage compromise for a two-to-thre
 
 Time the calibration and a student-pair UI pilot before the final freeze. Counts may change only for a documented feasibility, roster, ethics, compensation, or annotator-welfare reason, before formal outcomes are unblinded or formal ratings collected. Increment `plan_version` if the design changes.
 
-The current pre-generation gate is the digest-bound AI-assisted author QA in `configs/scenario_ai_author_review_v2.json`. It marks expansion scenarios `source_reviewed` and `ai_author_reviewed`, which is sufficient to run the experiment and later package conversations for annotation. It is not independent human review. If the team later chooses to add that strengthening study, use `analysis/scenario_review.py export`; importing fully approved returned rows creates a separate human approval ledger and marks scenarios `verified` and `approved`.
+The current pre-generation gate is the digest-bound V3 circulation, narrative,
+quality-boundary, identity-treatment, and interaction-catalog audit. It is
+AI-assisted author QA, not independent human review. If the construction-validity
+claim will rely on independent review, use `analysis/scenario_review.py`. Its V3
+packet binds all 51 motifs to the exact source, narrative, quality, identity, and
+three-structure artifacts. Reviewers assess circulation match, narrative
+fidelity, construct alignment, matched structures, identity treatment, prompt
+plausibility, and difficulty. They do not adjudicate whether the conspiracy
+allegation is true or false. A fully approved returned packet produces a
+separate digest-bound human QA ledger; requested revisions must be applied and
+the packet regenerated before approval is claimed.
 
 ## Expert rubric
 
@@ -42,7 +52,7 @@ Important distinction: “That sounds frightening” can validate emotion withou
 4. Freeze the rubric before formal annotation. Do not silently revise definitions mid-study.
 5. Each formal item receives at least two expert ratings; use a third expert for prespecified adjudication or a random overlap subset.
 
-After calibration discussion, copy and complete `annotation/rubric_freeze_decision_template.private.json`. The analysis plan cannot pass `analysis/validate_analysis_plan.py --require-frozen` until it points to the content-validity report, calibration exclusion manifest, and completed calibration decision record with matching digests. This prevents a draft rubric from being silently treated as frozen.
+After calibration discussion, copy and complete `annotation/rubric_freeze_decision_template.private.json`. The V3 analysis plan cannot pass `scripts/validate_analysis_plan_v3.py --require-frozen` until it points to the content-validity report, calibration exclusion manifest, completed calibration decision record, approved V3 scenario-review ledger, and frozen workload plan with matching digests. This prevents a draft rubric or stale scenario catalog from being silently treated as frozen.
 
 After the timed calibration/UI pilot, freeze the workload plan. Record `No count changes after timed pilot` when that is the truthful result; otherwise edit the draft counts, increment `plan_version`, and describe the approved change before freezing:
 
@@ -60,15 +70,16 @@ python3 analysis/validate_human_annotation_plan.py \
 After committing the final rubric-derived amendments, create the frozen analysis plan with the checked freezer. It refuses a dirty worktree and recomputes dataset, model-config, human-annotation-plan, context-registry, and expert-artifact digests:
 
 ```bash
-python3 analysis/freeze_analysis_plan.py \
+python3 analysis/freeze_analysis_plan_v3.py \
   --content-validity-report annotation/rubric_validity/rubric_content_validity_report.private.json \
   --calibration-exclusion-manifest annotation/calibration/calibration_exclusion_manifest.private.json \
   --calibration-decision-record annotation/rubric_freeze_decision.private.json \
+  --scenario-review-approval annotation/scenario_review_v3/approval.private.json \
   --human-annotation-plan configs/human_annotation_plan_v2.frozen.json \
   --approved-by pi_01 \
-  --output configs/analysis_plan_v2.frozen.json
-python3 analysis/validate_analysis_plan.py \
-  configs/analysis_plan_v2.frozen.json --require-frozen
+  --output configs/analysis_plan_v3.frozen.json
+python3 scripts/validate_analysis_plan_v3.py \
+  configs/analysis_plan_v3.frozen.json --require-frozen
 ```
 
 Do not distribute one unrestricted master file and reconstruct coverage afterward. Freeze a deterministic assignment ledger before collection. With three available experts, the default assignment gives every conversation to exactly two experts while rotating pairs to balance workload and create genuine overlap among all three. If only two experts are available, both rate every selected conversation.
@@ -115,6 +126,17 @@ The importer uses the private randomization key to decode A/B into `neutral` ver
 - `annotation_ui/index.html` can load either public JSONL file, retain progress locally, and export returned JSONL in the importer's schema. It has no network dependencies and must never receive the private key.
 
 ## Commands
+
+Required independent V3 scenario QA before the final V3 analysis freeze:
+
+```bash
+python analysis/scenario_review.py export \
+  --output-dir annotation/scenario_review_v3
+
+python analysis/scenario_review.py import \
+  --review returned/scenario_reviewer_01.jsonl \
+  --output annotation/scenario_review_v3/approval.private.json
+```
 
 Pilot package for UI/rubric testing:
 

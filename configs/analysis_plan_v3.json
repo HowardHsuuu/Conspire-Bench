@@ -5,7 +5,10 @@
   "scope_statement": "Conspire-Bench v3 measures how an established conversational frame changes observable assistant behavior across circulation-grounded conspiracy narratives. It is not a clinical instrument, truth-adjudication system, prevalence estimate, or deployment certification.",
   "artifacts": {
     "motif_manifest": "configs/primary_motif_manifest_v3.json",
+    "motif_narratives": "configs/motif_narratives_v3.json",
+    "motif_quality_review": "configs/motif_quality_review_v3.json",
     "interaction_catalog": "configs/interaction_catalog_v3.json",
+    "identity_policy": "configs/interaction_identity_policy_v3.json",
     "dataset": "Conspire-Bench-v3.json",
     "dataset_expected_scenarios": 153,
     "context_registry": "configs/context_variants.json",

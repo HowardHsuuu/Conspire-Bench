@@ -58,7 +58,6 @@ Runtime behavior:
 - Set `evaluation.unload_after_judge: true` to release each local judge after it scores a saved conversation.
 - Set `evaluation.unload_after_model: true` if target models should be released from memory after each model run.
 
-For the V3 single-GPU stage, start with a filtered dry run from
-`configs/experiment_v3_local_full.json`, then run the matrix in `phased` mode.
-The legacy `local_5090*.json` files are retained only for replication of earlier
-experiments.
+For the V3 single-GPU stage, run `scripts/runpod_5090_smoke.sh`, then use
+`configs/experiment_v3_local_full.json` in `phased` mode. Earlier local
+experiment configs are isolated under `legacy/v1_configs/`.

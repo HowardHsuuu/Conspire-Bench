@@ -2,8 +2,10 @@ from __future__ import annotations
 
 import copy
 import json
+import re
 import unittest
 from pathlib import Path
+from tempfile import TemporaryDirectory
 
 from analysis.frame_effect_stats import (
     FRAME_DESIGNS,
@@ -12,6 +14,7 @@ from analysis.frame_effect_stats import (
 from analysis.frame_effect_stats import (
     build_report as build_frame_report,
 )
+from analysis.make_figures import effect_rows, render_frame_effect_figure
 from experiment_conditions import load_context_set
 from scripts.audit_release_readiness import build_report as build_readiness_report
 from scripts.build_interaction_catalog_v3 import build_catalog
@@ -22,6 +25,7 @@ from scripts.render_motif_pool_coverage_v3 import (
     render_document as render_pool_coverage,
 )
 from scripts.validate_context_variants_v3 import validate_context_variants
+from scripts.validate_experiment_configs_v3 import validate as validate_experiments
 from scripts.validate_interaction_catalog_v3 import validate as validate_interactions
 from scripts.validate_motif_narratives_v3 import validate_records
 from scripts.validate_motif_quality_review_v3 import validate_review
@@ -31,9 +35,51 @@ from scripts.validate_motif_selection_recommendation_v3 import (
 from scripts.validate_primary_motif_manifest import validate_manifest
 
 ROOT = Path(__file__).resolve().parents[1]
+PUBLIC_MARKDOWN = {
+    "README.md",
+    "annotation/rubric_validity_v2/README.md",
+    "annotation_ui/README.md",
+    "docs/annotation_protocol.md",
+    "docs/dataset.md",
+    "docs/evaluation.md",
+    "docs/local_models.md",
+    "docs/rubric.md",
+    "docs/runpod_5090_setup.md",
+}
 
 
 class V3MotifPipelineTest(unittest.TestCase):
+    def test_public_markdown_is_bounded_and_local_links_resolve(self) -> None:
+        actual = {
+            str(path.relative_to(ROOT))
+            for path in ROOT.rglob("*.md")
+            if ".local" not in path.parts and "legacy" not in path.parts
+        }
+        self.assertEqual(actual, PUBLIC_MARKDOWN)
+
+        missing_links: list[str] = []
+        for relative in sorted(PUBLIC_MARKDOWN):
+            document = ROOT / relative
+            for target in re.findall(
+                r"\[[^\]]+\]\(([^)]+)\)", document.read_text(encoding="utf-8")
+            ):
+                if "://" in target or target.startswith(("#", "mailto:")):
+                    continue
+                clean_target = target.split("#", 1)[0].strip("<>")
+                if clean_target and not (document.parent / clean_target).exists():
+                    missing_links.append(f"{relative} -> {target}")
+        self.assertEqual(missing_links, [])
+
+    def test_v3_experiment_matrices_preserve_scale_and_provider_coverage(self) -> None:
+        local_config = self._load("configs/experiment_v3_local_full.json")
+        api_config = self._load("configs/experiment_v3_api_full.json")
+        self.assertEqual(validate_experiments(local_config, api_config), [])
+
+        invalid = copy.deepcopy(local_config)
+        invalid["models"][0].pop("parameter_scale_b")
+        errors = validate_experiments(invalid, api_config)
+        self.assertTrue(any("parameter_scale_b" in error for error in errors))
+
     def test_release_readiness_contract_is_code_complete(self) -> None:
         report = build_readiness_report()
 
@@ -43,6 +89,12 @@ class V3MotifPipelineTest(unittest.TestCase):
         )
         self.assertTrue(report["pending_live_evidence"])
         self.assertTrue(report["pending_human_evidence"])
+        self.assertEqual(report["unresolved_code_or_design_issues"], [])
+        coverage = report["reviewer_revision_coverage"]
+        self.assertEqual(len(coverage), 11)
+        self.assertTrue(
+            all(item["status"] not in {"missing", "unimplemented"} for item in coverage)
+        )
 
     def test_builder_uses_only_manifest_primary_motifs(self) -> None:
         narratives = {
@@ -298,6 +350,11 @@ class V3MotifPipelineTest(unittest.TestCase):
             for contrast in outcome_report["contrasts"]
         ]
         self.assertEqual(len(sensitivity_contrasts), 28)
+        self.assertEqual(len(effect_rows(report)), 28)
+        with TemporaryDirectory() as temporary:
+            outputs = render_frame_effect_figure(report, Path(temporary))
+            self.assertEqual({path.suffix for path in outputs}, {".pdf", ".png"})
+            self.assertTrue(all(path.stat().st_size > 0 for path in outputs))
 
     def test_full_wording_analysis_averages_variants_within_frame(self) -> None:
         rows = [
