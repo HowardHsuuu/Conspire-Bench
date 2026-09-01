@@ -1007,6 +1007,12 @@ class ConspireBenchmarkRunner:
                 )
                 interface = "google_generativeai_legacy_generate_content"
 
+            candidates = getattr(response, "candidates", None) or []
+            finish_reasons = [
+                str(getattr(candidate, "finish_reason", "unknown"))
+                for candidate in candidates
+            ]
+
             try:
                 if hasattr(response, 'text') and response.text:
                     return ModelText(
@@ -1016,6 +1022,7 @@ class ConspireBenchmarkRunner:
                             "requested_model": model,
                             "resolved_model": getattr(response, "model_version", None),
                             "interface": interface,
+                            "finish_reasons": finish_reasons,
                             "usage": _serializable_metadata(
                                 getattr(response, "usage_metadata", None)
                             ),
@@ -1024,11 +1031,6 @@ class ConspireBenchmarkRunner:
             except Exception as e:
                 self.logger.debug(f"Failed to access response.text: {e}")
 
-            candidates = getattr(response, "candidates", None) or []
-            finish_reasons = [
-                str(getattr(candidate, "finish_reason", "unknown"))
-                for candidate in candidates
-            ]
             raise Exception(
                 "Gemini API returned no usable response content; finish reasons="
                 f"{finish_reasons or ['none']}"

@@ -1087,10 +1087,14 @@ class SmokeTests(unittest.TestCase):
         class FakeTypes:
             GenerateContentConfig = FakeConfig
 
+        class FakeCandidate:
+            finish_reason = "STOP"
+
         class FakeResponse:
             text = "grounded answer"
             model_version = "gemini-test-snapshot"
             usage_metadata = {"prompt_token_count": 10}
+            candidates = [FakeCandidate()]
 
         class FakeModels:
             def generate_content(self, **kwargs):
@@ -1116,6 +1120,7 @@ class SmokeTests(unittest.TestCase):
 
         self.assertEqual(str(response), "grounded answer")
         self.assertEqual(response.metadata["resolved_model"], "gemini-test-snapshot")
+        self.assertEqual(response.metadata["finish_reasons"], ["STOP"])
         self.assertEqual(captured["config"], {"max_output_tokens": 100})
         self.assertEqual(captured["request"]["model"], "gemini-test")
 
