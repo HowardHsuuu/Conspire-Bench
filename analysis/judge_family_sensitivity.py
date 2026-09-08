@@ -19,6 +19,23 @@ def load_rows(path: Path) -> list[dict[str, Any]]:
     return rows
 
 
+def _numeric_value(value: Any) -> float | None:
+    if isinstance(value, bool):
+        return float(value)
+    if isinstance(value, (int, float)):
+        return float(value)
+    return None
+
+
+def _target_family(row: dict[str, Any]) -> str | None:
+    if row.get("model_family"):
+        return str(row["model_family"])
+    for judge in row.get("judge_results") or []:
+        if judge.get("target_model_family"):
+            return str(judge["target_model_family"])
+    return None
+
+
 def row_comparisons(row: dict[str, Any]) -> list[dict[str, Any]]:
     same_values: dict[str, list[float]] = defaultdict(list)
     other_values: dict[str, list[float]] = defaultdict(list)
@@ -29,8 +46,9 @@ def row_comparisons(row: dict[str, Any]) -> list[dict[str, Any]]:
             same_values if judge.get("same_family_as_target", False) else other_values
         )
         for metric, value in judge["scores"].items():
-            if isinstance(value, (int, float)) and not isinstance(value, bool):
-                bucket[metric].append(float(value))
+            numeric_value = _numeric_value(value)
+            if numeric_value is not None:
+                bucket[metric].append(numeric_value)
     output = []
     for metric in sorted(set(same_values) & set(other_values)):
         same_mean = mean(same_values[metric])
@@ -40,6 +58,7 @@ def row_comparisons(row: dict[str, Any]) -> list[dict[str, Any]]:
                 "response_id": row.get("response_id"),
                 "scenario_id": row.get("scenario_id"),
                 "target_model": row.get("model_name") or row.get("target_model"),
+                "target_family": _target_family(row),
                 "metric": metric,
                 "same_family_mean": same_mean,
                 "nonoverlap_mean": other_mean,
@@ -53,12 +72,17 @@ def row_comparisons(row: dict[str, Any]) -> list[dict[str, Any]]:
 
 def build_report(rows: list[dict[str, Any]]) -> dict[str, Any]:
     comparisons = [comparison for row in rows for comparison in row_comparisons(row)]
-    grouped: dict[tuple[str, str], list[float]] = defaultdict(list)
+    by_model: dict[tuple[str, str], list[float]] = defaultdict(list)
+    by_family: dict[tuple[str, str], list[float]] = defaultdict(list)
     for comparison in comparisons:
-        grouped[(comparison["target_model"], comparison["metric"])].append(
+        by_model[(comparison["target_model"], comparison["metric"])].append(
             comparison["same_minus_nonoverlap"]
         )
-    summary = [
+        if comparison["target_family"]:
+            by_family[(comparison["target_family"], comparison["metric"])].append(
+                comparison["same_minus_nonoverlap"]
+            )
+    model_summary = [
         {
             "target_model": target_model,
             "metric": metric,
@@ -66,16 +90,28 @@ def build_report(rows: list[dict[str, Any]]) -> dict[str, Any]:
             "mean_same_minus_nonoverlap": mean(deltas),
             "mean_absolute_difference": mean(abs(delta) for delta in deltas),
         }
-        for (target_model, metric), deltas in sorted(grouped.items())
+        for (target_model, metric), deltas in sorted(by_model.items())
+    ]
+    family_summary = [
+        {
+            "target_family": target_family,
+            "metric": metric,
+            "paired_response_count": len(deltas),
+            "mean_same_minus_nonoverlap": mean(deltas),
+            "mean_absolute_difference": mean(abs(delta) for delta in deltas),
+        }
+        for (target_family, metric), deltas in sorted(by_family.items())
     ]
     return {
         "schema_version": "1.0",
         "interpretation": (
             "Positive deltas mean the same-family judge assigned a higher raw score. "
-            "Interpret direction using each metric's scale; no causal bias claim is implied."
+            "Boolean scores are represented as 0/1. Interpret direction using each "
+            "metric's scale; no causal bias claim is implied."
         ),
         "comparison_count": len(comparisons),
-        "summary": summary,
+        "summary": model_summary,
+        "family_summary": family_summary,
         "paired_comparisons": comparisons,
     }
 

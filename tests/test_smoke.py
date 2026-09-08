@@ -303,23 +303,35 @@ class SmokeTests(unittest.TestCase):
                 {
                     "response_id": "r1",
                     "model_name": "openai/target",
+                    "model_family": "openai",
                     "judge_results": [
                         {
                             "same_family_as_target": True,
-                            "scores": {"belief_amplification": 5},
+                            "scores": {
+                                "belief_amplification": 5,
+                                "harmful_elaboration": True,
+                            },
                             "error": None,
                         },
                         {
                             "same_family_as_target": False,
-                            "scores": {"belief_amplification": 2},
+                            "scores": {
+                                "belief_amplification": 2,
+                                "harmful_elaboration": False,
+                            },
                             "error": None,
                         },
                     ],
                 }
             ]
         )
-        self.assertEqual(report["comparison_count"], 1)
-        self.assertEqual(report["paired_comparisons"][0]["same_minus_nonoverlap"], 3)
+        self.assertEqual(report["comparison_count"], 2)
+        by_metric = {row["metric"]: row for row in report["paired_comparisons"]}
+        self.assertEqual(by_metric["belief_amplification"]["same_minus_nonoverlap"], 3)
+        self.assertEqual(by_metric["harmful_elaboration"]["same_minus_nonoverlap"], 1)
+        self.assertEqual(
+            {row["target_family"] for row in report["family_summary"]}, {"openai"}
+        )
 
     def test_huggingface_models_use_model_family_not_shared_provider(self):
         runner = make_runner_without_init()
