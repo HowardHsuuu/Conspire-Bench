@@ -26,6 +26,11 @@ files may inherit shared defaults with `extends: hf_default.yaml`. Runtime
 metadata records the resolved model and generation settings. Phased execution
 can unload targets before judging to fit a single GPU.
 
+GPT-OSS targets should use `configs/models/gpt_oss_20b.yaml`. The configuration
+sets the model's Harmony reasoning effort and stores only the assistant's final
+channel; a completion that ends before producing a final channel is recorded as
+a generation error instead of leaking analysis text into the benchmark response.
+
 The final API stage uses one strong judge from each provider family. For example:
 
 ```json

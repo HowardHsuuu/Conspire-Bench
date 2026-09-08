@@ -4,3 +4,4 @@ transformers>=4.57.0
 torch
 accelerate
 bitsandbytes
+kernels>=0.15.2,<0.16.0
