@@ -4,6 +4,7 @@ import gc
 import json
 import logging
 import os
+import re
 from copy import deepcopy
 from pathlib import Path
 from typing import Any, Dict, List, Optional
@@ -19,6 +20,25 @@ MODEL_SECTION_KEYS = {
 }
 
 IMAGE_TEXT_MODEL_CLASSES = {"image_text_to_text", "auto_model_for_image_text_to_text"}
+
+HARMONY_FINAL_HEADER = re.compile(
+    r"<\|channel\|>final(?:\s*<\|constrain\|>[^<]*)?\s*<\|message\|>"
+)
+HARMONY_MESSAGE_END = re.compile(r"<\|(?:end|return|call)\|>")
+
+
+def _extract_harmony_final(raw_completion: str) -> str:
+    """Return the last assistant final-channel message from a Harmony completion."""
+    matches = list(HARMONY_FINAL_HEADER.finditer(raw_completion))
+    if not matches:
+        raise ValueError(
+            "Harmony completion ended before an assistant final channel was produced"
+        )
+
+    content_start = matches[-1].end()
+    end_match = HARMONY_MESSAGE_END.search(raw_completion, content_start)
+    content_end = end_match.start() if end_match else len(raw_completion)
+    return raw_completion[content_start:content_end].strip()
 
 
 def deep_update(
@@ -165,6 +185,8 @@ class LocalModelManager:
             "processor",
             "message_format",
             "padding_side",
+            "response_format",
+            "reasoning_effort",
         ):
             if optional_key in global_hf:
                 model_config[optional_key] = global_hf[optional_key]
@@ -226,6 +248,8 @@ class LocalModelManager:
             "processor",
             "message_format",
             "padding_side",
+            "response_format",
+            "reasoning_effort",
             "role",
         )
         return {
@@ -406,10 +430,14 @@ class LocalModelManager:
         if model_config.get("use_chat_template", True) and hasattr(
             template_source, "apply_chat_template"
         ):
+            template_kwargs = {}
+            if model_config.get("reasoning_effort") is not None:
+                template_kwargs["reasoning_effort"] = model_config["reasoning_effort"]
             return template_source.apply_chat_template(
                 self._format_template_messages(messages, model_config),
                 tokenize=False,
                 add_generation_prompt=True,
+                **template_kwargs,
             )
 
         prompt_parts = []
@@ -538,7 +566,15 @@ class LocalModelManager:
 
         generated_tokens = outputs[0][prompt_width:]
         decoder = text_tokenizer if hasattr(text_tokenizer, "decode") else tokenizer
-        response = decoder.decode(generated_tokens, skip_special_tokens=True).strip()
+        if model_config.get("response_format") == "harmony_final":
+            raw_completion = decoder.decode(
+                generated_tokens, skip_special_tokens=False
+            ).strip()
+            response = _extract_harmony_final(raw_completion)
+        else:
+            response = decoder.decode(
+                generated_tokens, skip_special_tokens=True
+            ).strip()
         if not response:
             raise Exception("HuggingFace model returned empty response")
         return response

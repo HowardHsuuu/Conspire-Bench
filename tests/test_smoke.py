@@ -54,7 +54,11 @@ from experiment_conditions import (
     load_context_conditions,
     load_context_set,
 )
-from local_models import LocalModelManager, load_local_model_config
+from local_models import (
+    LocalModelManager,
+    _extract_harmony_final,
+    load_local_model_config,
+)
 from main import (
     _target_model_configs,
     _validate_judge_sections,
@@ -1376,6 +1380,51 @@ class SmokeTests(unittest.TestCase):
         self.assertEqual(config["model"]["device_map"], "auto")
         self.assertTrue(config["model"]["use_chat_template"])
         self.assertEqual(config["generation"]["top_p"], 0.95)
+
+    def test_gpt_oss_config_extracts_only_harmony_final_channel(self):
+        config = load_local_model_config(
+            ROOT / "configs" / "models" / "gpt_oss_20b.yaml"
+        )
+        raw_completion = (
+            "<|channel|>analysis<|message|>private reasoning<|end|>"
+            "<|start|>assistant<|channel|>final<|message|>public answer<|return|>"
+        )
+
+        self.assertEqual(_extract_harmony_final(raw_completion), "public answer")
+        self.assertEqual(config["model"]["response_format"], "harmony_final")
+        self.assertEqual(config["model"]["reasoning_effort"], "low")
+        self.assertEqual(config["generation"]["max_new_tokens"], 2048)
+
+    def test_harmony_completion_without_final_channel_is_rejected(self):
+        raw_completion = "<|channel|>analysis<|message|>unfinished reasoning<|return|>"
+
+        with self.assertRaisesRegex(ValueError, "before an assistant final channel"):
+            _extract_harmony_final(raw_completion)
+
+    def test_reasoning_effort_is_forwarded_to_chat_template(self):
+        class FakeTokenizer:
+            def __init__(self):
+                self.kwargs = None
+
+            def apply_chat_template(self, messages, **kwargs):
+                self.kwargs = kwargs
+                return "prompt"
+
+        manager = LocalModelManager({}, logging.getLogger("test"), root_dir=ROOT)
+        tokenizer = FakeTokenizer()
+
+        prompt = manager._format_messages(
+            tokenizer,
+            [{"role": "user", "content": "hello"}],
+            {
+                "name": "openai/gpt-oss-20b",
+                "use_chat_template": True,
+                "reasoning_effort": "low",
+            },
+        )
+
+        self.assertEqual(prompt, "prompt")
+        self.assertEqual(tokenizer.kwargs["reasoning_effort"], "low")
 
     def test_gemma4_config_uses_image_text_loader(self):
         config = load_local_model_config(
