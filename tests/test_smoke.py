@@ -1436,7 +1436,18 @@ class SmokeTests(unittest.TestCase):
         self.assertEqual(config["model"]["message_format"], "multimodal")
         self.assertEqual(config["model"]["attn_implementation"], "sdpa")
         self.assertEqual(config["model"]["padding_side"], "left")
+        self.assertEqual(config["model"]["dtype"], "bfloat16")
         self.assertEqual(config["generation"]["cache_implementation"], "static")
+
+    def test_gemma3_configs_use_native_bfloat16(self):
+        for name in (
+            "gemma3_1b_it.yaml",
+            "gemma3_4b_it.yaml",
+            "gemma3_12b_it_4bit.yaml",
+        ):
+            with self.subTest(name=name):
+                config = load_local_model_config(ROOT / "configs" / "models" / name)
+                self.assertEqual(config["model"]["dtype"], "bfloat16")
 
     def test_gemma4_processor_path_uses_tokenized_chat_template(self):
         class FakeInputIds:

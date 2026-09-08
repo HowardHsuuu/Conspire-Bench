@@ -3,6 +3,7 @@ model:
   name: google/gemma-4-E4B-it
   tokenizer: google/gemma-4-E4B-it
   processor: google/gemma-4-E4B-it
+  dtype: bfloat16
   model_class: image_text_to_text
   attn_implementation: sdpa
   batch_size: 1

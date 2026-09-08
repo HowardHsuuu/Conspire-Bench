@@ -3,6 +3,7 @@ model:
   name: google/gemma-3-4b-it
   tokenizer: google/gemma-3-4b-it
   processor: google/gemma-3-4b-it
+  dtype: bfloat16
   model_class: image_text_to_text
   batch_size: 1
   max_seq_length: 4096

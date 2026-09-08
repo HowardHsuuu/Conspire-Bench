@@ -312,7 +312,7 @@ class LocalModelManager:
     ) -> Dict[str, Any]:
         model_kwargs = {
             **common_kwargs,
-            "torch_dtype": _torch_dtype(model_config.get("dtype", "float16")),
+            "dtype": _torch_dtype(model_config.get("dtype", "float16")),
             "device_map": model_config.get("device_map", "auto"),
         }
         for key in ("low_cpu_mem_usage", "attn_implementation"):

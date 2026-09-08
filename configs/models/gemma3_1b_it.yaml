@@ -2,6 +2,7 @@ extends: hf_default.yaml
 model:
   name: google/gemma-3-1b-it
   tokenizer: google/gemma-3-1b-it
+  dtype: bfloat16
   batch_size: 1
   max_seq_length: 4096
 
