@@ -73,6 +73,7 @@ from scripts.merge_generation_results import merge_bundles
 from scripts.preflight_api_models import role_entries as preflight_role_entries
 from scripts.validate_analysis_plan_v3 import validate as validate_plan
 from scripts.verify_full_benchmark_results import verify_bundle
+from scripts.verify_generation_results import verify_generation_bundle
 
 ROOT = Path(__file__).resolve().parents[1]
 
@@ -559,6 +560,32 @@ class SmokeTests(unittest.TestCase):
         ]
         with self.assertRaisesRegex(ValueError, "primary_judge_names"):
             verify_bundle(
+                {"detailed_results": [row]},
+                config,
+                expected_rows_per_model=1,
+            )
+
+    def test_generation_verifier_requires_exact_complete_rows(self):
+        config = {"models": [{"provider": "huggingface", "model": "target"}]}
+        row = {
+            "response_id": "response-a",
+            "condition_id": "condition-a",
+            "model_name": "huggingface/target",
+            "conversation_log": [{"role": "assistant", "content": "answer"}],
+            "generation_complete": True,
+            "error": None,
+        }
+
+        report = verify_generation_bundle(
+            {"detailed_results": [row]},
+            config,
+            expected_rows_per_model=1,
+        )
+        self.assertTrue(report["ok"])
+
+        row["generation_complete"] = False
+        with self.assertRaisesRegex(ValueError, "generation_complete"):
+            verify_generation_bundle(
                 {"detailed_results": [row]},
                 config,
                 expected_rows_per_model=1,
