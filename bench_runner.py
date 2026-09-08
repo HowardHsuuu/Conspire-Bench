@@ -2132,5 +2132,13 @@ class ConspireBenchmarkRunner:
 
     def _save_results(self, results: Any, filename: str):
         filepath = os.path.join(self.results_dir, filename)
-        with open(filepath, "w") as f:
-            json.dump(results, f, indent=2, ensure_ascii=False)
+        temporary_path = f"{filepath}.tmp-{os.getpid()}"
+        try:
+            with open(temporary_path, "w") as output:
+                json.dump(results, output, indent=2, ensure_ascii=False)
+                output.flush()
+                os.fsync(output.fileno())
+            os.replace(temporary_path, filepath)
+        finally:
+            if os.path.exists(temporary_path):
+                os.unlink(temporary_path)

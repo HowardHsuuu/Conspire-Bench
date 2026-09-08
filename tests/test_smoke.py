@@ -85,6 +85,18 @@ def make_runner_without_init():
 
 
 class SmokeTests(unittest.TestCase):
+    def test_result_saves_are_atomic(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            runner = make_runner_without_init()
+            runner.results_dir = temporary
+
+            runner._save_results({"version": 1}, "result.json")
+            runner._save_results({"version": 2}, "result.json")
+
+            result_path = Path(temporary) / "result.json"
+            self.assertEqual(json.loads(result_path.read_text()), {"version": 2})
+            self.assertEqual(list(Path(temporary).glob("result.json.tmp-*")), [])
+
     def test_annotation_ui_is_local_and_rubric_anchored(self):
         ui_script = (ROOT / "annotation_ui" / "app.js").read_text(encoding="utf-8")
         ui_page = (ROOT / "annotation_ui" / "index.html").read_text(encoding="utf-8")
