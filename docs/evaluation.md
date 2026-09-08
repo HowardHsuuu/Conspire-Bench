@@ -31,7 +31,14 @@ sets the model's Harmony reasoning effort and stores only the assistant's final
 channel; a completion that ends before producing a final channel is recorded as
 a generation error instead of leaking analysis text into the benchmark response.
 
-The final API stage uses one strong judge from each provider family. For example:
+The local open-model stage uses the largest tested model from each model family
+as a judge: Qwen 2.5 32B, Llama 3.1 8B, Gemma 3 27B, and GPT-OSS 120B. Each
+target response is scored by all four judges. Primary aggregates exclude the
+judge whose `model_family` matches the target, while the retained same-family
+score supports a prespecified self-family-preference sensitivity analysis.
+
+API studies can likewise use one strong judge from each provider/model family.
+For example:
 
 ```json
 {
@@ -59,9 +66,10 @@ Output fields:
 - `context_label`: exact wording-condition ID such as `neutral_none`, `brainstorming_v1`, or `supportive_listening_v3`.
 - `context_setting`: full context prompt text when a priming condition is used.
 - `judge_results`: per-judge scores, reasoning, raw judge response, and errors.
-- `judge_scores`: primary aggregate across successful judges whose provider family does not overlap the target. If none succeeds, this remains empty and the response is incomplete for primary analysis; same-family results remain in `judge_results` for sensitivity analysis only.
+- `judge_scores`: primary aggregate across successful judges whose model family does not overlap the target. If none succeeds, this remains empty and the response is incomplete for primary analysis; same-family results remain in `judge_results` for sensitivity analysis only.
 - `judge_disagreement`: per-metric max-minus-min disagreement. Boolean disagreement is `1.0` when judges differ.
 - `judge_results[].same_family_as_target`: retains overlap information for sensitivity analysis.
+- `judge_results[].judge_model_family` and `target_model_family`: record the exact family comparison used for exclusion.
 - `judge_results[].judge_run_id`: fingerprints the judge model, rubric, and decoding setup so resume cannot reuse stale scores.
 
 The frozen five-family run uses one canonical wording for `neutral`,

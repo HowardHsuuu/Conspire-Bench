@@ -234,6 +234,42 @@ class ConspireBenchmarkRunner:
             or f"{judge_config['provider']}/{judge_config['model']}"
         )
 
+    @staticmethod
+    def _model_family(
+        model_name: Optional[str],
+        *,
+        explicit_family: Optional[str] = None,
+        provider: Optional[str] = None,
+    ) -> Optional[str]:
+        """Return a stable vendor/model family, not the shared hosting provider."""
+
+        if explicit_family:
+            return str(explicit_family).strip().lower().replace("-", "_")
+
+        normalized = str(model_name or "").strip().lower()
+        family_markers = (
+            ("gpt-oss", "gpt_oss"),
+            ("qwen", "qwen"),
+            ("llama", "llama"),
+            ("gemma", "gemma"),
+            ("gemini", "gemini"),
+            ("claude", "anthropic"),
+        )
+        for marker, family in family_markers:
+            if marker in normalized:
+                return family
+
+        provider_name = str(provider or "").strip().lower()
+        if provider_name and provider_name != ModelProvider.HUGGINGFACE.value:
+            return provider_name
+
+        parts = [part for part in normalized.split("/") if part]
+        if parts and parts[0] == ModelProvider.HUGGINGFACE.value:
+            parts = parts[1:]
+        if len(parts) >= 2:
+            return parts[0].replace("-", "_")
+        return provider_name or None
+
     def _judge_rubric_version(
         self, judge_config: Optional[Dict[str, Any]] = None
     ) -> str:
@@ -388,6 +424,7 @@ class ConspireBenchmarkRunner:
                 conversation_log,
                 judge_configs,
                 target_model_name=f"{model_provider.value}/{model_name}",
+                target_model_family=(model_config_override or {}).get("model_family"),
             )
 
             return TestResult(
@@ -417,6 +454,11 @@ class ConspireBenchmarkRunner:
                     model_provider, model_config_override
                 ),
                 access_date=datetime.now().date().isoformat(),
+                model_family=self._model_family(
+                    model_name,
+                    explicit_family=(model_config_override or {}).get("model_family"),
+                    provider=model_provider.value,
+                ),
                 primary_judge_names=judge_summary["primary_judge_names"],
                 same_family_excluded=judge_summary["same_family_excluded"],
                 scenario_metadata=self._scenario_metadata(scenario),
@@ -453,6 +495,11 @@ class ConspireBenchmarkRunner:
                     model_provider, model_config_override
                 ),
                 access_date=datetime.now().date().isoformat(),
+                model_family=self._model_family(
+                    model_name,
+                    explicit_family=(model_config_override or {}).get("model_family"),
+                    provider=model_provider.value,
+                ),
                 scenario_metadata=self._scenario_metadata(scenario),
             )
 
@@ -721,6 +768,7 @@ class ConspireBenchmarkRunner:
         conversation_log: List[Dict],
         judge_config: Dict[str, Any],
         target_model_name: Optional[str] = None,
+        target_model_family: Optional[str] = None,
     ) -> Dict[str, Any]:
         judge_provider = ModelProvider(judge_config["provider"])
         judge_model = judge_config["model"]
@@ -730,9 +778,19 @@ class ConspireBenchmarkRunner:
         judge_prompt = self._build_judge_prompt(
             scenario, conversation_log, rubric_version=rubric_version
         )
-        target_provider = (target_model_name or "").split("/", 1)[0]
+        judge_model_family = self._model_family(
+            judge_model,
+            explicit_family=judge_config.get("model_family"),
+            provider=judge_provider.value,
+        )
+        resolved_target_family = self._model_family(
+            target_model_name,
+            explicit_family=target_model_family,
+        )
         same_family_as_target = bool(
-            target_provider and target_provider == judge_provider.value
+            resolved_target_family
+            and judge_model_family
+            and resolved_target_family == judge_model_family
         )
         judge_response: str = ""
         request_metadata: Dict[str, Any] = {}
@@ -762,6 +820,8 @@ class ConspireBenchmarkRunner:
                 "judge_run_id": judge_run_id,
                 "provider": judge_provider.value,
                 "model": judge_model,
+                "judge_model_family": judge_model_family,
+                "target_model_family": resolved_target_family,
                 "rubric_version": rubric_version,
                 "same_family_as_target": same_family_as_target,
                 "scores": metrics.scores(),
@@ -777,6 +837,8 @@ class ConspireBenchmarkRunner:
                 "judge_run_id": judge_run_id,
                 "provider": judge_provider.value,
                 "model": judge_model,
+                "judge_model_family": judge_model_family,
+                "target_model_family": resolved_target_family,
                 "rubric_version": rubric_version,
                 "same_family_as_target": same_family_as_target,
                 "scores": {},
@@ -794,6 +856,7 @@ class ConspireBenchmarkRunner:
         conversation_log: List[Dict],
         judge_configs: List[Dict[str, Any]],
         target_model_name: Optional[str] = None,
+        target_model_family: Optional[str] = None,
     ) -> Dict[str, Any]:
         judge_results = []
         for judge_config in judge_configs:
@@ -803,6 +866,7 @@ class ConspireBenchmarkRunner:
                     conversation_log,
                     judge_config,
                     target_model_name=target_model_name,
+                    target_model_family=target_model_family,
                 )
             )
             if ModelProvider(
@@ -1299,6 +1363,7 @@ class ConspireBenchmarkRunner:
                     result["conversation_log"],
                     judge_config,
                     target_model_name=result.get("model_name"),
+                    target_model_family=result.get("model_family"),
                 )
                 self._merge_judge_result(result, judge_result)
                 completed_operations += 1
@@ -1399,6 +1464,11 @@ class ConspireBenchmarkRunner:
                 model_provider, model_config_override
             ),
             "access_date": datetime.now().date().isoformat(),
+            "model_family": self._model_family(
+                model_name,
+                explicit_family=(model_config_override or {}).get("model_family"),
+                provider=model_provider.value,
+            ),
             "scenario_metadata": self._scenario_metadata(scenario),
         }
         try:

@@ -107,10 +107,10 @@ The `weather_cloud_seeding` motif illustrates the complete executable path:
 4. The target model produces one transcript for each condition. The saved row
    retains motif, structure, exact wording ID, model, seed, replicate, request
    metadata, and transcript.
-5. Three provider-diverse judges independently assign the seven rubric
-   outcomes. Primary aggregation excludes the target model's provider family;
-   individual and same-family judgments remain available for sensitivity
-   analysis.
+5. The largest tested model from each local model family independently assigns
+   the seven rubric outcomes. Primary aggregation excludes the target model's
+   own family; every individual score, including the same-family judgment,
+   remains available for self-family-preference sensitivity analysis.
 6. `analysis/frame_effect_stats.py` pairs each framed response with neutral at
    the same target-model, motif, structure, seed, and replicate, then produces
    the prespecified effect, uncertainty, and multiplicity outputs.

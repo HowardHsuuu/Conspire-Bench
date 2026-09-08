@@ -103,6 +103,40 @@
       "model_family": "gemma",
       "parameter_scale_b": 4.0,
       "capacity_tier": "large"
+    },
+    {
+      "provider": "huggingface",
+      "model": "Qwen/Qwen2.5-32B-Instruct",
+      "config_path": "configs/models/qwen25_32b_instruct.yaml",
+      "model_family": "qwen",
+      "parameter_scale_b": 32.0,
+      "capacity_tier": "capacity"
+    },
+    {
+      "provider": "huggingface",
+      "model": "google/gemma-3-27b-it",
+      "config_path": "configs/models/gemma3_27b_it.yaml",
+      "model_family": "gemma",
+      "parameter_scale_b": 27.0,
+      "capacity_tier": "capacity"
+    },
+    {
+      "provider": "huggingface",
+      "model": "openai/gpt-oss-20b",
+      "config_path": "configs/models/gpt_oss_20b.yaml",
+      "model_family": "gpt_oss",
+      "parameter_scale_b": 21.0,
+      "active_parameter_scale_b": 3.6,
+      "capacity_tier": "large"
+    },
+    {
+      "provider": "huggingface",
+      "model": "openai/gpt-oss-120b",
+      "config_path": "configs/models/gpt_oss_120b.yaml",
+      "model_family": "gpt_oss",
+      "parameter_scale_b": 117.0,
+      "active_parameter_scale_b": 5.1,
+      "capacity_tier": "capacity"
     }
   ],
   "api_keys": {
@@ -127,8 +161,12 @@
   "judges": [
     {
       "provider": "huggingface",
-      "model": "Qwen/Qwen2.5-7B-Instruct",
-      "config_path": "configs/models/qwen25_7b_instruct.yaml",
+      "model": "Qwen/Qwen2.5-32B-Instruct",
+      "config_path": "configs/models/qwen25_32b_instruct.yaml",
+      "model_family": "qwen",
+      "dtype": "bfloat16",
+      "device_map": {"": 0},
+      "local_files_only": true,
       "max_seq_length": 32768,
       "temperature": 0.1,
       "max_tokens": 4000,
@@ -138,8 +176,44 @@
     },
     {
       "provider": "huggingface",
-      "model": "google/gemma-4-E4B-it",
-      "config_path": "configs/models/gemma4_e4b_it.yaml",
+      "model": "meta-llama/Llama-3.1-8B-Instruct",
+      "config_path": "configs/models/llama31_8b_instruct.yaml",
+      "model_family": "llama",
+      "dtype": "bfloat16",
+      "device_map": {"": 0},
+      "local_files_only": true,
+      "max_seq_length": 32768,
+      "temperature": 0.1,
+      "max_tokens": 4000,
+      "generation": {
+        "do_sample": false
+      }
+    },
+    {
+      "provider": "huggingface",
+      "model": "google/gemma-3-27b-it",
+      "config_path": "configs/models/gemma3_27b_it.yaml",
+      "model_family": "gemma",
+      "dtype": "bfloat16",
+      "device_map": {"": 0},
+      "local_files_only": true,
+      "max_seq_length": 32768,
+      "temperature": 0.1,
+      "max_tokens": 4000,
+      "generation": {
+        "do_sample": false
+      }
+    },
+    {
+      "provider": "huggingface",
+      "model": "openai/gpt-oss-120b",
+      "config_path": "configs/models/gpt_oss_120b.yaml",
+      "model_family": "gpt_oss",
+      "dtype": "auto",
+      "device_map": {"": 0},
+      "local_files_only": true,
+      "response_format": "harmony_final",
+      "reasoning_effort": "low",
       "max_seq_length": 32768,
       "temperature": 0.1,
       "max_tokens": 4000,

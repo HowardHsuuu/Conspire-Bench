@@ -288,9 +288,10 @@ def _reviewer_revision_coverage() -> list[dict[str, Any]]:
             "issue": "judge_reliability_size_and_family_bias",
             "status": "implemented_pending_live_and_human_evidence",
             "evidence": [
+                "configs/experiment_v3_local_full.json: four largest-family judges",
                 "configs/experiment_v3_api_full.json: three provider-diverse judges",
                 "analysis/judge_family_sensitivity.py",
-                "cross-family primary aggregation in bench_runner.py",
+                "leave-same-model-family-out primary aggregation in bench_runner.py",
             ],
         },
         {
@@ -306,7 +307,7 @@ def _reviewer_revision_coverage() -> list[dict[str, Any]]:
             "issue": "larger_open_and_deployed_models",
             "status": "matrices_implemented_pending_live_evidence",
             "evidence": [
-                "configs/experiment_v3_local_full.json: 13 open models",
+                "configs/experiment_v3_local_full.json: 17 open models",
                 "configs/experiment_v3_api_full.json: 9 API models",
                 "scripts/preflight_api_models.py",
             ],

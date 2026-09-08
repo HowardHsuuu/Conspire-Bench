@@ -175,6 +175,12 @@ With only two or three experts, CVI summaries are descriptive content-validity e
 
 ## Automated judge design
 
-The primary automated analysis uses three strong API judges from different provider families. Per-judge outputs and disagreement are retained. For each target response, the primary aggregate excludes judges from the same provider family as the target and never falls back to same-family scores. Same-family judgments are analyzed only as a sensitivity check.
+The local automated analysis uses the largest tested Qwen, Llama, Gemma, and
+GPT-OSS model as four separate judges. Per-judge outputs and disagreement are
+retained. For each target response, the primary aggregate excludes the judge
+from the same model family as the target and never falls back to same-family
+scores. Same-family judgments are retained for a paired self-family-preference
+sensitivity analysis. API runs apply the corresponding family-exclusion rule to
+their provider/model families.
 
 Judge prompts use the same observable definitions as the human rubric. Judging occurs after target generation, so rubric changes normally require rerunning judges but not regenerating target responses. Provider, requested and resolved model, interface, access date, generation parameters, prompt variant, and rubric version are recorded.

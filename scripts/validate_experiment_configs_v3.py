@@ -13,6 +13,7 @@ DEFAULT_LOCAL = ROOT / "configs" / "experiment_v3_local_full.json"
 DEFAULT_API = ROOT / "configs" / "experiment_v3_api_full.json"
 EXPECTED_PROVIDERS = {"openai", "anthropic", "gemini"}
 EXPECTED_TIERS = {"large", "medium", "efficient"}
+EXPECTED_LOCAL_TIERS = EXPECTED_TIERS | {"capacity"}
 
 
 def _read(path: Path) -> dict[str, Any]:
@@ -58,14 +59,18 @@ def validate(local_config: dict[str, Any], api_config: dict[str, Any]) -> list[s
                 )
 
     local_models = local_config.get("models") or []
-    if len(local_models) != 13:
-        errors.append("local.models must contain the frozen 13-model matrix")
+    if len(local_models) != 17:
+        errors.append("local.models must contain the frozen 17-model matrix")
     local_families = {model.get("model_family") for model in local_models}
-    if local_families != {"llama", "qwen", "gemma"}:
-        errors.append("local.models must contain Llama, Qwen, and Gemma families")
+    if local_families != {"llama", "qwen", "gemma", "gpt_oss"}:
+        errors.append(
+            "local.models must contain Llama, Qwen, Gemma, and GPT-OSS families"
+        )
     local_tiers = {model.get("capacity_tier") for model in local_models}
-    if local_tiers != EXPECTED_TIERS:
-        errors.append("local.models must contain efficient, medium, and large tiers")
+    if local_tiers != EXPECTED_LOCAL_TIERS:
+        errors.append(
+            "local.models must contain efficient, medium, large, and capacity tiers"
+        )
     parameter_scales = [
         model.get("parameter_scale_b")
         for model in local_models
@@ -84,8 +89,19 @@ def validate(local_config: dict[str, Any], api_config: dict[str, Any]) -> list[s
         config_path = model.get("config_path")
         if not config_path or not (ROOT / config_path).exists():
             errors.append(f"local.models[{index}] has a missing config_path")
-        if model.get("capacity_tier") not in EXPECTED_TIERS:
+        if model.get("capacity_tier") not in EXPECTED_LOCAL_TIERS:
             errors.append(f"local.models[{index}] has an invalid capacity_tier")
+
+    local_judges = local_config.get("judges") or []
+    expected_local_judge_families = {"llama", "qwen", "gemma", "gpt_oss"}
+    if (
+        len(local_judges) != 4
+        or {judge.get("model_family") for judge in local_judges}
+        != expected_local_judge_families
+    ):
+        errors.append(
+            "local.judges must contain the largest tested model from each local family"
+        )
 
     api_models = api_config.get("models") or []
     provider_tiers = {

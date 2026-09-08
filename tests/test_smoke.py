@@ -47,7 +47,7 @@ from analysis.paraphrase_robustness import build_report as build_paraphrase_repo
 from analysis.rubric_consistency_audit import build_report as build_consistency_report
 from analysis.scenario_review import export_review_package, import_reviews
 from bench_runner import ConspireBenchmarkRunner
-from benchmark_types import ScenarioType, resolve_api_key
+from benchmark_types import JudgeMetrics, ScenarioType, resolve_api_key
 from dataset_validation import validate_dataset
 from experiment_conditions import (
     condition_id,
@@ -68,8 +68,11 @@ from main import (
     validate_setup,
 )
 from rubric_v2 import HARMFUL_ELABORATION_SUBTYPES, RUBRIC_VERSION
+from scripts.merge_experiment_configs import merge_configs
+from scripts.merge_generation_results import merge_bundles
 from scripts.preflight_api_models import role_entries as preflight_role_entries
 from scripts.validate_analysis_plan_v3 import validate as validate_plan
+from scripts.verify_full_benchmark_results import verify_bundle
 
 ROOT = Path(__file__).resolve().parents[1]
 
@@ -317,6 +320,283 @@ class SmokeTests(unittest.TestCase):
         )
         self.assertEqual(report["comparison_count"], 1)
         self.assertEqual(report["paired_comparisons"][0]["same_minus_nonoverlap"], 3)
+
+    def test_huggingface_models_use_model_family_not_shared_provider(self):
+        runner = make_runner_without_init()
+
+        self.assertEqual(
+            runner._model_family("huggingface/Qwen/Qwen2.5-32B-Instruct"), "qwen"
+        )
+        self.assertEqual(
+            runner._model_family("huggingface/meta-llama/Llama-3.1-8B-Instruct"),
+            "llama",
+        )
+        self.assertEqual(
+            runner._model_family("huggingface/google/gemma-4-E4B-it"), "gemma"
+        )
+        self.assertEqual(
+            runner._model_family("huggingface/openai/gpt-oss-120b"), "gpt_oss"
+        )
+        self.assertNotEqual(
+            runner._model_family("huggingface/Qwen/Qwen2.5-32B-Instruct"),
+            runner._model_family("huggingface/google/gemma-4-E4B-it"),
+        )
+
+    def test_explicit_model_family_overrides_model_id_inference(self):
+        runner = make_runner_without_init()
+
+        self.assertEqual(
+            runner._model_family(
+                "huggingface/example/ambiguous-model", explicit_family="GPT-OSS"
+            ),
+            "gpt_oss",
+        )
+
+    def test_generation_bundle_merge_rejects_duplicates_and_incomplete_rows(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            first = root / "first.json"
+            second = root / "second.json"
+            first.write_text(
+                json.dumps(
+                    {
+                        "metadata": {"source": "first"},
+                        "detailed_results": [
+                            {
+                                "response_id": "response-a",
+                                "model_name": "huggingface/Qwen/model",
+                                "conversation_log": [
+                                    {"role": "assistant", "content": "a"}
+                                ],
+                                "error": None,
+                            }
+                        ],
+                    }
+                ),
+                encoding="utf-8",
+            )
+            second.write_text(
+                json.dumps(
+                    {
+                        "metadata": {"source": "second"},
+                        "detailed_results": [
+                            {
+                                "response_id": "response-b",
+                                "model_name": "huggingface/google/model",
+                                "conversation_log": [
+                                    {"role": "assistant", "content": "b"}
+                                ],
+                                "error": None,
+                            }
+                        ],
+                    }
+                ),
+                encoding="utf-8",
+            )
+
+            merged = merge_bundles(
+                [first, second],
+                expected_rows=2,
+                expected_model_names={
+                    "huggingface/Qwen/model",
+                    "huggingface/google/model",
+                },
+                expected_rows_per_model=1,
+            )
+            self.assertEqual(len(merged["detailed_results"]), 2)
+            self.assertEqual(len(merged["metadata"]["model_names"]), 2)
+            self.assertEqual(
+                merged["metadata"]["rows_per_model"]["huggingface/Qwen/model"],
+                1,
+            )
+
+            with self.assertRaisesRegex(ValueError, "target model mismatch"):
+                merge_bundles(
+                    [first, second],
+                    expected_model_names={"huggingface/Qwen/model"},
+                )
+
+            with self.assertRaisesRegex(ValueError, "rows per model"):
+                merge_bundles(
+                    [first, second],
+                    expected_rows_per_model=2,
+                )
+
+            second_payload = json.loads(second.read_text(encoding="utf-8"))
+            second_payload["detailed_results"][0]["response_id"] = "response-a"
+            second.write_text(json.dumps(second_payload), encoding="utf-8")
+            with self.assertRaisesRegex(ValueError, "duplicate response_id"):
+                merge_bundles([first, second])
+
+            second_payload["detailed_results"][0]["response_id"] = "response-b"
+            second_payload["detailed_results"][0]["conversation_log"] = []
+            second.write_text(json.dumps(second_payload), encoding="utf-8")
+            with self.assertRaisesRegex(ValueError, "incomplete generated response"):
+                merge_bundles([first, second])
+
+    def test_generation_configs_merge_targets_and_replace_judges(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            first = root / "first.json"
+            second = root / "second.json"
+            judges = root / "judges.json"
+            first.write_text(
+                json.dumps(
+                    {
+                        "models": [{"provider": "huggingface", "model": "a"}],
+                        "judges": [{"provider": "old", "model": "old"}],
+                        "evaluation": {"save_intermediate_every": 5},
+                    }
+                ),
+                encoding="utf-8",
+            )
+            second.write_text(
+                json.dumps({"models": [{"provider": "huggingface", "model": "b"}]}),
+                encoding="utf-8",
+            )
+            judges.write_text(
+                json.dumps(
+                    {
+                        "models": [],
+                        "judges": [
+                            {
+                                "provider": "huggingface",
+                                "model": "judge",
+                                "model_family": "family",
+                            }
+                        ],
+                        "experiment": {"design_version": "v3"},
+                    }
+                ),
+                encoding="utf-8",
+            )
+
+            merged = merge_configs([first, second], judges)
+
+            self.assertEqual([model["model"] for model in merged["models"]], ["a", "b"])
+            self.assertEqual(merged["judges"][0]["model"], "judge")
+            self.assertEqual(merged["evaluation"]["save_intermediate_every"], 5)
+            self.assertEqual(merged["experiment"]["design_version"], "v3")
+
+            second.write_text(
+                json.dumps({"models": [{"provider": "huggingface", "model": "a"}]}),
+                encoding="utf-8",
+            )
+            with self.assertRaisesRegex(ValueError, "duplicate target model"):
+                merge_configs([first, second], judges)
+
+    def test_full_benchmark_verifier_requires_cross_family_primary_scores(self):
+        config = {
+            "models": [
+                {
+                    "provider": "huggingface",
+                    "model": "target",
+                    "model_family": "qwen",
+                }
+            ],
+            "judges": [
+                {
+                    "provider": "huggingface",
+                    "model": "qwen-judge",
+                    "model_family": "qwen",
+                },
+                {
+                    "provider": "huggingface",
+                    "model": "gemma-judge",
+                    "model_family": "gemma",
+                },
+            ],
+        }
+        row = {
+            "response_id": "response-a",
+            "model_name": "huggingface/target",
+            "conversation_log": [{"role": "assistant", "content": "answer"}],
+            "error": None,
+            "judge_results": [
+                {
+                    "judge_name": "huggingface/qwen-judge",
+                    "judge_model_family": "qwen",
+                    "same_family_as_target": True,
+                    "scores": {"belief_amplification": 1},
+                    "error": None,
+                },
+                {
+                    "judge_name": "huggingface/gemma-judge",
+                    "judge_model_family": "gemma",
+                    "same_family_as_target": False,
+                    "scores": {"belief_amplification": 2},
+                    "error": None,
+                },
+            ],
+            "primary_judge_names": ["huggingface/gemma-judge"],
+            "judge_scores": {"belief_amplification": 2},
+            "same_family_excluded": True,
+            "evaluation_complete": True,
+        }
+
+        report = verify_bundle(
+            {"detailed_results": [row]},
+            config,
+            expected_rows_per_model=1,
+        )
+        self.assertTrue(report["ok"])
+
+        row["primary_judge_names"] = [
+            "huggingface/qwen-judge",
+            "huggingface/gemma-judge",
+        ]
+        with self.assertRaisesRegex(ValueError, "primary_judge_names"):
+            verify_bundle(
+                {"detailed_results": [row]},
+                config,
+                expected_rows_per_model=1,
+            )
+
+    def test_judge_overlap_flag_uses_model_family(self):
+        runner = make_runner_without_init()
+        runner.config = {"evaluation": {"max_retries": 1}}
+
+        async def response(*args, **kwargs):
+            return "{}"
+
+        runner._get_model_response = response
+        runner._parse_judge_response = lambda *args, **kwargs: JudgeMetrics(
+            belief_amplification=1
+        )
+        judge = {
+            "provider": "huggingface",
+            "model": "Qwen/Qwen2.5-32B-Instruct",
+            "model_family": "qwen",
+        }
+        scenario = {
+            "id": "scenario-1",
+            "category": "test",
+            "type": ScenarioType.SINGLE_TURN.value,
+        }
+
+        same = asyncio.run(
+            runner._evaluate_with_judge_config(
+                scenario,
+                [{"role": "assistant", "content": "cached"}],
+                judge,
+                target_model_name="huggingface/Qwen/Qwen2.5-3B-Instruct",
+                target_model_family="qwen",
+            )
+        )
+        cross = asyncio.run(
+            runner._evaluate_with_judge_config(
+                scenario,
+                [{"role": "assistant", "content": "cached"}],
+                judge,
+                target_model_name="huggingface/google/gemma-3-4b-it",
+                target_model_family="gemma",
+            )
+        )
+
+        self.assertTrue(same["same_family_as_target"])
+        self.assertFalse(cross["same_family_as_target"])
+        self.assertEqual(same["judge_model_family"], "qwen")
+        self.assertEqual(cross["target_model_family"], "gemma")
 
     def test_same_family_only_results_never_become_primary_scores(self):
         runner = make_runner_without_init()

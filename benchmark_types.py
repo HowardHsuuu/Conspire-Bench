@@ -112,6 +112,7 @@ class TestResult:
     generation_config: dict[str, Any] | None = None
     generation_interface: str | None = None
     access_date: str | None = None
+    model_family: str | None = None
     primary_judge_names: list[str] | None = None
     same_family_excluded: bool = False
     scenario_metadata: dict[str, Any] | None = None
