@@ -205,22 +205,42 @@ async def call_openai_compatible(
 
     response = await clients["openai_compatible"].chat.completions.create(**request)
     choice = response.choices[0]
+    retry_metadata: dict[str, Any] | None = None
+    retry_max_tokens = role_config.get("truncation_retry_max_tokens")
+    if (
+        getattr(choice, "finish_reason", None) == "length"
+        and retry_max_tokens is not None
+        and int(retry_max_tokens) > max_tokens
+    ):
+        retry_request = dict(request)
+        retry_request["max_tokens"] = int(retry_max_tokens)
+        retry_metadata = {
+            "initial_max_tokens": max_tokens,
+            "retry_max_tokens": int(retry_max_tokens),
+            "initial_finish_reason": getattr(choice, "finish_reason", None),
+            "initial_response_id": getattr(response, "id", None),
+            "initial_usage": serializable_metadata(getattr(response, "usage", None)),
+        }
+        response = await clients["openai_compatible"].chat.completions.create(
+            **retry_request
+        )
+        choice = response.choices[0]
     content = choice.message.content
     if not content:
         raise RuntimeError("OpenAI-compatible endpoint returned no text content")
 
-    return ModelText(
-        content,
-        {
-            "provider": "huggingface",
-            "requested_model": model,
-            "resolved_model": getattr(response, "model", None),
-            "response_id": getattr(response, "id", None),
-            "interface": "openai_compatible_chat_completions",
-            "finish_reason": getattr(choice, "finish_reason", None),
-            "usage": serializable_metadata(getattr(response, "usage", None)),
-        },
-    )
+    metadata = {
+        "provider": "huggingface",
+        "requested_model": model,
+        "resolved_model": getattr(response, "model", None),
+        "response_id": getattr(response, "id", None),
+        "interface": "openai_compatible_chat_completions",
+        "finish_reason": getattr(choice, "finish_reason", None),
+        "usage": serializable_metadata(getattr(response, "usage", None)),
+    }
+    if retry_metadata is not None:
+        metadata["truncation_retry"] = retry_metadata
+    return ModelText(content, metadata)
 
 
 async def call_anthropic(

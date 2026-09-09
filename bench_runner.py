@@ -1954,6 +1954,13 @@ class ConspireBenchmarkRunner:
         result = resume_by_key.get(key)
         if not result or not result.get("conversation_log"):
             return None
+        if any(
+            message.get("role") == "assistant"
+            and (message.get("response_metadata") or {}).get("finish_reason")
+            == "length"
+            for message in result["conversation_log"]
+        ):
+            return None
 
         resumed = deepcopy(result)
         resumed["resumed"] = True

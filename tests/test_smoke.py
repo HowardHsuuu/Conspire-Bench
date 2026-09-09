@@ -162,6 +162,74 @@ class SmokeTests(unittest.TestCase):
         self.assertEqual(captured["seed"], 42)
         self.assertEqual(captured["reasoning_effort"], "low")
 
+    def test_openai_compatible_retries_configured_length_truncation(self):
+        requests = []
+
+        class Message:
+            def __init__(self, content):
+                self.content = content
+
+        class Choice:
+            def __init__(self, content, finish_reason):
+                self.message = Message(content)
+                self.finish_reason = finish_reason
+
+        class Response:
+            model = "openai/gpt-oss-120b"
+
+            def __init__(
+                self, content, finish_reason, response_id, completion_tokens
+            ):
+                self.choices = [Choice(content, finish_reason)]
+                self.id = response_id
+                self.usage = {"completion_tokens": completion_tokens}
+
+        class Completions:
+            async def create(self, **kwargs):
+                requests.append(kwargs)
+                if len(requests) == 1:
+                    return Response("cut off", "length", "first", 8192)
+                return Response("complete answer", "stop", "retry", 9000)
+
+        class Chat:
+            completions = Completions()
+
+        class Client:
+            chat = Chat()
+
+        response = asyncio.run(
+            call_openai_compatible(
+                {"openai_compatible": Client()},
+                "openai/gpt-oss-120b",
+                [{"role": "user", "content": "hello"}],
+                max_tokens=8192,
+                temperature=0.7,
+                role_config={
+                    "seed": 42,
+                    "reasoning_effort": "low",
+                    "truncation_retry_max_tokens": 16384,
+                },
+            )
+        )
+
+        self.assertEqual(str(response), "complete answer")
+        self.assertEqual(
+            [request["max_tokens"] for request in requests],
+            [8192, 16384],
+        )
+        self.assertEqual([request["seed"] for request in requests], [42, 42])
+        self.assertEqual(response.metadata["finish_reason"], "stop")
+        self.assertEqual(
+            response.metadata["truncation_retry"],
+            {
+                "initial_max_tokens": 8192,
+                "retry_max_tokens": 16384,
+                "initial_finish_reason": "length",
+                "initial_response_id": "first",
+                "initial_usage": {"completion_tokens": 8192},
+            },
+        )
+
     def test_openai_compatible_call_preserves_greedy_huggingface_sampling(self):
         captured = {}
 
@@ -1855,7 +1923,31 @@ class SmokeTests(unittest.TestCase):
         self.assertIsNone(resumed["error"])
         self.assertEqual(len(resumed["judge_results"]), 2)
         self.assertEqual(resumed["judge_scores"]["belief_amplification"], 3.0)
-        self.assertEqual(resumed["judge_disagreement"]["response_appropriateness"], 2.0)
+        self.assertEqual(
+            resumed["judge_disagreement"]["response_appropriateness"],
+            2.0,
+        )
+
+    def test_phased_resume_rejects_length_truncated_conversation(self):
+        runner = make_runner_without_init()
+        existing = {
+            "condition_id": "cond_truncated",
+            "conversation_log": [
+                {
+                    "role": "assistant",
+                    "content": "cut off",
+                    "response_metadata": {"finish_reason": "length"},
+                }
+            ],
+        }
+        resume_map = runner._resume_result_map([existing])
+
+        self.assertIsNone(
+            runner._resumed_conversation(
+                resume_map,
+                ("condition_id", "cond_truncated"),
+            )
+        )
 
     def test_status_file_writer(self):
         runner = make_runner_without_init()

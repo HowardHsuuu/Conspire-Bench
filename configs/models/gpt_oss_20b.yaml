@@ -12,6 +12,9 @@ model:
 
 generation:
   max_new_tokens: 8192
+  # Rare Harmony requests can spend the entire initial completion budget.
+  # Retry only those truncated requests with the same seed and a larger cap.
+  truncation_retry_max_tokens: 16384
   temperature: 0.7
   do_sample: true
   top_p: 0.95
