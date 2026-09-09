@@ -189,9 +189,15 @@ async def call_openai_compatible(
         "max_tokens": max_tokens,
     }
     if not role_config.get("omit_sampling_parameters", False):
-        request["temperature"] = temperature
-        if role_config.get("top_p") is not None:
-            request["top_p"] = float(role_config["top_p"])
+        if role_config.get("do_sample") is False:
+            # Local Transformers configs use ``do_sample: false`` for greedy
+            # judges even when a legacy temperature value is present. Preserve
+            # that behavior when the same model is served through vLLM/SGLang.
+            request["temperature"] = 0.0
+        else:
+            request["temperature"] = temperature
+            if role_config.get("top_p") is not None:
+                request["top_p"] = float(role_config["top_p"])
     if role_config.get("seed") is not None:
         request["seed"] = int(role_config["seed"])
 

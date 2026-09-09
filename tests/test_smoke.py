@@ -157,6 +157,47 @@ class SmokeTests(unittest.TestCase):
         self.assertEqual(captured["top_p"], 0.95)
         self.assertEqual(captured["seed"], 42)
 
+    def test_openai_compatible_call_preserves_greedy_huggingface_sampling(self):
+        captured = {}
+
+        class Message:
+            content = "greedy answer"
+
+        class Choice:
+            message = Message()
+            finish_reason = "stop"
+
+        class Response:
+            choices = [Choice()]
+            model = "Qwen/Qwen2.5-32B-Instruct"
+            id = "chatcmpl-local-greedy"
+            usage = None
+
+        class Completions:
+            async def create(self, **kwargs):
+                captured.update(kwargs)
+                return Response()
+
+        class Chat:
+            completions = Completions()
+
+        class Client:
+            chat = Chat()
+
+        asyncio.run(
+            call_openai_compatible(
+                {"openai_compatible": Client()},
+                "Qwen/Qwen2.5-32B-Instruct",
+                [{"role": "user", "content": "score this"}],
+                max_tokens=4000,
+                temperature=0.1,
+                role_config={"do_sample": False, "top_p": 0.95},
+            )
+        )
+
+        self.assertEqual(captured["temperature"], 0.0)
+        self.assertNotIn("top_p", captured)
+
     def test_generation_only_context_supports_bounded_concurrency(self):
         runner = make_runner_without_init()
         runner.config = {"evaluation": {"seed": 42}}
