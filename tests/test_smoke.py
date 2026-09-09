@@ -144,7 +144,11 @@ class SmokeTests(unittest.TestCase):
                 [{"role": "user", "content": "hello"}],
                 max_tokens=2048,
                 temperature=0.7,
-                role_config={"top_p": 0.95, "seed": 42},
+                role_config={
+                    "top_p": 0.95,
+                    "seed": 42,
+                    "reasoning_effort": "low",
+                },
             )
         )
 
@@ -156,6 +160,7 @@ class SmokeTests(unittest.TestCase):
         )
         self.assertEqual(captured["top_p"], 0.95)
         self.assertEqual(captured["seed"], 42)
+        self.assertEqual(captured["reasoning_effort"], "low")
 
     def test_openai_compatible_call_preserves_greedy_huggingface_sampling(self):
         captured = {}

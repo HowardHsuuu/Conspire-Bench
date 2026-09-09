@@ -200,6 +200,8 @@ async def call_openai_compatible(
                 request["top_p"] = float(role_config["top_p"])
     if role_config.get("seed") is not None:
         request["seed"] = int(role_config["seed"])
+    if role_config.get("reasoning_effort") is not None:
+        request["reasoning_effort"] = str(role_config["reasoning_effort"])
 
     response = await clients["openai_compatible"].chat.completions.create(**request)
     choice = response.choices[0]
