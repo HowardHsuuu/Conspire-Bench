@@ -207,6 +207,11 @@ async def call_openai_compatible(
     choice = response.choices[0]
     retry_metadata: dict[str, Any] | None = None
     retry_max_tokens = role_config.get("truncation_retry_max_tokens")
+    if retry_max_tokens is None and role_config.get("model_family") == "gpt_oss":
+        retry_max_tokens = min(
+            max_tokens * 2,
+            int(role_config.get("max_seq_length", max_tokens * 2)),
+        )
     if (
         getattr(choice, "finish_reason", None) == "length"
         and retry_max_tokens is not None

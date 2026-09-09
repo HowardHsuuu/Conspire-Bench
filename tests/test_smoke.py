@@ -207,7 +207,8 @@ class SmokeTests(unittest.TestCase):
                 role_config={
                     "seed": 42,
                     "reasoning_effort": "low",
-                    "truncation_retry_max_tokens": 16384,
+                    "model_family": "gpt_oss",
+                    "max_seq_length": 32768,
                 },
             )
         )
