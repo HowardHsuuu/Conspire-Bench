@@ -4,12 +4,15 @@ model:
   tokenizer: openai/gpt-oss-120b
   batch_size: 1
   dtype: auto
-  max_seq_length: 8192
+  # The Harmony reasoning channel and visible answer share the completion
+  # budget. Keep enough total context for low-effort reasoning plus multi-turn
+  # history; 2,048 output tokens truncated most observed responses.
+  max_seq_length: 32768
   response_format: harmony_final
   reasoning_effort: low
 
 generation:
-  max_new_tokens: 2048
+  max_new_tokens: 8192
   temperature: 0.7
   do_sample: true
   top_p: 0.95

@@ -4,12 +4,14 @@ model:
   tokenizer: openai/gpt-oss-20b
   batch_size: 1
   dtype: auto
-  max_seq_length: 8192
+  # Match the 120B target: Harmony reasoning tokens count against the output
+  # limit, and multi-turn history also consumes the total context window.
+  max_seq_length: 32768
   response_format: harmony_final
   reasoning_effort: low
 
 generation:
-  max_new_tokens: 2048
+  max_new_tokens: 8192
   temperature: 0.7
   do_sample: true
   top_p: 0.95

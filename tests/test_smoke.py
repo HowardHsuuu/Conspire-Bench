@@ -2064,7 +2064,8 @@ class SmokeTests(unittest.TestCase):
         self.assertEqual(_extract_harmony_final(raw_completion), "public answer")
         self.assertEqual(config["model"]["response_format"], "harmony_final")
         self.assertEqual(config["model"]["reasoning_effort"], "low")
-        self.assertEqual(config["generation"]["max_new_tokens"], 2048)
+        self.assertEqual(config["model"]["max_seq_length"], 32768)
+        self.assertEqual(config["generation"]["max_new_tokens"], 8192)
 
     def test_harmony_completion_without_final_channel_is_rejected(self):
         raw_completion = "<|channel|>analysis<|message|>unfinished reasoning<|return|>"
