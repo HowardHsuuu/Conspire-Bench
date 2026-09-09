@@ -38,6 +38,7 @@ def verify_bundle(
     expected_models = {_model_name(model): model for model in models}
     expected_judges = {_model_name(judge): judge for judge in judges}
     model_counts: Counter[str] = Counter()
+    length_truncations: Counter[str] = Counter()
     response_ids: set[str] = set()
     errors: list[str] = []
 
@@ -62,6 +63,13 @@ def verify_bundle(
             errors.append(f"{label}: row error: {row['error']}")
         if not row.get("conversation_log"):
             errors.append(f"{label}: missing conversation_log")
+        else:
+            length_truncations[model_name] += sum(
+                message.get("role") == "assistant"
+                and (message.get("response_metadata") or {}).get("finish_reason")
+                == "length"
+                for message in row["conversation_log"]
+            )
 
         judge_results = row.get("judge_results")
         if not isinstance(judge_results, list):
@@ -134,12 +142,24 @@ def verify_bundle(
     if len(rows) != expected_total:
         errors.append(f"expected {expected_total} rows, found {len(rows)}")
 
+    invalid_gpt_oss_truncations = {
+        name: length_truncations[name]
+        for name, model in expected_models.items()
+        if model.get("model_family") == "gpt_oss" and length_truncations[name]
+    }
+    if invalid_gpt_oss_truncations:
+        errors.append(
+            "GPT-OSS assistant turns reached the completion-token limit: "
+            f"{invalid_gpt_oss_truncations}"
+        )
+
     report = {
         "ok": not errors,
         "row_count": len(rows),
         "target_model_count": len(expected_models),
         "judge_count": len(expected_judges),
         "rows_per_model": dict(sorted(model_counts.items())),
+        "length_truncated_assistant_turns": dict(sorted(length_truncations.items())),
         "errors": errors,
     }
     if errors:

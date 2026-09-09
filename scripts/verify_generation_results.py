@@ -27,8 +27,11 @@ def verify_generation_bundle(
     if not isinstance(models, list) or not models:
         raise ValueError("config has no models list")
 
-    expected_models = {f"{model['provider']}/{model['model']}" for model in models}
+    expected_models = {
+        f"{model['provider']}/{model['model']}": model for model in models
+    }
     model_counts: Counter[str] = Counter()
+    length_truncations: Counter[str] = Counter()
     response_ids: set[str] = set()
     condition_ids: set[str] = set()
     errors: list[str] = []
@@ -63,16 +66,24 @@ def verify_generation_bundle(
             errors.append(f"{label}: generation_complete is not true")
         if not row.get("conversation_log"):
             errors.append(f"{label}: missing conversation_log")
+        else:
+            length_truncations[model_name] += sum(
+                message.get("role") == "assistant"
+                and (message.get("response_metadata") or {}).get("finish_reason")
+                == "length"
+                for message in row["conversation_log"]
+            )
 
         if len(errors) >= 50:
             break
 
+    expected_model_set = set(expected_models)
     actual_models = set(model_counts)
-    if actual_models != expected_models:
+    if actual_models != expected_model_set:
         errors.append(
             "target model set mismatch: "
-            f"missing={sorted(expected_models - actual_models) or 'none'}, "
-            f"unexpected={sorted(actual_models - expected_models) or 'none'}"
+            f"missing={sorted(expected_model_set - actual_models) or 'none'}, "
+            f"unexpected={sorted(actual_models - expected_model_set) or 'none'}"
         )
     invalid_counts = {
         name: model_counts.get(name, 0)
@@ -88,11 +99,23 @@ def verify_generation_bundle(
     if len(rows) != expected_total:
         errors.append(f"expected {expected_total} rows, found {len(rows)}")
 
+    invalid_gpt_oss_truncations = {
+        name: length_truncations[name]
+        for name, model in expected_models.items()
+        if model.get("model_family") == "gpt_oss" and length_truncations[name]
+    }
+    if invalid_gpt_oss_truncations:
+        errors.append(
+            "GPT-OSS assistant turns reached the completion-token limit: "
+            f"{invalid_gpt_oss_truncations}"
+        )
+
     report = {
         "ok": not errors,
         "row_count": len(rows),
         "target_model_count": len(expected_models),
         "rows_per_model": dict(sorted(model_counts.items())),
+        "length_truncated_assistant_turns": dict(sorted(length_truncations.items())),
         "errors": errors,
     }
     if errors:

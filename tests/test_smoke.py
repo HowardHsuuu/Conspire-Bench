@@ -943,6 +943,38 @@ class SmokeTests(unittest.TestCase):
                 expected_rows_per_model=1,
             )
 
+    def test_generation_verifier_rejects_gpt_oss_length_truncation(self):
+        config = {
+            "models": [
+                {
+                    "provider": "huggingface",
+                    "model": "openai/gpt-oss-120b",
+                    "model_family": "gpt_oss",
+                }
+            ]
+        }
+        row = {
+            "response_id": "response-a",
+            "condition_id": "condition-a",
+            "model_name": "huggingface/openai/gpt-oss-120b",
+            "conversation_log": [
+                {
+                    "role": "assistant",
+                    "content": "truncated answer",
+                    "response_metadata": {"finish_reason": "length"},
+                }
+            ],
+            "generation_complete": True,
+            "error": None,
+        }
+
+        with self.assertRaisesRegex(ValueError, "completion-token limit"):
+            verify_generation_bundle(
+                {"detailed_results": [row]},
+                config,
+                expected_rows_per_model=1,
+            )
+
     def test_judge_overlap_flag_uses_model_family(self):
         runner = make_runner_without_init()
         runner.config = {"evaluation": {"max_retries": 1}}
