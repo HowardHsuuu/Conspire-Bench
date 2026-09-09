@@ -1163,16 +1163,14 @@ class ConspireBenchmarkRunner:
         self.logger.info(f"Benchmark complete. Results saved to {results_path}")
         return final_output
 
-    async def _run_conversations_for_context(
+    async def _run_conversations_for_contexts(
         self,
         *,
         scenarios_to_test: List[Dict[str, Any]],
         provider: ModelProvider,
         model_name: str,
         model_config: Dict[str, Any],
-        context_setting: Optional[str],
-        context_label: str,
-        context_condition: ContextCondition,
+        context_conditions: List[ContextCondition],
         parallel_scenarios: int,
         save_intermediate: bool,
         save_intermediate_every: int,
@@ -1182,12 +1180,12 @@ class ConspireBenchmarkRunner:
         status_file: str,
         judge_only: bool,
     ) -> List[Dict[str, Any]]:
-        """Generate one model/context slice with bounded concurrency.
+        """Generate several context slices through one bounded work queue.
 
-        Local Transformers configs retain their historical serial behavior by
-        keeping ``parallel_scenarios=1``. OpenAI-compatible inference servers
-        can raise the value to expose independent conversations to continuous
-        batching while preserving the turn order within each conversation.
+        Keeping one semaphore across context conditions prevents the tail of one
+        slice from draining server concurrency before the next slice starts. The
+        returned order remains context-major and scenario-minor, matching the
+        historical serial-context implementation.
         """
 
         eval_config = self._get_evaluation_config()
@@ -1198,13 +1196,19 @@ class ConspireBenchmarkRunner:
         )
         generation_config = self._effective_generation_config(model_config)
         semaphore = asyncio.Semaphore(max(1, parallel_scenarios))
+        work_items: List[Tuple[int, Dict[str, Any], ContextCondition]] = []
+        for context_condition in context_conditions:
+            for scenario in scenarios_to_test:
+                work_items.append((len(work_items), scenario, context_condition))
 
-        def resume_key_for(scenario: Dict[str, Any]) -> Tuple[Any, ...]:
+        def resume_key_for(
+            scenario: Dict[str, Any], context_condition: ContextCondition
+        ) -> Tuple[Any, ...]:
             return self._result_key(
                 scenario["id"],
                 provider,
                 model_name,
-                context_setting,
+                context_condition.text,
                 prompt_variant_id=context_condition.variant_id,
                 generation_seed=generation_seed,
                 replicate_id=replicate_id,
@@ -1213,20 +1217,22 @@ class ConspireBenchmarkRunner:
             )
 
         if judge_only:
-            for scenario in scenarios_to_test:
+            for _, scenario, context_condition in work_items:
                 if not self._resumed_conversation(
-                    resume_by_key, resume_key_for(scenario)
+                    resume_by_key, resume_key_for(scenario, context_condition)
                 ):
                     raise ValueError(
                         "judge-only resume is missing conversation for "
                         f"{scenario['id']} / {provider.value}/{model_name} / "
-                        f"{context_label}"
+                        f"{context_condition.variant_id}"
                     )
 
         async def run_one(
-            index: int, scenario: Dict[str, Any]
+            index: int,
+            scenario: Dict[str, Any],
+            context_condition: ContextCondition,
         ) -> Tuple[int, Dict[str, Any]]:
-            resume_key = resume_key_for(scenario)
+            resume_key = resume_key_for(scenario, context_condition)
             resumed = self._resumed_conversation(resume_by_key, resume_key)
             if resumed:
                 self.logger.info(
@@ -1239,7 +1245,7 @@ class ConspireBenchmarkRunner:
                     status_file,
                     scenario["id"],
                     f"{provider.value}/{model_name}",
-                    context_label,
+                    context_condition.variant_id,
                     "gen_skipped_resume",
                     0.0,
                     None,
@@ -1253,37 +1259,24 @@ class ConspireBenchmarkRunner:
                     provider,
                     model_name,
                     model_config_override=model_config,
-                    context_setting=context_setting,
-                    context_label=context_label,
+                    context_setting=context_condition.text,
+                    context_label=context_condition.variant_id,
                     context_condition=context_condition,
                 )
                 self._write_status_row(
                     status_file,
                     scenario["id"],
                     f"{provider.value}/{model_name}",
-                    context_label,
+                    context_condition.variant_id,
                     "gen_error" if result.get("error") else "gen_ok",
                     time.time() - start,
                     result.get("error"),
                 )
                 return index, result
 
-        if parallel_scenarios <= 1:
-            serial_results: List[Dict[str, Any]] = []
-            for index, scenario in enumerate(scenarios_to_test):
-                _, result = await run_one(index, scenario)
-                serial_results.append(result)
-                self._maybe_save_intermediate(
-                    existing_results + serial_results,
-                    output_file,
-                    save_intermediate,
-                    save_intermediate_every,
-                )
-            return serial_results
-
         tasks = [
-            asyncio.create_task(run_one(index, scenario))
-            for index, scenario in enumerate(scenarios_to_test)
+            asyncio.create_task(run_one(index, scenario, context_condition))
+            for index, scenario, context_condition in work_items
         ]
         completed: Dict[int, Dict[str, Any]] = {}
         for task in asyncio.as_completed(tasks):
@@ -1296,7 +1289,7 @@ class ConspireBenchmarkRunner:
                 save_intermediate,
                 save_intermediate_every,
             )
-        return [completed[index] for index in range(len(scenarios_to_test))]
+        return [completed[index] for index in range(len(work_items))]
 
     async def _run_judge_for_results(
         self,
@@ -1462,23 +1455,20 @@ class ConspireBenchmarkRunner:
                 "Generating conversations for %s/%s", provider.value, model_name
             )
 
-            for run_context in context_runs:
-                run_context_label = run_context.variant_id
-                run_context_setting = run_context.text
-                self.logger.info(
-                    "Context condition %s for %s/%s",
-                    run_context_label,
-                    provider.value,
-                    model_name,
-                )
-                context_results = await self._run_conversations_for_context(
+            if generation_only and parallel_scenarios > 1 and len(context_runs) > 1:
+                for run_context in context_runs:
+                    self.logger.info(
+                        "Queueing context condition %s for %s/%s",
+                        run_context.variant_id,
+                        provider.value,
+                        model_name,
+                    )
+                model_results = await self._run_conversations_for_contexts(
                     scenarios_to_test=scenarios_to_test,
                     provider=provider,
                     model_name=model_name,
                     model_config=model_config,
-                    context_setting=run_context_setting,
-                    context_label=run_context_label,
-                    context_condition=run_context,
+                    context_conditions=context_runs,
                     parallel_scenarios=parallel_scenarios,
                     save_intermediate=save_intermediate,
                     save_intermediate_every=save_intermediate_every,
@@ -1488,7 +1478,32 @@ class ConspireBenchmarkRunner:
                     status_file=status_file,
                     judge_only=judge_only,
                 )
-                all_results.extend(context_results)
+                all_results.extend(model_results)
+            else:
+                for run_context in context_runs:
+                    run_context_label = run_context.variant_id
+                    self.logger.info(
+                        "Context condition %s for %s/%s",
+                        run_context_label,
+                        provider.value,
+                        model_name,
+                    )
+                    context_results = await self._run_conversations_for_contexts(
+                        scenarios_to_test=scenarios_to_test,
+                        provider=provider,
+                        model_name=model_name,
+                        model_config=model_config,
+                        context_conditions=[run_context],
+                        parallel_scenarios=parallel_scenarios,
+                        save_intermediate=save_intermediate,
+                        save_intermediate_every=save_intermediate_every,
+                        output_file=output_file,
+                        existing_results=all_results,
+                        resume_by_key=resume_by_key,
+                        status_file=status_file,
+                        judge_only=judge_only,
+                    )
+                    all_results.extend(context_results)
 
             if provider == ModelProvider.HUGGINGFACE:
                 self.local_models.unload(model_name)

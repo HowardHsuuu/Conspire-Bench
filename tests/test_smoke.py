@@ -226,7 +226,7 @@ class SmokeTests(unittest.TestCase):
         runner.run_conversation_only_scenario = fake_run
         scenarios = [{"id": f"s{index}"} for index in range(1, 4)]
         results = asyncio.run(
-            runner._run_conversations_for_context(
+            runner._run_conversations_for_contexts(
                 scenarios_to_test=scenarios,
                 provider=ModelProvider.HUGGINGFACE,
                 model_name="Qwen/Qwen2.5-32B-Instruct",
@@ -234,9 +234,7 @@ class SmokeTests(unittest.TestCase):
                     "provider": "huggingface",
                     "model": "Qwen/Qwen2.5-32B-Instruct",
                 },
-                context_setting=None,
-                context_label="neutral_none",
-                context_condition=adhoc_context_condition("neutral_none", None),
+                context_conditions=[adhoc_context_condition("neutral_none", None)],
                 parallel_scenarios=2,
                 save_intermediate=False,
                 save_intermediate_every=5,
@@ -251,6 +249,75 @@ class SmokeTests(unittest.TestCase):
         self.assertEqual(max_active, 2)
         self.assertEqual(
             [result["scenario_id"] for result in results], ["s1", "s2", "s3"]
+        )
+
+    def test_generation_only_contexts_share_one_bounded_queue(self):
+        runner = make_runner_without_init()
+        runner.config = {"evaluation": {"seed": 42}}
+        runner._write_status_row = lambda *args, **kwargs: None
+        active = 0
+        max_active = 0
+        active_contexts = []
+        cross_context_overlap = False
+
+        async def fake_run(scenario, *args, **kwargs):
+            nonlocal active, cross_context_overlap, max_active
+            active += 1
+            max_active = max(max_active, active)
+            active_contexts.append(kwargs["context_label"])
+            cross_context_overlap = (
+                cross_context_overlap or len(set(active_contexts)) > 1
+            )
+            await asyncio.sleep(0.01)
+            active_contexts.remove(kwargs["context_label"])
+            active -= 1
+            return {
+                "scenario_id": scenario["id"],
+                "context_label": kwargs["context_label"],
+                "condition_id": f"cond_{kwargs['context_label']}_{scenario['id']}",
+                "conversation_log": [{"role": "assistant", "content": "ok"}],
+                "error": None,
+            }
+
+        runner.run_conversation_only_scenario = fake_run
+        scenarios = [{"id": "s1"}, {"id": "s2"}, {"id": "s3"}]
+        contexts = [
+            adhoc_context_condition("frame_a", "Frame A"),
+            adhoc_context_condition("frame_b", "Frame B"),
+        ]
+        results = asyncio.run(
+            runner._run_conversations_for_contexts(
+                scenarios_to_test=scenarios,
+                provider=ModelProvider.HUGGINGFACE,
+                model_name="Qwen/Qwen2.5-32B-Instruct",
+                model_config={
+                    "provider": "huggingface",
+                    "model": "Qwen/Qwen2.5-32B-Instruct",
+                },
+                context_conditions=contexts,
+                parallel_scenarios=2,
+                save_intermediate=False,
+                save_intermediate_every=5,
+                output_file="unused.json",
+                existing_results=[],
+                resume_by_key={},
+                status_file="unused.tsv",
+                judge_only=False,
+            )
+        )
+
+        self.assertEqual(max_active, 2)
+        self.assertTrue(cross_context_overlap)
+        self.assertEqual(
+            [(result["context_label"], result["scenario_id"]) for result in results],
+            [
+                ("frame_a", "s1"),
+                ("frame_a", "s2"),
+                ("frame_a", "s3"),
+                ("frame_b", "s1"),
+                ("frame_b", "s2"),
+                ("frame_b", "s3"),
+            ],
         )
 
     def test_phased_judging_supports_bounded_concurrency(self):
