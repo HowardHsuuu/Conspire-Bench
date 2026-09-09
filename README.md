@@ -107,6 +107,29 @@ python main.py \
 bash scripts/smoke_local_v3.sh
 ```
 
+For larger sweeps, a vLLM or SGLang server can provide continuous batching
+through its OpenAI-compatible endpoint while results retain their Hugging Face
+model identity. Set the endpoint once, opt each served model into the backend,
+and choose bounded concurrency appropriate for the available KV-cache memory:
+
+```json
+{
+  "openai_compatible": {"base_url": "http://127.0.0.1:8000/v1"},
+  "models": [{
+    "provider": "huggingface",
+    "model": "Qwen/Qwen2.5-32B-Instruct",
+    "inference_backend": "openai_compatible"
+  }],
+  "evaluation": {"parallel_scenarios": 16, "parallel_judgements": 32}
+}
+```
+
+Conversations remain sequential within a scenario; independent scenarios and
+judge requests are concurrent. The result metadata records
+`openai_compatible_chat_completions` as the generation interface. Keep the
+server model, revision, precision, and sampling configuration fixed within an
+experiment bundle.
+
 API credentials are read from environment variables such as `OPENAI_API_KEY`,
 `ANTHROPIC_API_KEY`, and `GEMINI_API_KEY`. Never place credentials in a tracked
 configuration file.

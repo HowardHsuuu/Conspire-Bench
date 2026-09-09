@@ -227,6 +227,13 @@ def _validate_model_section(config: dict, section: str) -> Optional[str]:
         return f"Unsupported provider in '{section}': {config[section]['provider']}"
     role_config = config[section]
     model = str(role_config["model"])
+    if role_config["provider"] == "huggingface":
+        inference_backend = role_config.get("inference_backend", "local_transformers")
+        if inference_backend not in {"local_transformers", "openai_compatible"}:
+            return (
+                f"Hugging Face model {model} has unsupported "
+                f"inference_backend={inference_backend}"
+            )
     if (
         role_config["provider"] == "anthropic"
         and model in {"claude-opus-5", "claude-sonnet-5"}
@@ -262,6 +269,9 @@ def _validate_judge_sections(config: dict) -> Optional[str]:
         error = _validate_model_section(temp, "judge")
         if error:
             return f"Invalid judges[{index}]: {error}"
+    endpoint_error = _validate_openai_compatible_endpoint(config, config["judges"])
+    if endpoint_error:
+        return endpoint_error
     return None
 
 
@@ -277,6 +287,28 @@ def _validate_target_model_sections(config: dict) -> Optional[str]:
         error = _validate_model_section(temp, "model")
         if error:
             return f"Invalid models[{index}]: {error}"
+    endpoint_error = _validate_openai_compatible_endpoint(config, config["models"])
+    if endpoint_error:
+        return endpoint_error
+    return None
+
+
+def _validate_openai_compatible_endpoint(
+    config: dict, role_configs: list[dict]
+) -> Optional[str]:
+    requires_endpoint = any(
+        role.get("provider") == "huggingface"
+        and role.get("inference_backend") == "openai_compatible"
+        for role in role_configs
+    )
+    if not requires_endpoint:
+        return None
+    endpoint = config.get("openai_compatible")
+    if not isinstance(endpoint, dict) or not endpoint.get("base_url"):
+        return (
+            "Hugging Face models using inference_backend=openai_compatible require "
+            "openai_compatible.base_url"
+        )
     return None
 
 

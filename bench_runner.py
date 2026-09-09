@@ -14,6 +14,7 @@ from api_providers import (
     call_anthropic,
     call_gemini,
     call_openai,
+    call_openai_compatible,
     huggingface_dependencies_available,
     initialize_api_clients,
 )
@@ -194,6 +195,11 @@ class ConspireBenchmarkRunner:
             return str(
                 (model_config or {}).get("api_mode", "google_genai_generate_content")
             )
+        if (
+            provider == ModelProvider.HUGGINGFACE
+            and (model_config or {}).get("inference_backend") == "openai_compatible"
+        ):
+            return "openai_compatible_chat_completions"
         return "local_transformers"
 
     @staticmethod
@@ -738,6 +744,36 @@ class ConspireBenchmarkRunner:
         temperature: Optional[float] = None,
         role_config_override: Optional[Dict[str, Any]] = None,
     ) -> str:
+        if (role_config_override or {}).get("inference_backend") == (
+            "openai_compatible"
+        ):
+            compatible_role_config = dict(self.config.get("huggingface", {}))
+            compatible_role_config.update(role_config_override or {})
+            compatible_role_config.update(
+                (role_config_override or {}).get("generation", {})
+            )
+            compatible_max_tokens = max_tokens
+            if compatible_max_tokens is None:
+                compatible_max_tokens = compatible_role_config.get("max_tokens")
+            if compatible_max_tokens is None:
+                compatible_max_tokens = compatible_role_config.get(
+                    "max_new_tokens", 2000
+                )
+            if compatible_max_tokens is None:
+                compatible_max_tokens = 2000
+            compatible_temperature = temperature
+            if compatible_temperature is None:
+                compatible_temperature = compatible_role_config.get("temperature", 0.7)
+            if compatible_temperature is None:
+                compatible_temperature = 0.7
+            return await call_openai_compatible(
+                self.clients,
+                model,
+                messages,
+                max_tokens=int(compatible_max_tokens),
+                temperature=float(compatible_temperature),
+                role_config=compatible_role_config,
+            )
         if not self.local_models.available():
             raise ImportError(
                 "HuggingFace models not available (transformers/torch not installed)"
@@ -1127,6 +1163,236 @@ class ConspireBenchmarkRunner:
         self.logger.info(f"Benchmark complete. Results saved to {results_path}")
         return final_output
 
+    async def _run_conversations_for_context(
+        self,
+        *,
+        scenarios_to_test: List[Dict[str, Any]],
+        provider: ModelProvider,
+        model_name: str,
+        model_config: Dict[str, Any],
+        context_setting: Optional[str],
+        context_label: str,
+        context_condition: ContextCondition,
+        parallel_scenarios: int,
+        save_intermediate: bool,
+        save_intermediate_every: int,
+        output_file: str,
+        existing_results: List[Dict[str, Any]],
+        resume_by_key: Dict[Tuple[Any, ...], Dict[str, Any]],
+        status_file: str,
+        judge_only: bool,
+    ) -> List[Dict[str, Any]]:
+        """Generate one model/context slice with bounded concurrency.
+
+        Local Transformers configs retain their historical serial behavior by
+        keeping ``parallel_scenarios=1``. OpenAI-compatible inference servers
+        can raise the value to expose independent conversations to continuous
+        batching while preserving the turn order within each conversation.
+        """
+
+        eval_config = self._get_evaluation_config()
+        configured_seed = model_config.get("seed", eval_config.get("seed"))
+        generation_seed = int(configured_seed) if configured_seed is not None else None
+        replicate_id = int(
+            model_config.get("replicate_id", eval_config.get("replicate_id", 0))
+        )
+        generation_config = self._effective_generation_config(model_config)
+        semaphore = asyncio.Semaphore(max(1, parallel_scenarios))
+
+        def resume_key_for(scenario: Dict[str, Any]) -> Tuple[Any, ...]:
+            return self._result_key(
+                scenario["id"],
+                provider,
+                model_name,
+                context_setting,
+                prompt_variant_id=context_condition.variant_id,
+                generation_seed=generation_seed,
+                replicate_id=replicate_id,
+                context_condition=context_condition,
+                generation_config=generation_config,
+            )
+
+        if judge_only:
+            for scenario in scenarios_to_test:
+                if not self._resumed_conversation(
+                    resume_by_key, resume_key_for(scenario)
+                ):
+                    raise ValueError(
+                        "judge-only resume is missing conversation for "
+                        f"{scenario['id']} / {provider.value}/{model_name} / "
+                        f"{context_label}"
+                    )
+
+        async def run_one(
+            index: int, scenario: Dict[str, Any]
+        ) -> Tuple[int, Dict[str, Any]]:
+            resume_key = resume_key_for(scenario)
+            resumed = self._resumed_conversation(resume_by_key, resume_key)
+            if resumed:
+                self.logger.info(
+                    "Skipping generated conversation for %s on %s/%s",
+                    scenario["id"],
+                    provider.value,
+                    model_name,
+                )
+                self._write_status_row(
+                    status_file,
+                    scenario["id"],
+                    f"{provider.value}/{model_name}",
+                    context_label,
+                    "gen_skipped_resume",
+                    0.0,
+                    None,
+                )
+                return index, resumed
+
+            async with semaphore:
+                start = time.time()
+                result = await self.run_conversation_only_scenario(
+                    scenario,
+                    provider,
+                    model_name,
+                    model_config_override=model_config,
+                    context_setting=context_setting,
+                    context_label=context_label,
+                    context_condition=context_condition,
+                )
+                self._write_status_row(
+                    status_file,
+                    scenario["id"],
+                    f"{provider.value}/{model_name}",
+                    context_label,
+                    "gen_error" if result.get("error") else "gen_ok",
+                    time.time() - start,
+                    result.get("error"),
+                )
+                return index, result
+
+        if parallel_scenarios <= 1:
+            serial_results: List[Dict[str, Any]] = []
+            for index, scenario in enumerate(scenarios_to_test):
+                _, result = await run_one(index, scenario)
+                serial_results.append(result)
+                self._maybe_save_intermediate(
+                    existing_results + serial_results,
+                    output_file,
+                    save_intermediate,
+                    save_intermediate_every,
+                )
+            return serial_results
+
+        tasks = [
+            asyncio.create_task(run_one(index, scenario))
+            for index, scenario in enumerate(scenarios_to_test)
+        ]
+        completed: Dict[int, Dict[str, Any]] = {}
+        for task in asyncio.as_completed(tasks):
+            index, result = await task
+            completed[index] = result
+            ordered_partial = [completed[key] for key in sorted(completed)]
+            self._maybe_save_intermediate(
+                existing_results + ordered_partial,
+                output_file,
+                save_intermediate,
+                save_intermediate_every,
+            )
+        return [completed[index] for index in range(len(scenarios_to_test))]
+
+    async def _run_judge_for_results(
+        self,
+        *,
+        all_results: List[Dict[str, Any]],
+        judge_config: Dict[str, Any],
+        parallel_judgements: int,
+        save_intermediate: bool,
+        save_intermediate_every: int,
+        output_file: str,
+        status_file: str,
+    ) -> None:
+        """Evaluate one judge over cached conversations with bounded concurrency."""
+
+        judge_name = self._judge_name(judge_config)
+        judge_run_id = self._judge_run_id(judge_config)
+        semaphore = asyncio.Semaphore(max(1, parallel_judgements))
+
+        async def evaluate_one(
+            index: int, result: Dict[str, Any]
+        ) -> Tuple[int, Dict[str, Any], float]:
+            scenario_id = result.get("scenario_id")
+            if not isinstance(scenario_id, str):
+                raise ValueError("Cached result is missing a string scenario_id")
+            scenario = self._scenario_by_id(scenario_id)
+            async with semaphore:
+                start = time.time()
+                judge_result = await self._evaluate_with_judge_config(
+                    scenario,
+                    result["conversation_log"],
+                    judge_config,
+                    target_model_name=result.get("model_name"),
+                    target_model_family=result.get("model_family"),
+                )
+                return index, judge_result, time.time() - start
+
+        pending = []
+        for index, result in enumerate(all_results):
+            model_name_for_status = (
+                result.get("model_name") or result.get("target_model") or ""
+            )
+            if not result.get("conversation_log"):
+                self._write_status_row(
+                    status_file,
+                    result.get("scenario_id", ""),
+                    model_name_for_status,
+                    result.get("context_label"),
+                    "judge_skipped_no_conversation",
+                    0.0,
+                    result.get("error") or "missing conversation_log",
+                )
+                continue
+            if self._successful_judge_result(
+                result,
+                judge_name,
+                judge_run_id=judge_run_id,
+            ):
+                self.logger.info(
+                    "Skipping completed judge %s for %s on %s",
+                    judge_name,
+                    result.get("scenario_id"),
+                    model_name_for_status,
+                )
+                self._write_status_row(
+                    status_file,
+                    result.get("scenario_id", ""),
+                    model_name_for_status,
+                    result.get("context_label"),
+                    "judge_skipped_resume",
+                    0.0,
+                    None,
+                )
+                continue
+            pending.append(asyncio.create_task(evaluate_one(index, result)))
+
+        completed = 0
+        for task in asyncio.as_completed(pending):
+            index, judge_result, elapsed = await task
+            result = all_results[index]
+            self._merge_judge_result(result, judge_result)
+            completed += 1
+            model_name_for_status = (
+                result.get("model_name") or result.get("target_model") or ""
+            )
+            self._write_status_row(
+                status_file,
+                result.get("scenario_id", ""),
+                model_name_for_status,
+                result.get("context_label"),
+                "judge_error" if judge_result.get("error") else "judge_ok",
+                elapsed,
+                judge_result.get("error"),
+            )
+            if save_intermediate and completed % save_intermediate_every == 0:
+                self._save_results(all_results, f"temp_{output_file}")
+
     async def run_benchmark_phased(
         self,
         models_to_test: List[Dict[str, Any]],
@@ -1165,11 +1431,14 @@ class ConspireBenchmarkRunner:
         )
         judge_configs = self._get_judge_configs()
         eval_config = self._get_evaluation_config()
+        parallel_scenarios = max(1, int(eval_config.get("parallel_scenarios", 1)))
+        parallel_judgements = max(
+            1, int(eval_config.get("parallel_judgements", parallel_scenarios))
+        )
         save_intermediate = bool(eval_config.get("save_intermediate_results", True))
         save_intermediate_every = max(
             1, int(eval_config.get("save_intermediate_every", 1))
         )
-        completed_operations = 0
         resume_by_key = self._resume_result_map(resume_results or [])
         status_file = status_file or os.path.join(self.results_dir, "status.tsv")
         self._initialize_status_file(status_file)
@@ -1202,81 +1471,24 @@ class ConspireBenchmarkRunner:
                     provider.value,
                     model_name,
                 )
-                configured_seed = model_config.get("seed", eval_config.get("seed"))
-                for scenario in scenarios_to_test:
-                    resume_key = self._result_key(
-                        scenario["id"],
-                        provider,
-                        model_name,
-                        run_context_setting,
-                        prompt_variant_id=run_context.variant_id,
-                        generation_seed=(
-                            int(configured_seed)
-                            if configured_seed is not None
-                            else None
-                        ),
-                        replicate_id=int(
-                            model_config.get(
-                                "replicate_id", eval_config.get("replicate_id", 0)
-                            )
-                        ),
-                        context_condition=run_context,
-                        generation_config=self._effective_generation_config(
-                            model_config
-                        ),
-                    )
-                    resumed = self._resumed_conversation(resume_by_key, resume_key)
-                    if resumed:
-                        self.logger.info(
-                            "Skipping generated conversation for %s on %s/%s",
-                            scenario["id"],
-                            provider.value,
-                            model_name,
-                        )
-                        all_results.append(resumed)
-                        self._write_status_row(
-                            status_file,
-                            scenario["id"],
-                            f"{provider.value}/{model_name}",
-                            run_context_label,
-                            "gen_skipped_resume",
-                            0.0,
-                            None,
-                        )
-                        continue
-
-                    if judge_only:
-                        raise ValueError(
-                            "judge-only resume is missing conversation for "
-                            f"{scenario['id']} / {provider.value}/{model_name} / {run_context_label}"
-                        )
-
-                    start = time.time()
-                    result = await self.run_conversation_only_scenario(
-                        scenario,
-                        provider,
-                        model_name,
-                        model_config_override=model_config,
-                        context_setting=run_context_setting,
-                        context_label=run_context_label,
-                        context_condition=run_context,
-                    )
-                    all_results.append(result)
-                    completed_operations += 1
-                    self._write_status_row(
-                        status_file,
-                        scenario["id"],
-                        f"{provider.value}/{model_name}",
-                        run_context_label,
-                        "gen_error" if result.get("error") else "gen_ok",
-                        time.time() - start,
-                        result.get("error"),
-                    )
-                    if (
-                        save_intermediate
-                        and completed_operations % save_intermediate_every == 0
-                    ):
-                        self._save_results(all_results, f"temp_{output_file}")
+                context_results = await self._run_conversations_for_context(
+                    scenarios_to_test=scenarios_to_test,
+                    provider=provider,
+                    model_name=model_name,
+                    model_config=model_config,
+                    context_setting=run_context_setting,
+                    context_label=run_context_label,
+                    context_condition=run_context,
+                    parallel_scenarios=parallel_scenarios,
+                    save_intermediate=save_intermediate,
+                    save_intermediate_every=save_intermediate_every,
+                    output_file=output_file,
+                    existing_results=all_results,
+                    resume_by_key=resume_by_key,
+                    status_file=status_file,
+                    judge_only=judge_only,
+                )
+                all_results.extend(context_results)
 
             if provider == ModelProvider.HUGGINGFACE:
                 self.local_models.unload(model_name)
@@ -1293,7 +1505,7 @@ class ConspireBenchmarkRunner:
                 context_setting=context_setting,
                 context_label=context_label,
                 context_runs=context_runs,
-                parallel_scenarios=1,
+                parallel_scenarios=parallel_scenarios,
                 eval_config=eval_config,
                 status_file=status_file,
                 resume_results=resume_results,
@@ -1313,74 +1525,15 @@ class ConspireBenchmarkRunner:
             judge_provider_value = ModelProvider(judge_config["provider"])
             judge_name = self._judge_name(judge_config)
             self.logger.info("Evaluating conversations with judge %s", judge_name)
-
-            for result in all_results:
-                scenario_id = result.get("scenario_id")
-                if not isinstance(scenario_id, str):
-                    raise ValueError("Cached result is missing a string scenario_id")
-                scenario = self._scenario_by_id(scenario_id)
-                model_name_for_status = (
-                    result.get("model_name") or result.get("target_model") or ""
-                )
-
-                if not result.get("conversation_log"):
-                    self._write_status_row(
-                        status_file,
-                        result.get("scenario_id", ""),
-                        model_name_for_status,
-                        result.get("context_label"),
-                        "judge_skipped_no_conversation",
-                        0.0,
-                        result.get("error") or "missing conversation_log",
-                    )
-                    continue
-
-                if self._successful_judge_result(
-                    result,
-                    judge_name,
-                    judge_run_id=self._judge_run_id(judge_config),
-                ):
-                    self.logger.info(
-                        "Skipping completed judge %s for %s on %s",
-                        judge_name,
-                        result.get("scenario_id"),
-                        model_name_for_status,
-                    )
-                    self._write_status_row(
-                        status_file,
-                        result.get("scenario_id", ""),
-                        model_name_for_status,
-                        result.get("context_label"),
-                        "judge_skipped_resume",
-                        0.0,
-                        None,
-                    )
-                    continue
-
-                start = time.time()
-                judge_result = await self._evaluate_with_judge_config(
-                    scenario,
-                    result["conversation_log"],
-                    judge_config,
-                    target_model_name=result.get("model_name"),
-                    target_model_family=result.get("model_family"),
-                )
-                self._merge_judge_result(result, judge_result)
-                completed_operations += 1
-                self._write_status_row(
-                    status_file,
-                    result.get("scenario_id", ""),
-                    model_name_for_status,
-                    result.get("context_label"),
-                    "judge_error" if judge_result.get("error") else "judge_ok",
-                    time.time() - start,
-                    judge_result.get("error"),
-                )
-                if (
-                    save_intermediate
-                    and completed_operations % save_intermediate_every == 0
-                ):
-                    self._save_results(all_results, f"temp_{output_file}")
+            await self._run_judge_for_results(
+                all_results=all_results,
+                judge_config=judge_config,
+                parallel_judgements=parallel_judgements,
+                save_intermediate=save_intermediate,
+                save_intermediate_every=save_intermediate_every,
+                output_file=output_file,
+                status_file=status_file,
+            )
 
             if judge_provider_value == ModelProvider.HUGGINGFACE:
                 self.local_models.unload(judge_config["model"])
@@ -1399,7 +1552,7 @@ class ConspireBenchmarkRunner:
             context_setting=context_setting,
             context_label=context_label,
             context_runs=context_runs,
-            parallel_scenarios=1,
+            parallel_scenarios=parallel_scenarios,
             eval_config=eval_config,
             status_file=status_file,
             resume_results=resume_results,
@@ -2002,6 +2155,10 @@ class ConspireBenchmarkRunner:
                 "execution": {
                     "mode": execution_mode,
                     "parallel_scenarios": parallel_scenarios,
+                    "parallel_judgements": max(
+                        1,
+                        int(eval_config.get("parallel_judgements", parallel_scenarios)),
+                    ),
                     "max_retries": int(eval_config.get("max_retries", 1)),
                     "timeout": eval_config.get("timeout"),
                     "resume_from_results": bool(resume_results),

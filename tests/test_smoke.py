@@ -46,10 +46,12 @@ from analysis.judge_family_sensitivity import build_report as build_family_repor
 from analysis.paraphrase_robustness import build_report as build_paraphrase_report
 from analysis.rubric_consistency_audit import build_report as build_consistency_report
 from analysis.scenario_review import export_review_package, import_reviews
+from api_providers import call_openai_compatible, initialize_api_clients
 from bench_runner import ConspireBenchmarkRunner
-from benchmark_types import JudgeMetrics, ScenarioType, resolve_api_key
+from benchmark_types import JudgeMetrics, ModelProvider, ScenarioType, resolve_api_key
 from dataset_validation import validate_dataset
 from experiment_conditions import (
+    adhoc_context_condition,
     condition_id,
     load_context_conditions,
     load_context_set,
@@ -85,6 +87,231 @@ def make_runner_without_init():
 
 
 class SmokeTests(unittest.TestCase):
+    def test_openai_compatible_client_uses_configured_base_url(self):
+        captured = {}
+
+        class FakeOpenAI:
+            @staticmethod
+            def AsyncOpenAI(**kwargs):
+                captured.update(kwargs)
+                return object()
+
+        config = {
+            "openai_compatible": {
+                "base_url": "http://127.0.0.1:8000/v1",
+                "timeout": 120,
+            }
+        }
+        with patch("api_providers.openai", FakeOpenAI):
+            clients = initialize_api_clients(config)
+
+        self.assertIn("openai_compatible", clients)
+        self.assertEqual(captured["base_url"], "http://127.0.0.1:8000/v1")
+        self.assertEqual(captured["api_key"], "local")
+        self.assertEqual(captured["timeout"], 120.0)
+
+    def test_openai_compatible_call_preserves_huggingface_identity(self):
+        captured = {}
+
+        class Message:
+            content = "batched answer"
+
+        class Choice:
+            message = Message()
+            finish_reason = "stop"
+
+        class Response:
+            choices = [Choice()]
+            model = "Qwen/Qwen2.5-32B-Instruct"
+            id = "chatcmpl-local"
+            usage = {"prompt_tokens": 10, "completion_tokens": 5}
+
+        class Completions:
+            async def create(self, **kwargs):
+                captured.update(kwargs)
+                return Response()
+
+        class Chat:
+            completions = Completions()
+
+        class Client:
+            chat = Chat()
+
+        response = asyncio.run(
+            call_openai_compatible(
+                {"openai_compatible": Client()},
+                "Qwen/Qwen2.5-32B-Instruct",
+                [{"role": "user", "content": "hello"}],
+                max_tokens=2048,
+                temperature=0.7,
+                role_config={"top_p": 0.95, "seed": 42},
+            )
+        )
+
+        self.assertEqual(str(response), "batched answer")
+        self.assertEqual(response.metadata["provider"], "huggingface")
+        self.assertEqual(
+            response.metadata["interface"],
+            "openai_compatible_chat_completions",
+        )
+        self.assertEqual(captured["top_p"], 0.95)
+        self.assertEqual(captured["seed"], 42)
+
+    def test_generation_only_context_supports_bounded_concurrency(self):
+        runner = make_runner_without_init()
+        runner.config = {"evaluation": {"seed": 42}}
+        runner._write_status_row = lambda *args, **kwargs: None
+        active = 0
+        max_active = 0
+
+        async def fake_run(scenario, *args, **kwargs):
+            nonlocal active, max_active
+            active += 1
+            max_active = max(max_active, active)
+            await asyncio.sleep(0.01 * (4 - int(scenario["id"][-1])))
+            active -= 1
+            return {
+                "scenario_id": scenario["id"],
+                "condition_id": f"cond_{scenario['id']}",
+                "conversation_log": [{"role": "assistant", "content": "ok"}],
+                "error": None,
+            }
+
+        runner.run_conversation_only_scenario = fake_run
+        scenarios = [{"id": f"s{index}"} for index in range(1, 4)]
+        results = asyncio.run(
+            runner._run_conversations_for_context(
+                scenarios_to_test=scenarios,
+                provider=ModelProvider.HUGGINGFACE,
+                model_name="Qwen/Qwen2.5-32B-Instruct",
+                model_config={
+                    "provider": "huggingface",
+                    "model": "Qwen/Qwen2.5-32B-Instruct",
+                },
+                context_setting=None,
+                context_label="neutral_none",
+                context_condition=adhoc_context_condition("neutral_none", None),
+                parallel_scenarios=2,
+                save_intermediate=False,
+                save_intermediate_every=5,
+                output_file="unused.json",
+                existing_results=[],
+                resume_by_key={},
+                status_file="unused.tsv",
+                judge_only=False,
+            )
+        )
+
+        self.assertEqual(max_active, 2)
+        self.assertEqual(
+            [result["scenario_id"] for result in results], ["s1", "s2", "s3"]
+        )
+
+    def test_phased_judging_supports_bounded_concurrency(self):
+        runner = make_runner_without_init()
+        runner._write_status_row = lambda *args, **kwargs: None
+        runner._scenario_by_id = lambda scenario_id: {"id": scenario_id}
+        runner._merge_judge_result = lambda result, judged: result.update(
+            {"merged_judge": judged["judge_name"]}
+        )
+        active = 0
+        max_active = 0
+
+        async def fake_evaluate(*args, **kwargs):
+            nonlocal active, max_active
+            active += 1
+            max_active = max(max_active, active)
+            await asyncio.sleep(0.01)
+            active -= 1
+            return {"judge_name": "judge-a", "error": None}
+
+        runner._evaluate_with_judge_config = fake_evaluate
+        results = [
+            {
+                "scenario_id": f"s{index}",
+                "model_name": "huggingface/target",
+                "model_family": "qwen",
+                "context_label": "neutral_none",
+                "conversation_log": [{"role": "assistant", "content": "ok"}],
+                "judge_results": [],
+            }
+            for index in range(3)
+        ]
+        asyncio.run(
+            runner._run_judge_for_results(
+                all_results=results,
+                judge_config={
+                    "provider": "huggingface",
+                    "model": "judge-a",
+                    "judge_name": "judge-a",
+                },
+                parallel_judgements=2,
+                save_intermediate=False,
+                save_intermediate_every=5,
+                output_file="unused.json",
+                status_file="unused.tsv",
+            )
+        )
+
+        self.assertEqual(max_active, 2)
+        self.assertTrue(all(result["merged_judge"] == "judge-a" for result in results))
+
+    def test_huggingface_openai_compatible_interface_is_recorded(self):
+        self.assertEqual(
+            ConspireBenchmarkRunner._generation_interface(
+                ModelProvider.HUGGINGFACE,
+                {"inference_backend": "openai_compatible"},
+            ),
+            "openai_compatible_chat_completions",
+        )
+
+    def test_huggingface_openai_compatible_uses_global_sampling_config(self):
+        runner = make_runner_without_init()
+        runner.config = {
+            "huggingface": {
+                "max_new_tokens": 123,
+                "temperature": 0.6,
+                "top_p": 0.95,
+            }
+        }
+        runner.clients = {}
+        captured = {}
+
+        async def fake_call(*args, **kwargs):
+            captured.update(kwargs)
+            return "ok"
+
+        with patch("bench_runner.call_openai_compatible", new=fake_call):
+            response = asyncio.run(
+                runner._call_huggingface(
+                    "Qwen/Qwen2.5-32B-Instruct",
+                    [{"role": "user", "content": "hello"}],
+                    role_config_override={"inference_backend": "openai_compatible"},
+                )
+            )
+
+        self.assertEqual(response, "ok")
+        self.assertEqual(captured["max_tokens"], 123)
+        self.assertEqual(captured["temperature"], 0.6)
+        self.assertEqual(captured["role_config"]["top_p"], 0.95)
+
+    def test_openai_compatible_huggingface_config_requires_endpoint(self):
+        config = {
+            "models": [
+                {
+                    "provider": "huggingface",
+                    "model": "Qwen/Qwen2.5-32B-Instruct",
+                    "inference_backend": "openai_compatible",
+                }
+            ]
+        }
+        self.assertIn(
+            "openai_compatible.base_url",
+            _validate_target_model_sections(config),
+        )
+        config["openai_compatible"] = {"base_url": "http://127.0.0.1:8000/v1"}
+        self.assertIsNone(_validate_target_model_sections(config))
+
     def test_result_saves_are_atomic(self):
         with tempfile.TemporaryDirectory() as temporary:
             runner = make_runner_without_init()

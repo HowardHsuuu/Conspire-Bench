@@ -53,6 +53,25 @@ def initialize_api_clients(config: dict[str, Any]) -> dict[str, Any]:
             )
         clients["openai"] = openai.AsyncOpenAI(api_key=openai_key)
 
+    compatible_config = config.get("openai_compatible") or {}
+    if compatible_config:
+        if openai is None:
+            raise ImportError(
+                "OpenAI SDK is required for an OpenAI-compatible endpoint. "
+                "Install requirements.txt."
+            )
+        base_url = compatible_config.get("base_url")
+        if not base_url:
+            raise ValueError("openai_compatible.base_url is required")
+        compatible_key = resolve_api_key(config, "openai_compatible") or "local"
+        client_kwargs: dict[str, Any] = {
+            "api_key": compatible_key,
+            "base_url": str(base_url),
+        }
+        if compatible_config.get("timeout") is not None:
+            client_kwargs["timeout"] = float(compatible_config["timeout"])
+        clients["openai_compatible"] = openai.AsyncOpenAI(**client_kwargs)
+
     if anthropic_key:
         if AsyncAnthropic is None:
             raise ImportError(
@@ -136,6 +155,60 @@ async def call_openai(
             "resolved_model": getattr(response, "model", None),
             "response_id": getattr(response, "id", None),
             "interface": "chat_completions",
+            "finish_reason": getattr(choice, "finish_reason", None),
+            "usage": serializable_metadata(getattr(response, "usage", None)),
+        },
+    )
+
+
+async def call_openai_compatible(
+    clients: dict[str, Any],
+    model: str,
+    messages: list[dict[str, Any]],
+    *,
+    max_tokens: int,
+    temperature: float,
+    role_config: dict[str, Any] | None = None,
+) -> ModelText:
+    """Call a local/remote OpenAI-compatible chat-completions server.
+
+    This adapter is intentionally separate from the OpenAI provider so an
+    open-weight target keeps its Hugging Face identity while vLLM, SGLang, or
+    another compatible server supplies the inference backend.
+    """
+
+    if "openai_compatible" not in clients:
+        raise ValueError(
+            "OpenAI-compatible endpoint not configured. Set openai_compatible.base_url."
+        )
+
+    role_config = role_config or {}
+    request: dict[str, Any] = {
+        "model": model,
+        "messages": messages,
+        "max_tokens": max_tokens,
+    }
+    if not role_config.get("omit_sampling_parameters", False):
+        request["temperature"] = temperature
+        if role_config.get("top_p") is not None:
+            request["top_p"] = float(role_config["top_p"])
+    if role_config.get("seed") is not None:
+        request["seed"] = int(role_config["seed"])
+
+    response = await clients["openai_compatible"].chat.completions.create(**request)
+    choice = response.choices[0]
+    content = choice.message.content
+    if not content:
+        raise RuntimeError("OpenAI-compatible endpoint returned no text content")
+
+    return ModelText(
+        content,
+        {
+            "provider": "huggingface",
+            "requested_model": model,
+            "resolved_model": getattr(response, "model", None),
+            "response_id": getattr(response, "id", None),
+            "interface": "openai_compatible_chat_completions",
             "finish_reason": getattr(choice, "finish_reason", None),
             "usage": serializable_metadata(getattr(response, "usage", None)),
         },
