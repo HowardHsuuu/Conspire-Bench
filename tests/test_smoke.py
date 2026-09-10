@@ -1929,10 +1929,12 @@ class SmokeTests(unittest.TestCase):
             2.0,
         )
 
-    def test_phased_resume_rejects_length_truncated_conversation(self):
+    def test_phased_resume_rejects_gpt_oss_length_truncated_conversation(self):
         runner = make_runner_without_init()
         existing = {
             "condition_id": "cond_truncated",
+            "model_name": "huggingface/openai/gpt-oss-120b",
+            "model_family": "gpt_oss",
             "conversation_log": [
                 {
                     "role": "assistant",
@@ -1949,6 +1951,30 @@ class SmokeTests(unittest.TestCase):
                 ("condition_id", "cond_truncated"),
             )
         )
+
+    def test_phased_resume_keeps_non_gpt_oss_length_capped_conversation(self):
+        runner = make_runner_without_init()
+        existing = {
+            "condition_id": "cond_length_capped",
+            "model_name": "huggingface/Qwen/Qwen2.5-0.5B-Instruct",
+            "model_family": "qwen",
+            "conversation_log": [
+                {
+                    "role": "assistant",
+                    "content": "response at the configured output cap",
+                    "response_metadata": {"finish_reason": "length"},
+                }
+            ],
+        }
+        resume_map = runner._resume_result_map([existing])
+
+        resumed = runner._resumed_conversation(
+            resume_map,
+            ("condition_id", "cond_length_capped"),
+        )
+
+        self.assertIsNotNone(resumed)
+        self.assertTrue(resumed["generation_complete"])
 
     def test_status_file_writer(self):
         runner = make_runner_without_init()

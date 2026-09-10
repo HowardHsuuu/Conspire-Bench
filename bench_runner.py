@@ -1954,7 +1954,15 @@ class ConspireBenchmarkRunner:
         result = resume_by_key.get(key)
         if not result or not result.get("conversation_log"):
             return None
-        if any(
+        # Hitting the configured output cap is part of the observed response for
+        # ordinary chat models, so the frozen conversation remains judgeable and
+        # must not be silently regenerated. GPT-OSS is the exception: reasoning
+        # can consume its completion budget before a final answer is produced,
+        # and its generation configs explicitly provide a larger truncation retry.
+        model_name = str(result.get("model_name") or "").lower()
+        model_family = str(result.get("model_family") or "").lower()
+        is_gpt_oss = model_family == "gpt_oss" or "gpt-oss" in model_name
+        if is_gpt_oss and any(
             message.get("role") == "assistant"
             and (message.get("response_metadata") or {}).get("finish_reason")
             == "length"
