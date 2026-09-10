@@ -2167,6 +2167,12 @@ class SmokeTests(unittest.TestCase):
                 validate_setup(str(ROOT / "configs" / "experiment_v3_local_full.json"))
             )
 
+    def test_local_full_config_has_room_for_long_multi_turn_prompts(self):
+        with open(ROOT / "configs" / "experiment_v3_local_full.json", "r") as f:
+            config = json.load(f)
+
+        self.assertGreaterEqual(config["huggingface"]["max_seq_length"], 32768)
+
     def test_local_model_config_extends_base_yaml(self):
         config = load_local_model_config(
             ROOT / "configs" / "models" / "qwen25_3b_instruct.yaml"
