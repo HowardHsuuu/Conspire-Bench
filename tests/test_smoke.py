@@ -48,7 +48,13 @@ from analysis.rubric_consistency_audit import build_report as build_consistency_
 from analysis.scenario_review import export_review_package, import_reviews
 from api_providers import call_openai_compatible, initialize_api_clients
 from bench_runner import ConspireBenchmarkRunner
-from benchmark_types import JudgeMetrics, ModelProvider, ScenarioType, resolve_api_key
+from benchmark_types import (
+    JudgeMetrics,
+    ModelProvider,
+    ModelText,
+    ScenarioType,
+    resolve_api_key,
+)
 from dataset_validation import validate_dataset
 from experiment_conditions import (
     adhoc_context_condition,
@@ -271,6 +277,86 @@ class SmokeTests(unittest.TestCase):
 
         self.assertEqual(captured["temperature"], 0.0)
         self.assertNotIn("top_p", captured)
+
+    def test_openai_compatible_call_can_request_json_object(self):
+        requests = []
+
+        class Message:
+            content = '{"score": 1}'
+
+        class Choice:
+            message = Message()
+            finish_reason = "stop"
+
+        class Response:
+            choices = [Choice()]
+            model = "meta-llama/Llama-3.1-8B-Instruct"
+            id = "chatcmpl-json"
+            usage = None
+
+        class Completions:
+            async def create(self, **kwargs):
+                requests.append(kwargs)
+                return Response()
+
+        class Chat:
+            completions = Completions()
+
+        class Client:
+            chat = Chat()
+
+        asyncio.run(
+            call_openai_compatible(
+                {"openai_compatible": Client()},
+                "meta-llama/Llama-3.1-8B-Instruct",
+                [{"role": "user", "content": "score this"}],
+                max_tokens=4000,
+                temperature=0.0,
+                role_config={"response_format": "json_object"},
+            )
+        )
+
+        self.assertEqual(requests[0]["response_format"], {"type": "json_object"})
+
+    def test_openai_compatible_call_does_not_forward_local_response_format(self):
+        captured = {}
+
+        class Message:
+            content = "answer"
+
+        class Choice:
+            message = Message()
+            finish_reason = "stop"
+
+        class Response:
+            choices = [Choice()]
+            model = "openai/gpt-oss-20b"
+            id = "chatcmpl-harmony"
+            usage = None
+
+        class Completions:
+            async def create(self, **kwargs):
+                captured.update(kwargs)
+                return Response()
+
+        class Chat:
+            completions = Completions()
+
+        class Client:
+            chat = Chat()
+
+        asyncio.run(
+            call_openai_compatible(
+                {"openai_compatible": Client()},
+                "openai/gpt-oss-20b",
+                [{"role": "user", "content": "hello"}],
+                max_tokens=4000,
+                temperature=0.7,
+                role_config={"response_format": "harmony_final"},
+            )
+        )
+
+        self.assertNotIn("response_format", captured)
 
     def test_generation_only_context_supports_bounded_concurrency(self):
         runner = make_runner_without_init()
@@ -1089,6 +1175,75 @@ class SmokeTests(unittest.TestCase):
         self.assertFalse(cross["same_family_as_target"])
         self.assertEqual(same["judge_model_family"], "qwen")
         self.assertEqual(cross["target_model_family"], "gemma")
+
+    def test_openai_compatible_judge_retries_malformed_json_structured(self):
+        runner = make_runner_without_init()
+        runner.config = {"evaluation": {"max_retries": 1}}
+        role_configs = []
+
+        async def response(*args, **kwargs):
+            role_config = kwargs["role_config_override"]
+            role_configs.append(role_config)
+            if role_config.get("response_format") == "json_object":
+                return ModelText(
+                    '{"valid": true}',
+                    {
+                        "response_id": "structured",
+                        "finish_reason": "stop",
+                        "usage": {"completion_tokens": 10},
+                    },
+                )
+            return ModelText(
+                "I will explain the scores in prose.",
+                {
+                    "response_id": "initial",
+                    "finish_reason": "stop",
+                    "usage": {"completion_tokens": 20},
+                },
+            )
+
+        def parse(value, **kwargs):
+            if str(value).startswith("I will"):
+                raise ValueError("invalid JSON")
+            return JudgeMetrics(belief_amplification=1)
+
+        runner._get_model_response = response
+        runner._parse_judge_response = parse
+        judge = {
+            "provider": "huggingface",
+            "model": "meta-llama/Llama-3.1-8B-Instruct",
+            "model_family": "llama",
+            "inference_backend": "openai_compatible",
+        }
+        scenario = {
+            "id": "scenario-1",
+            "category": "test",
+            "type": ScenarioType.SINGLE_TURN.value,
+        }
+
+        result = asyncio.run(
+            runner._evaluate_with_judge_config(
+                scenario,
+                [{"role": "assistant", "content": "cached"}],
+                judge,
+                target_model_name="huggingface/google/gemma-3-4b-it",
+                target_model_family="gemma",
+            )
+        )
+
+        self.assertIsNone(result["error"])
+        self.assertEqual(len(role_configs), 2)
+        self.assertNotIn("response_format", role_configs[0])
+        self.assertEqual(role_configs[1]["response_format"], "json_object")
+        self.assertEqual(
+            result["response_metadata"]["structured_output_retry"],
+            {
+                "response_format": "json_object",
+                "initial_finish_reason": "stop",
+                "initial_response_id": "initial",
+                "initial_usage": {"completion_tokens": 20},
+            },
+        )
 
     def test_same_family_only_results_never_become_primary_scores(self):
         runner = make_runner_without_init()

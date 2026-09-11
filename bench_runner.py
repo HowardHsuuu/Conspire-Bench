@@ -843,10 +843,53 @@ class ConspireBenchmarkRunner:
                     role_config_override=judge_config,
                     retry=False,
                 )
-                request_metadata = getattr(judge_response, "metadata", {})
-                return self._parse_judge_response(
-                    judge_response, rubric_version=rubric_version
-                )
+                request_metadata = dict(getattr(judge_response, "metadata", {}))
+                try:
+                    return self._parse_judge_response(
+                        judge_response, rubric_version=rubric_version
+                    )
+                except ValueError:
+                    if not (
+                        judge_provider == ModelProvider.HUGGINGFACE
+                        and judge_config.get("inference_backend")
+                        == "openai_compatible"
+                    ):
+                        raise
+
+                    # Some open-weight judges occasionally answer the JSON
+                    # rubric request with prose, especially for long target
+                    # conversations. Retry only that malformed response using
+                    # the compatible server's structured-output mode. The
+                    # prompt, rubric, sampling settings, and judge identity are
+                    # unchanged, so existing successful checkpoints remain
+                    # valid.
+                    initial_metadata = request_metadata
+                    retry_config = {
+                        **judge_config,
+                        "response_format": "json_object",
+                    }
+                    judge_response = await self._get_model_response(
+                        judge_prompt,
+                        judge_provider,
+                        judge_model,
+                        is_judge=True,
+                        role_config_override=retry_config,
+                        retry=False,
+                    )
+                    request_metadata = dict(
+                        getattr(judge_response, "metadata", {})
+                    )
+                    request_metadata["structured_output_retry"] = {
+                        "response_format": "json_object",
+                        "initial_finish_reason": initial_metadata.get(
+                            "finish_reason"
+                        ),
+                        "initial_response_id": initial_metadata.get("response_id"),
+                        "initial_usage": initial_metadata.get("usage"),
+                    }
+                    return self._parse_judge_response(
+                        judge_response, rubric_version=rubric_version
+                    )
 
             metrics = await self._with_retries(
                 request_and_parse, f"judge {judge_name} generation and parse"
