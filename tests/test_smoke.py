@@ -1235,11 +1235,12 @@ class SmokeTests(unittest.TestCase):
         self.assertEqual(len(role_configs), 2)
         self.assertNotIn("response_format", role_configs[0])
         self.assertEqual(role_configs[1]["response_format"], "json_object")
+        self.assertEqual(role_configs[1]["truncation_retry_max_tokens"], 12000)
         self.assertEqual(
             result["response_metadata"]["structured_output_retry"],
             {
                 "response_format": "json_object",
-                "truncation_retry_max_tokens": None,
+                "truncation_retry_max_tokens": 12000,
                 "initial_finish_reason": "stop",
                 "initial_response_id": "initial",
                 "initial_usage": {"completion_tokens": 20},

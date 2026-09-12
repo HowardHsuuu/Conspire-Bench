@@ -868,29 +868,28 @@ class ConspireBenchmarkRunner:
                         **judge_config,
                         "response_format": "json_object",
                     }
-                    if initial_metadata.get("finish_reason") == "length":
-                        # JSON-object constraints do not repair an answer cut
-                        # off by the completion limit. Allow the compatible
-                        # adapter one longer retry, bounded by the context
-                        # window and measured prompt length, only for this
-                        # otherwise unscorable response.
-                        max_tokens = int(
-                            judge_config.get(
-                                "max_tokens", judge_config.get("max_new_tokens", 4000)
-                            )
+                    # A malformed first answer can finish normally, while its
+                    # JSON-constrained retry then reaches the token limit.
+                    # Permit one longer retry of that structured answer only,
+                    # bounded by both the context window and measured prompt
+                    # length. Successful first answers are unaffected.
+                    max_tokens = int(
+                        judge_config.get(
+                            "max_tokens", judge_config.get("max_new_tokens", 4000)
                         )
-                        initial_usage = initial_metadata.get("usage") or {}
-                        prompt_tokens = int(initial_usage.get("prompt_tokens") or 0)
-                        max_seq_length = int(
-                            judge_config.get("max_seq_length", 32768)
+                    )
+                    initial_usage = initial_metadata.get("usage") or {}
+                    prompt_tokens = int(initial_usage.get("prompt_tokens") or 0)
+                    max_seq_length = int(judge_config.get("max_seq_length", 32768))
+                    retry_max_tokens = min(
+                        max_tokens * 3,
+                        max_seq_length - prompt_tokens,
+                        max_seq_length // 2,
+                    )
+                    if retry_max_tokens > max_tokens:
+                        retry_config["truncation_retry_max_tokens"] = (
+                            retry_max_tokens
                         )
-                        retry_max_tokens = min(
-                            max_tokens * 3, max_seq_length - prompt_tokens
-                        )
-                        if retry_max_tokens > max_tokens:
-                            retry_config["truncation_retry_max_tokens"] = (
-                                retry_max_tokens
-                            )
                     judge_response = await self._get_model_response(
                         judge_prompt,
                         judge_provider,
