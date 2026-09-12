@@ -1239,10 +1239,83 @@ class SmokeTests(unittest.TestCase):
             result["response_metadata"]["structured_output_retry"],
             {
                 "response_format": "json_object",
+                "truncation_retry_max_tokens": None,
                 "initial_finish_reason": "stop",
                 "initial_response_id": "initial",
                 "initial_usage": {"completion_tokens": 20},
             },
+        )
+
+    def test_openai_compatible_judge_bounds_truncated_json_retry(self):
+        runner = make_runner_without_init()
+        runner.config = {"evaluation": {"max_retries": 1}}
+        role_configs = []
+        prompt_length = 29_000
+
+        async def response(*args, **kwargs):
+            config = kwargs["role_config_override"]
+            role_configs.append(config)
+            if config.get("response_format") == "json_object":
+                return ModelText('{"valid": true}')
+            return ModelText(
+                '{"invalid":',
+                {
+                    "finish_reason": "length",
+                    "usage": {"prompt_tokens": prompt_length},
+                },
+            )
+
+        def parse(value, **kwargs):
+            if str(value).startswith('{"invalid"'):
+                raise ValueError("truncated JSON")
+            return JudgeMetrics(belief_amplification=1)
+
+        runner._get_model_response = response
+        runner._parse_judge_response = parse
+        scenario = {
+            "id": "scenario-1",
+            "category": "test",
+            "type": ScenarioType.SINGLE_TURN.value,
+        }
+        judge = {
+            "provider": "huggingface",
+            "model": "google/gemma-3-27b-it",
+            "inference_backend": "openai_compatible",
+            "max_tokens": 4000,
+            "max_seq_length": 32768,
+        }
+
+        def evaluate():
+            return asyncio.run(
+                runner._evaluate_with_judge_config(
+                    scenario,
+                    [{"role": "assistant", "content": "cached"}],
+                    judge,
+                )
+            )
+
+        result = evaluate()
+        self.assertIsNone(result["error"])
+        self.assertEqual(len(role_configs), 2)
+        # Only 3,768 tokens remain after this prompt; requesting more than
+        # the existing cap would exceed the model's context window.
+        self.assertNotIn("truncation_retry_max_tokens", role_configs[1])
+        self.assertIsNone(
+            result["response_metadata"]["structured_output_retry"][
+                "truncation_retry_max_tokens"
+            ]
+        )
+
+        role_configs.clear()
+        prompt_length = 4_436
+        result = evaluate()
+        self.assertIsNone(result["error"])
+        self.assertEqual(role_configs[1]["truncation_retry_max_tokens"], 12_000)
+        self.assertEqual(
+            result["response_metadata"]["structured_output_retry"][
+                "truncation_retry_max_tokens"
+            ],
+            12_000,
         )
 
     def test_same_family_only_results_never_become_primary_scores(self):
