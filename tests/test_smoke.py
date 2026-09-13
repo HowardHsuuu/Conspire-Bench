@@ -318,6 +318,60 @@ class SmokeTests(unittest.TestCase):
 
         self.assertEqual(requests[0]["response_format"], {"type": "json_object"})
 
+    def test_openai_compatible_call_can_request_bounded_rubric_schema(self):
+        requests = []
+
+        class Message:
+            content = '{"score": 1}'
+
+        class Choice:
+            message = Message()
+            finish_reason = "stop"
+
+        class Response:
+            choices = [Choice()]
+            model = "google/gemma-3-27b-it"
+            id = "chatcmpl-schema"
+            usage = None
+
+        class Completions:
+            async def create(self, **kwargs):
+                requests.append(kwargs)
+                return Response()
+
+        class Chat:
+            completions = Completions()
+
+        class Client:
+            chat = Chat()
+
+        schema = {"type": "object", "properties": {"score": {"type": "integer"}}}
+        asyncio.run(
+            call_openai_compatible(
+                {"openai_compatible": Client()},
+                "google/gemma-3-27b-it",
+                [{"role": "user", "content": "score this"}],
+                max_tokens=4000,
+                temperature=0.0,
+                role_config={
+                    "response_format": "rubric_v2_json_schema",
+                    "json_schema": schema,
+                },
+            )
+        )
+
+        self.assertEqual(
+            requests[0]["response_format"],
+            {
+                "type": "json_schema",
+                "json_schema": {
+                    "name": "conspire_bench_rubric_v2",
+                    "strict": True,
+                    "schema": schema,
+                },
+            },
+        )
+
     def test_openai_compatible_call_does_not_forward_local_response_format(self):
         captured = {}
 
@@ -1317,6 +1371,87 @@ class SmokeTests(unittest.TestCase):
                 "truncation_retry_max_tokens"
             ],
             12_000,
+        )
+
+    def test_openai_compatible_judge_recovers_runaway_json_reasoning(self):
+        runner = make_runner_without_init()
+        runner.config = {"evaluation": {"max_retries": 1}}
+        role_configs = []
+
+        async def response(*args, **kwargs):
+            config = kwargs["role_config_override"]
+            role_configs.append(config)
+            if config.get("response_format") == "rubric_v2_json_schema":
+                return ModelText(
+                    '{"valid": true}',
+                    {"response_id": "schema", "finish_reason": "stop"},
+                )
+            if config.get("response_format") == "json_object":
+                return ModelText(
+                    '{"truncated":',
+                    {
+                        "response_id": "json-object",
+                        "finish_reason": "length",
+                        "usage": {"completion_tokens": 12000},
+                    },
+                )
+            return ModelText(
+                "prose",
+                {
+                    "response_id": "initial",
+                    "finish_reason": "stop",
+                    "usage": {"prompt_tokens": 1581},
+                },
+            )
+
+        def parse(value, **kwargs):
+            if str(value) != '{"valid": true}':
+                raise ValueError("invalid JSON")
+            return JudgeMetrics(belief_amplification=1)
+
+        runner._get_model_response = response
+        runner._parse_judge_response = parse
+        judge = {
+            "provider": "huggingface",
+            "model": "google/gemma-3-27b-it",
+            "inference_backend": "openai_compatible",
+            "max_tokens": 4000,
+            "max_seq_length": 32768,
+        }
+        scenario = {
+            "id": "scenario-1",
+            "category": "test",
+            "type": ScenarioType.SINGLE_TURN.value,
+        }
+
+        result = asyncio.run(
+            runner._evaluate_with_judge_config(
+                scenario,
+                [{"role": "assistant", "content": "cached"}],
+                judge,
+            )
+        )
+
+        self.assertIsNone(result["error"])
+        self.assertEqual(len(role_configs), 3)
+        self.assertNotIn("response_format", role_configs[0])
+        self.assertEqual(role_configs[1]["response_format"], "json_object")
+        self.assertEqual(
+            role_configs[2]["response_format"], "rubric_v2_json_schema"
+        )
+        schema = role_configs[2]["json_schema"]
+        self.assertEqual(len(schema["required"]), 7)
+        self.assertEqual(
+            schema["properties"]["belief_amplification"]["properties"][
+                "reasoning"
+            ]["maxLength"],
+            500,
+        )
+        self.assertEqual(
+            result["response_metadata"]["bounded_schema_retry"][
+                "previous_finish_reason"
+            ],
+            "length",
         )
 
     def test_openai_compatible_judge_extends_composite_retry_timeout(self):

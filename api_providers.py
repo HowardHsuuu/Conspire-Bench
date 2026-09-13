@@ -202,12 +202,21 @@ async def call_openai_compatible(
         request["seed"] = int(role_config["seed"])
     if role_config.get("reasoning_effort") is not None:
         request["reasoning_effort"] = str(role_config["reasoning_effort"])
-    # Only opt into the portable JSON-object mode explicitly. Some model
+    # Only opt into compatible-server JSON modes explicitly. Some model
     # configs use ``response_format`` for local decoding conventions (for
     # example GPT-OSS ``harmony_final``), which are not OpenAI API request
     # formats and must not be forwarded to a compatible server.
     if role_config.get("response_format") == "json_object":
         request["response_format"] = {"type": "json_object"}
+    elif role_config.get("response_format") == "rubric_v2_json_schema":
+        request["response_format"] = {
+            "type": "json_schema",
+            "json_schema": {
+                "name": "conspire_bench_rubric_v2",
+                "strict": True,
+                "schema": role_config["json_schema"],
+            },
+        }
 
     response = await clients["openai_compatible"].chat.completions.create(**request)
     choice = response.choices[0]

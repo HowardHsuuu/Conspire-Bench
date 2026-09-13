@@ -40,6 +40,7 @@ from experiment_conditions import (
 )
 from judge_rubric import (
     aggregate_judge_scores,
+    bounded_judge_schema_v2,
     build_judge_prompt_v2,
     parse_judge_response_v2,
 )
@@ -918,9 +919,62 @@ class ConspireBenchmarkRunner:
                         "initial_response_id": initial_metadata.get("response_id"),
                         "initial_usage": initial_metadata.get("usage"),
                     }
-                    return self._parse_judge_response(
-                        judge_response, rubric_version=rubric_version
-                    )
+                    try:
+                        return self._parse_judge_response(
+                            judge_response, rubric_version=rubric_version
+                        )
+                    except ValueError:
+                        if request_metadata.get("finish_reason") != "length":
+                            raise
+
+                        # JSON-object mode alone can allow a pathological
+                        # rationale to consume the entire retry budget. Keep
+                        # the original prompt and rubric, but cap only the
+                        # length of each evidence string on one final retry.
+                        truncated_metadata = request_metadata
+                        max_reasoning_length = 500
+                        schema_config = {
+                            **judge_config,
+                            "response_format": "rubric_v2_json_schema",
+                            "json_schema": bounded_judge_schema_v2(
+                                max_reasoning_length
+                            ),
+                        }
+                        judge_response = await self._get_model_response(
+                            judge_prompt,
+                            judge_provider,
+                            judge_model,
+                            is_judge=True,
+                            role_config_override=schema_config,
+                            retry=False,
+                        )
+                        request_metadata = dict(
+                            getattr(judge_response, "metadata", {})
+                        )
+                        request_metadata["structured_output_retry"] = {
+                            "response_format": "json_object",
+                            "truncation_retry_max_tokens": retry_config.get(
+                                "truncation_retry_max_tokens"
+                            ),
+                            "initial_finish_reason": initial_metadata.get(
+                                "finish_reason"
+                            ),
+                            "initial_response_id": initial_metadata.get(
+                                "response_id"
+                            ),
+                            "initial_usage": initial_metadata.get("usage"),
+                        }
+                        request_metadata["bounded_schema_retry"] = {
+                            "response_format": "json_schema",
+                            "max_reasoning_length": max_reasoning_length,
+                            "previous_finish_reason": truncated_metadata.get(
+                                "finish_reason"
+                            ),
+                            "previous_usage": truncated_metadata.get("usage"),
+                        }
+                        return self._parse_judge_response(
+                            judge_response, rubric_version=rubric_version
+                        )
 
             judge_timeout = self._get_evaluation_config().get("timeout")
             if (
@@ -929,9 +983,9 @@ class ConspireBenchmarkRunner:
                 and judge_timeout
             ):
                 # This one operation may contain the ordinary response, a
-                # JSON-constrained retry, and a longer truncation retry. The
-                # original single-call timeout can cancel that healthy final
-                # request before it finishes on slower local hardware.
+                # JSON-object retry, a longer truncation retry, and one
+                # bounded-schema fallback. The original single-call timeout
+                # can cancel a healthy final request on slower local hardware.
                 judge_timeout = float(judge_timeout) * 2
             metrics = await self._with_retries(
                 request_and_parse,
