@@ -208,14 +208,9 @@ async def call_openai_compatible(
     # formats and must not be forwarded to a compatible server.
     if role_config.get("response_format") == "json_object":
         request["response_format"] = {"type": "json_object"}
-    elif role_config.get("response_format") == "rubric_v2_json_schema":
-        request["response_format"] = {
-            "type": "json_schema",
-            "json_schema": {
-                "name": "conspire_bench_rubric_v2",
-                "strict": True,
-                "schema": role_config["json_schema"],
-            },
+    elif role_config.get("response_format") == "rubric_v2_bounded_regex":
+        request["extra_body"] = {
+            "structured_outputs": {"regex": role_config["output_regex"]}
         }
 
     response = await clients["openai_compatible"].chat.completions.create(**request)

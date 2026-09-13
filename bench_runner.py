@@ -40,7 +40,7 @@ from experiment_conditions import (
 )
 from judge_rubric import (
     aggregate_judge_scores,
-    bounded_judge_schema_v2,
+    bounded_judge_regex_v2,
     build_judge_prompt_v2,
     parse_judge_response_v2,
 )
@@ -927,16 +927,16 @@ class ConspireBenchmarkRunner:
                         if request_metadata.get("finish_reason") != "length":
                             raise
 
-                        # JSON-object mode alone can allow a pathological
-                        # rationale to consume the entire retry budget. Keep
-                        # the original prompt and rubric, but cap only the
-                        # length of each evidence string on one final retry.
+                        # JSON-object mode can stall on syntactic whitespace
+                        # even after the rationale is brief. This final
+                        # retry preserves the prompt and rubric while
+                        # bounding both rationale length and JSON syntax.
                         truncated_metadata = request_metadata
                         max_reasoning_length = 500
-                        schema_config = {
+                        bounded_config = {
                             **judge_config,
-                            "response_format": "rubric_v2_json_schema",
-                            "json_schema": bounded_judge_schema_v2(
+                            "response_format": "rubric_v2_bounded_regex",
+                            "output_regex": bounded_judge_regex_v2(
                                 max_reasoning_length
                             ),
                         }
@@ -945,7 +945,7 @@ class ConspireBenchmarkRunner:
                             judge_provider,
                             judge_model,
                             is_judge=True,
-                            role_config_override=schema_config,
+                            role_config_override=bounded_config,
                             retry=False,
                         )
                         request_metadata = dict(
@@ -964,8 +964,8 @@ class ConspireBenchmarkRunner:
                             ),
                             "initial_usage": initial_metadata.get("usage"),
                         }
-                        request_metadata["bounded_schema_retry"] = {
-                            "response_format": "json_schema",
+                        request_metadata["bounded_regex_retry"] = {
+                            "response_format": "structured_outputs.regex",
                             "max_reasoning_length": max_reasoning_length,
                             "previous_finish_reason": truncated_metadata.get(
                                 "finish_reason"
@@ -984,7 +984,7 @@ class ConspireBenchmarkRunner:
             ):
                 # This one operation may contain the ordinary response, a
                 # JSON-object retry, a longer truncation retry, and one
-                # bounded-schema fallback. The original single-call timeout
+                # bounded-regex fallback. The original single-call timeout
                 # can cancel a healthy final request on slower local hardware.
                 judge_timeout = float(judge_timeout) * 2
             metrics = await self._with_retries(
