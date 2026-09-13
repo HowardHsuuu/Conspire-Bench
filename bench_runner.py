@@ -333,10 +333,16 @@ class ConspireBenchmarkRunner:
         self,
         operation: Callable[[], Awaitable[T]],
         operation_name: str,
+        *,
+        timeout_seconds: Optional[float] = None,
     ) -> T:
         eval_config = self._get_evaluation_config()
         max_retries = max(1, int(eval_config.get("max_retries", 1)))
-        timeout = eval_config.get("timeout")
+        timeout = (
+            timeout_seconds
+            if timeout_seconds is not None
+            else eval_config.get("timeout")
+        )
         retry_delay = float(
             eval_config.get("retry_delay_seconds", eval_config.get("retry_delay", 1.0))
         )
@@ -916,8 +922,21 @@ class ConspireBenchmarkRunner:
                         judge_response, rubric_version=rubric_version
                     )
 
+            judge_timeout = self._get_evaluation_config().get("timeout")
+            if (
+                judge_provider == ModelProvider.HUGGINGFACE
+                and judge_config.get("inference_backend") == "openai_compatible"
+                and judge_timeout
+            ):
+                # This one operation may contain the ordinary response, a
+                # JSON-constrained retry, and a longer truncation retry. The
+                # original single-call timeout can cancel that healthy final
+                # request before it finishes on slower local hardware.
+                judge_timeout = float(judge_timeout) * 2
             metrics = await self._with_retries(
-                request_and_parse, f"judge {judge_name} generation and parse"
+                request_and_parse,
+                f"judge {judge_name} generation and parse",
+                timeout_seconds=judge_timeout,
             )
             return {
                 "judge_name": judge_name,

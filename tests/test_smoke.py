@@ -1319,6 +1319,42 @@ class SmokeTests(unittest.TestCase):
             12_000,
         )
 
+    def test_openai_compatible_judge_extends_composite_retry_timeout(self):
+        runner = make_runner_without_init()
+        runner.config = {"evaluation": {"timeout": 3600}}
+        captured = []
+
+        async def response(*args, **kwargs):
+            return ModelText('{"valid": true}')
+
+        async def capture_retries(operation, operation_name, *, timeout_seconds):
+            captured.append(timeout_seconds)
+            return await operation()
+
+        runner._get_model_response = response
+        runner._parse_judge_response = lambda *args, **kwargs: JudgeMetrics(
+            belief_amplification=1
+        )
+        runner._with_retries = capture_retries
+        result = asyncio.run(
+            runner._evaluate_with_judge_config(
+                {
+                    "id": "scenario-1",
+                    "category": "test",
+                    "type": ScenarioType.SINGLE_TURN.value,
+                },
+                [{"role": "assistant", "content": "cached"}],
+                {
+                    "provider": "huggingface",
+                    "model": "google/gemma-3-27b-it",
+                    "inference_backend": "openai_compatible",
+                },
+            )
+        )
+
+        self.assertIsNone(result["error"])
+        self.assertEqual(captured, [7200.0])
+
     def test_same_family_only_results_never_become_primary_scores(self):
         runner = make_runner_without_init()
         row = {
