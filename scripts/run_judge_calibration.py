@@ -60,7 +60,7 @@ async def run(args: argparse.Namespace) -> None:
         judge_config=judge,
         parallel_judgements=max(1, args.parallel),
         save_intermediate=True,
-        save_intermediate_every=5,
+        save_intermediate_every=max(1, args.save_intermediate_every),
         output_file=args.output.name,
         status_file=str(args.status),
     )
@@ -122,6 +122,12 @@ def main() -> int:
     parser.add_argument("--output", type=Path, required=True)
     parser.add_argument("--status", type=Path, required=True)
     parser.add_argument("--parallel", type=int, default=32)
+    parser.add_argument(
+        "--save-intermediate-every",
+        type=int,
+        default=5,
+        help="Write a resumable checkpoint after this many completed judgments.",
+    )
     args = parser.parse_args()
     asyncio.run(run(args))
     return 0

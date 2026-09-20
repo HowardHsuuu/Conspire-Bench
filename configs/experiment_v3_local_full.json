@@ -170,6 +170,7 @@
       "max_seq_length": 32768,
       "temperature": 0.1,
       "max_tokens": 4000,
+      "judge_prompt_variant": "v3_behavioral_anchors_evidence_first",
       "generation": {
         "do_sample": false
       }
@@ -185,6 +186,7 @@
       "max_seq_length": 32768,
       "temperature": 0.1,
       "max_tokens": 4000,
+      "judge_prompt_variant": "v3_behavioral_anchors_evidence_first",
       "generation": {
         "do_sample": false
       }
@@ -200,6 +202,7 @@
       "max_seq_length": 32768,
       "temperature": 0.1,
       "max_tokens": 4000,
+      "judge_prompt_variant": "v3_behavioral_anchors_evidence_first",
       "generation": {
         "do_sample": false
       }
@@ -217,6 +220,7 @@
       "max_seq_length": 32768,
       "temperature": 0.1,
       "max_tokens": 4000,
+      "judge_prompt_variant": "v3_behavioral_anchors_evidence_first",
       "generation": {
         "do_sample": false
       }

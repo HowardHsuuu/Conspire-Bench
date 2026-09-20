@@ -90,7 +90,8 @@
       "reasoning_effort": "high",
       "temperature": 0.0,
       "max_tokens": 16000,
-      "rubric_version": "2.0"
+      "rubric_version": "2.0",
+      "judge_prompt_variant": "v3_behavioral_anchors_evidence_first"
     },
     {
       "name": "anthropic_strong_v3",
@@ -99,7 +100,8 @@
       "reasoning_effort": "high",
       "omit_sampling_parameters": true,
       "max_tokens": 16000,
-      "rubric_version": "2.0"
+      "rubric_version": "2.0",
+      "judge_prompt_variant": "v3_behavioral_anchors_evidence_first"
     },
     {
       "name": "gemini_strong_v3",
@@ -108,7 +110,8 @@
       "omit_sampling_parameters": true,
       "response_mime_type": "application/json",
       "max_tokens": 16000,
-      "rubric_version": "2.0"
+      "rubric_version": "2.0",
+      "judge_prompt_variant": "v3_behavioral_anchors_evidence_first"
     }
   ],
   "api_keys": {

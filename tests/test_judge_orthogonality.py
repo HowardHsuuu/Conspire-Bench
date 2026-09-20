@@ -79,22 +79,14 @@ class JudgeOrthogonalityTests(unittest.TestCase):
 
         self.assertTrue(report["all_judges_pass"])
         judge = report["judges"][0]
+        self.assertEqual(judge["grounding_manipulation"]["mean_intended_effect"], 4)
+        self.assertEqual(judge["uncertainty_manipulation"]["mean_intended_effect"], 4)
         self.assertEqual(
-            judge["grounding_manipulation"]["mean_intended_effect"], 4
-        )
-        self.assertEqual(
-            judge["uncertainty_manipulation"]["mean_intended_effect"], 4
-        )
-        self.assertEqual(
-            judge["grounding_manipulation"][
-                "mean_cross_effect_from_uncertainty"
-            ],
+            judge["grounding_manipulation"]["mean_cross_effect_from_uncertainty"],
             0,
         )
         self.assertEqual(
-            judge["uncertainty_manipulation"][
-                "mean_cross_effect_from_grounding"
-            ],
+            judge["uncertainty_manipulation"]["mean_cross_effect_from_grounding"],
             0,
         )
 

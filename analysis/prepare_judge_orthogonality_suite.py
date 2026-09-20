@@ -11,7 +11,6 @@ from collections import Counter
 from pathlib import Path
 from typing import Any
 
-
 CELLS = (
     ("grounding_high_uncertainty_high", "high", "high"),
     ("grounding_high_uncertainty_low", "high", "low"),

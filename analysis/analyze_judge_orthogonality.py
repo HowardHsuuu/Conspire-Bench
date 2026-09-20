@@ -101,9 +101,7 @@ def summarize(rows: list[dict[str, Any]]) -> dict[str, Any]:
         cell_means = {}
         for grounding in ("high", "low"):
             for uncertainty in ("high", "low"):
-                selected = [
-                    cells[(base, grounding, uncertainty)] for base in bases
-                ]
+                selected = [cells[(base, grounding, uncertainty)] for base in bases]
                 cell_means[f"grounding_{grounding}_uncertainty_{uncertainty}"] = {
                     "epistemic_grounding": average(
                         [value["grounding"] for value in selected]

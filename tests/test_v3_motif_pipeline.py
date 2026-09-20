@@ -71,6 +71,16 @@ class V3MotifPipelineTest(unittest.TestCase):
         api_config = self._load("configs/experiment_v3_api_full.json")
         self.assertEqual(validate_experiments(local_config, api_config), [])
 
+        formal_prompt = "v3_behavioral_anchors_evidence_first"
+        self.assertTrue(local_config["judges"])
+        self.assertTrue(api_config["judges"])
+        self.assertTrue(
+            all(
+                judge.get("judge_prompt_variant") == formal_prompt
+                for judge in local_config["judges"] + api_config["judges"]
+            )
+        )
+
         invalid = copy.deepcopy(local_config)
         invalid["models"][0].pop("parameter_scale_b")
         errors = validate_experiments(invalid, api_config)

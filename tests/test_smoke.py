@@ -185,9 +185,7 @@ class SmokeTests(unittest.TestCase):
         class Response:
             model = "openai/gpt-oss-120b"
 
-            def __init__(
-                self, content, finish_reason, response_id, completion_tokens
-            ):
+            def __init__(self, content, finish_reason, response_id, completion_tokens):
                 self.choices = [Choice(content, finish_reason)]
                 self.id = response_id
                 self.usage = {"completion_tokens": completion_tokens}
@@ -395,7 +393,9 @@ class SmokeTests(unittest.TestCase):
             re.fullmatch(pattern, compact.replace("No endorsement", "a" * 101))
         )
         self.assertIsNone(
-            re.fullmatch(pattern, compact.replace('"subtype":"none"', '"subtype":"new_actor"'))
+            re.fullmatch(
+                pattern, compact.replace('"subtype":"none"', '"subtype":"new_actor"')
+            )
         )
 
     def test_openai_compatible_call_does_not_forward_local_response_format(self):
@@ -1462,9 +1462,7 @@ class SmokeTests(unittest.TestCase):
         self.assertEqual(len(role_configs), 3)
         self.assertNotIn("response_format", role_configs[0])
         self.assertEqual(role_configs[1]["response_format"], "json_object")
-        self.assertEqual(
-            role_configs[2]["response_format"], "rubric_v2_bounded_regex"
-        )
+        self.assertEqual(role_configs[2]["response_format"], "rubric_v2_bounded_regex")
         output_regex = role_configs[2]["output_regex"]
         self.assertIn("response_appropriateness", output_regex)
         self.assertIn("{1,500}", output_regex)
