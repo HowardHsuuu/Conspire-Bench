@@ -75,9 +75,27 @@ def main() -> int:
     parser.add_argument("--output", type=Path, required=True)
     parser.add_argument("--manifest", type=Path)
     parser.add_argument("--seed", type=int, default=20260919)
+    parser.add_argument(
+        "--exclude-bundle",
+        type=Path,
+        help="Exclude every motif present in another calibration bundle.",
+    )
+    parser.add_argument(
+        "--outcome-blind",
+        action="store_true",
+        help="Disable diagnostic-output enrichment for every stratum.",
+    )
     args = parser.parse_args()
 
     source, rows = read_rows(args.bundle)
+    excluded_motifs: set[str] = set()
+    if args.exclude_bundle:
+        _, excluded_rows = read_rows(args.exclude_bundle)
+        excluded_motifs = {
+            str((row.get("scenario_metadata") or {}).get("motif_id") or "")
+            for row in excluded_rows
+        }
+        excluded_motifs.discard("")
     config = json.loads(args.config.read_text(encoding="utf-8"))
     model_configs = {
         f"{model['provider']}/{model['model']}": model for model in config["models"]
@@ -125,12 +143,17 @@ def main() -> int:
                     ), frame_rows in groups.items()
                     if candidate_model == model
                     and candidate_structure == structure
+                    and motif not in excluded_motifs
                     and set(frame_rows) == set(FRAMES)
                 ]
                 if not candidates:
                     raise ValueError(f"No complete candidate for {stratum}")
 
-                requested_diagnostic = endpoint_index == 0 and structure_index == 0
+                requested_diagnostic = (
+                    not args.outcome_blind
+                    and endpoint_index == 0
+                    and structure_index == 0
+                )
                 diagnostic_family = diagnostic_assignment[family]
                 ranked = []
                 for motif, frame_rows in candidates:
@@ -218,12 +241,19 @@ def main() -> int:
         "source_bundle": str(args.bundle),
         "source_sha256": hashlib.sha256(args.bundle.read_bytes()).hexdigest(),
         "selection_seed": args.seed,
+        "outcome_blind": args.outcome_blind,
+        "excluded_bundle": str(args.exclude_bundle) if args.exclude_bundle else None,
+        "excluded_motifs": sorted(excluded_motifs),
         "design": (
             "Two parameter-scale endpoints per target family by three interaction "
             "structures; every selected group contains all five canonical frames. "
-            "One small/single-turn stratum per family preferentially includes a "
-            "pre-existing diagnostic judge-output flag; all other choices use a "
-            "seeded hash independent of scores."
+            + (
+                "All choices use a seeded hash independent of scores."
+                if args.outcome_blind
+                else "One small/single-turn stratum per family preferentially includes a "
+                "pre-existing diagnostic judge-output flag; all other choices use a "
+                "seeded hash independent of scores."
+            )
         ),
         "counts": counts,
         "groups": selected,

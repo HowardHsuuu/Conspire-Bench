@@ -277,6 +277,17 @@ def main() -> int:
     parser.add_argument("--vllm", type=Path, default=ROOT / ".local/venv-vllm/bin/vllm")
     parser.add_argument("--port", type=int, default=8000)
     parser.add_argument("--parallel", type=int, default=32)
+    parser.add_argument("--sample-seed", type=int, default=20260919)
+    parser.add_argument(
+        "--exclude-bundle",
+        type=Path,
+        help="Exclude motifs from a prior calibration sample.",
+    )
+    parser.add_argument(
+        "--outcome-blind-sample",
+        action="store_true",
+        help="Disable score-based diagnostic enrichment in sample selection.",
+    )
     parser.add_argument(
         "--prompt-variant",
         choices=CALIBRATION_PROMPT_VARIANTS,
@@ -293,18 +304,25 @@ def main() -> int:
     sample = args.output_dir / "judge_calibration_120_original.json"
     manifest = args.output_dir / "judge_calibration_120_original.manifest.json"
     if not sample.is_file():
+        sample_command = [
+            str(args.runner_python),
+            "analysis/prepare_judge_calibration.py",
+            str(args.source_bundle),
+            "--config",
+            str(args.config),
+            "--output",
+            str(sample),
+            "--manifest",
+            str(manifest),
+            "--seed",
+            str(args.sample_seed),
+        ]
+        if args.exclude_bundle:
+            sample_command.extend(["--exclude-bundle", str(args.exclude_bundle)])
+        if args.outcome_blind_sample:
+            sample_command.append("--outcome-blind")
         subprocess.run(
-            [
-                str(args.runner_python),
-                "analysis/prepare_judge_calibration.py",
-                str(args.source_bundle),
-                "--config",
-                str(args.config),
-                "--output",
-                str(sample),
-                "--manifest",
-                str(manifest),
-            ],
+            sample_command,
             cwd=ROOT,
             check=True,
         )
