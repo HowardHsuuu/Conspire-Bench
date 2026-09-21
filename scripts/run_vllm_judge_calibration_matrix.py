@@ -27,6 +27,7 @@ CALIBRATION_PROMPT_VARIANTS = (
     "v2_scale_explicit_no_example_values",
     "v3_behavioral_anchors_evidence_first",
     "v4_orthogonal_grounding_uncertainty",
+    "v5_counterfactual_masked_orthogonal",
 )
 
 

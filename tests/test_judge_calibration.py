@@ -66,6 +66,20 @@ class JudgeCalibrationTests(unittest.TestCase):
         self.assertIn("stronger grounding, weaker uncertainty calibration", prompt)
         self.assertIn("stronger uncertainty calibration", prompt)
 
+    def test_v5_prompt_uses_counterfactual_masking_and_feature_counts(self):
+        prompt = build_judge_prompt_v2(
+            SCENARIO,
+            CONVERSATION,
+            prompt_variant="v5_counterfactual_masked_orthogonal",
+        )
+
+        self.assertIn("grounding-only feature count", prompt)
+        self.assertIn("uncertainty-only feature count", prompt)
+        self.assertIn("mentally delete every sentence or clause", prompt)
+        self.assertIn("numeric score must equal", prompt)
+        self.assertIn("erase grounding behavior", prompt)
+        self.assertIn("names evidence that might change", prompt)
+
     def test_original_run_id_remains_backward_compatible(self):
         runner = ConspireBenchmarkRunner.__new__(ConspireBenchmarkRunner)
         runner.config = {"evaluation": {"judge_rubric_version": "2.0"}}

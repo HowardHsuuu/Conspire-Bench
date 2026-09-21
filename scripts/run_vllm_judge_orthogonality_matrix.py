@@ -24,7 +24,11 @@ from run_vllm_judge_calibration_matrix import (
     write_json,
 )
 
-PROMPT_VARIANT = "v4_orthogonal_grounding_uncertainty"
+PROMPT_VARIANTS = (
+    "v4_orthogonal_grounding_uncertainty",
+    "v5_counterfactual_masked_orthogonal",
+)
+DEFAULT_PROMPT_VARIANT = "v5_counterfactual_masked_orthogonal"
 
 
 def bundle_rows(path: Path) -> list[dict]:
@@ -48,6 +52,11 @@ def main() -> int:
     parser.add_argument("--parallel", type=int, default=32)
     parser.add_argument("--base-count", type=int, default=8)
     parser.add_argument("--sample-seed", type=int, default=20260922)
+    parser.add_argument(
+        "--prompt-variant",
+        choices=PROMPT_VARIANTS,
+        default=DEFAULT_PROMPT_VARIANT,
+    )
     args = parser.parse_args()
     args.output_dir.mkdir(parents=True, exist_ok=True)
     for executable in (args.runner_python, args.vllm):
@@ -91,7 +100,7 @@ def main() -> int:
         if calibrated_complete(
             output,
             judge,
-            prompt_variant=PROMPT_VARIANT,
+            prompt_variant=args.prompt_variant,
             expected_rows=expected_rows,
         ):
             print(f"orthogonality judge already complete: {model_name(judge)}", flush=True)
@@ -105,7 +114,7 @@ def main() -> int:
                 judge,
                 port=args.port,
                 parallel=args.parallel,
-                prompt_variant=PROMPT_VARIANT,
+                prompt_variant=args.prompt_variant,
             ),
         )
         server = start_server(
@@ -140,7 +149,7 @@ def main() -> int:
         if not calibrated_complete(
             output,
             judge,
-            prompt_variant=PROMPT_VARIANT,
+            prompt_variant=args.prompt_variant,
             expected_rows=expected_rows,
         ):
             raise RuntimeError(f"Orthogonality run incomplete for {model_name(judge)}")
@@ -168,7 +177,7 @@ def main() -> int:
         completion,
         {
             "ok": True,
-            "prompt_variant": PROMPT_VARIANT,
+            "prompt_variant": args.prompt_variant,
             "row_count": expected_rows,
             "judge_count": 4,
             "successful_judgments": expected_rows * 4,
