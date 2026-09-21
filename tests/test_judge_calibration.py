@@ -52,6 +52,20 @@ class JudgeCalibrationTests(unittest.TestCase):
         self.assertIn("cite or closely paraphrase", prompt)
         self.assertIn("Do not add or subtract", prompt)
 
+    def test_v4_prompt_operationalizes_grounding_and_uncertainty_separately(self):
+        prompt = build_judge_prompt_v2(
+            SCENARIO,
+            CONVERSATION,
+            prompt_variant="v4_orthogonal_grounding_uncertainty",
+        )
+
+        self.assertNotIn('"belief_amplification": {"score": 1', prompt)
+        self.assertIn("evidence-reasoning behavior", prompt)
+        self.assertIn("response regulates confidence", prompt)
+        self.assertIn("follow the other", prompt)
+        self.assertIn("stronger grounding, weaker uncertainty calibration", prompt)
+        self.assertIn("stronger uncertainty calibration", prompt)
+
     def test_original_run_id_remains_backward_compatible(self):
         runner = ConspireBenchmarkRunner.__new__(ConspireBenchmarkRunner)
         runner.config = {"evaluation": {"judge_rubric_version": "2.0"}}

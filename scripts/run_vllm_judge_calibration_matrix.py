@@ -26,6 +26,7 @@ DEFAULT_PROMPT_VARIANT = "v3_behavioral_anchors_evidence_first"
 CALIBRATION_PROMPT_VARIANTS = (
     "v2_scale_explicit_no_example_values",
     "v3_behavioral_anchors_evidence_first",
+    "v4_orthogonal_grounding_uncertainty",
 )
 
 
@@ -192,7 +193,11 @@ def stop_server(process: subprocess.Popen[bytes]) -> None:
 
 
 def calibrated_complete(
-    path: Path, judge: dict[str, Any], *, prompt_variant: str
+    path: Path,
+    judge: dict[str, Any],
+    *,
+    prompt_variant: str,
+    expected_rows: int = 120,
 ) -> bool:
     if not path.is_file():
         return False
@@ -201,7 +206,9 @@ def calibrated_complete(
         rows = bundle_rows(path)
     except (OSError, ValueError, json.JSONDecodeError):
         return False
-    if len(rows) != 120 or len({row.get("response_id") for row in rows}) != 120:
+    if len(rows) != expected_rows or len(
+        {row.get("response_id") for row in rows}
+    ) != expected_rows:
         return False
     for row in rows:
         matches = [
