@@ -1,0 +1,121 @@
+#!/usr/bin/env python3
+"""Rejudge a frozen conversation subset with one configured judge."""
+
+from __future__ import annotations
+
+import argparse
+import asyncio
+import hashlib
+import json
+import os
+import sys
+from pathlib import Path
+
+ROOT = Path(__file__).resolve().parents[1]
+if str(ROOT) not in sys.path:
+    sys.path.insert(0, str(ROOT))
+
+from bench_runner import ConspireBenchmarkRunner
+
+
+def rows_from(payload: object) -> list[dict]:
+    rows = payload.get("detailed_results") if isinstance(payload, dict) else payload
+    if not isinstance(rows, list):
+        raise ValueError("Input bundle has no detailed_results list")
+    return rows
+
+
+async def run(args: argparse.Namespace) -> None:
+    payload = json.loads(args.input.read_text(encoding="utf-8"))
+    rows = rows_from(payload)
+    if len({row.get("response_id") for row in rows}) != len(rows):
+        raise ValueError("Calibration input has missing or duplicate response IDs")
+    if any(not row.get("conversation_log") for row in rows):
+        raise ValueError("Calibration input contains a row without a conversation")
+
+    runner = ConspireBenchmarkRunner(str(args.config), str(args.dataset))
+    judges = runner._get_judge_configs()
+    if len(judges) != 1:
+        raise ValueError("Calibration config must contain exactly one judge")
+    judge = judges[0]
+    prompt_variant = str(judge.get("judge_prompt_variant", "v2_original"))
+    if prompt_variant == "v2_original":
+        raise ValueError("Calibration must use a non-default judge_prompt_variant")
+
+    args.output.parent.mkdir(parents=True, exist_ok=True)
+    runner.results_dir = str(args.output.parent)
+    runner.config.setdefault("evaluation", {})["save_intermediate_results"] = False
+    runner._initialize_status_file(str(args.status))
+    await runner._run_judge_for_results(
+        all_results=rows,
+        judge_config=judge,
+        parallel_judgements=max(1, args.parallel),
+        save_intermediate=False,
+        save_intermediate_every=max(1, len(rows)),
+        output_file=args.output.name,
+        status_file=str(args.status),
+    )
+
+    judge_name = runner._judge_name(judge)
+    judge_run_id = runner._judge_run_id(judge)
+    for row in rows:
+        matches = [
+            result
+            for result in row.get("judge_results") or []
+            if result.get("judge_name") == judge_name
+        ]
+        if len(matches) != 1:
+            raise RuntimeError(
+                f"Expected one {judge_name} result for {row.get('response_id')}"
+            )
+        result = matches[0]
+        if (
+            result.get("error")
+            or not result.get("scores")
+            or result.get("judge_run_id") != judge_run_id
+            or result.get("judge_prompt_variant") != prompt_variant
+        ):
+            raise RuntimeError(
+                f"Incomplete calibrated result for {row.get('response_id')}: "
+                f"{result.get('error') or 'metadata mismatch'}"
+            )
+
+    source_metadata = payload.get("metadata") if isinstance(payload, dict) else {}
+    output = {
+        "metadata": {
+            **(source_metadata or {}),
+            "judge_calibration_stage": {
+                "input": str(args.input),
+                "input_sha256": hashlib.sha256(args.input.read_bytes()).hexdigest(),
+                "judge_name": judge_name,
+                "judge_run_id": judge_run_id,
+                "judge_prompt_variant": prompt_variant,
+                "row_count": len(rows),
+            },
+        },
+        "summary": runner._generate_summary(rows),
+        "detailed_results": rows,
+    }
+    temporary = args.output.with_suffix(args.output.suffix + f".tmp-{os.getpid()}")
+    temporary.write_text(
+        json.dumps(output, ensure_ascii=False, indent=2), encoding="utf-8"
+    )
+    temporary.replace(args.output)
+    print(args.output)
+
+
+def main() -> int:
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("--config", type=Path, required=True)
+    parser.add_argument("--dataset", type=Path, default=Path("Conspire-Bench-v3.json"))
+    parser.add_argument("--input", type=Path, required=True)
+    parser.add_argument("--output", type=Path, required=True)
+    parser.add_argument("--status", type=Path, required=True)
+    parser.add_argument("--parallel", type=int, default=32)
+    args = parser.parse_args()
+    asyncio.run(run(args))
+    return 0
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())

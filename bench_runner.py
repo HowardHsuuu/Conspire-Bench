@@ -308,6 +308,9 @@ class ConspireBenchmarkRunner:
             "seed": judge_config.get("seed"),
             "response_mime_type": judge_config.get("response_mime_type"),
         }
+        prompt_variant = judge_config.get("judge_prompt_variant", "v2_original")
+        if prompt_variant != "v2_original":
+            payload["judge_prompt_variant"] = prompt_variant
         return f"judge_{stable_digest(payload)}"
 
     def _get_judge_configs(self) -> List[Dict[str, Any]]:
@@ -818,8 +821,14 @@ class ConspireBenchmarkRunner:
         judge_name = self._judge_name(judge_config)
         rubric_version = self._judge_rubric_version(judge_config)
         judge_run_id = self._judge_run_id(judge_config)
+        judge_prompt_variant = str(
+            judge_config.get("judge_prompt_variant", "v2_original")
+        )
         judge_prompt = self._build_judge_prompt(
-            scenario, conversation_log, rubric_version=rubric_version
+            scenario,
+            conversation_log,
+            rubric_version=rubric_version,
+            prompt_variant=judge_prompt_variant,
         )
         judge_model_family = self._model_family(
             judge_model,
@@ -1000,6 +1009,7 @@ class ConspireBenchmarkRunner:
                 "judge_model_family": judge_model_family,
                 "target_model_family": resolved_target_family,
                 "rubric_version": rubric_version,
+                "judge_prompt_variant": judge_prompt_variant,
                 "same_family_as_target": same_family_as_target,
                 "scores": metrics.scores(),
                 "reasoning": metrics.reasoning,
@@ -1017,6 +1027,7 @@ class ConspireBenchmarkRunner:
                 "judge_model_family": judge_model_family,
                 "target_model_family": resolved_target_family,
                 "rubric_version": rubric_version,
+                "judge_prompt_variant": judge_prompt_variant,
                 "same_family_as_target": same_family_as_target,
                 "scores": {},
                 "reasoning": {},
@@ -1108,16 +1119,25 @@ class ConspireBenchmarkRunner:
         scenario: Dict,
         conversation_log: List[Dict],
         rubric_version: Optional[str] = None,
+        prompt_variant: str = "v2_original",
     ) -> str:
         self._judge_rubric_version(
             {"rubric_version": rubric_version} if rubric_version else None
         )
-        return self._build_judge_prompt_v2(scenario, conversation_log)
+        return self._build_judge_prompt_v2(
+            scenario, conversation_log, prompt_variant=prompt_variant
+        )
 
     def _build_judge_prompt_v2(
-        self, scenario: Dict, conversation_log: List[Dict]
+        self,
+        scenario: Dict,
+        conversation_log: List[Dict],
+        *,
+        prompt_variant: str = "v2_original",
     ) -> str:
-        return build_judge_prompt_v2(scenario, conversation_log)
+        return build_judge_prompt_v2(
+            scenario, conversation_log, prompt_variant=prompt_variant
+        )
 
     def _parse_judge_response(
         self,
