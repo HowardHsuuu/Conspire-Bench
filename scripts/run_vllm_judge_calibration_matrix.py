@@ -22,7 +22,11 @@ from pathlib import Path
 from typing import Any
 
 ROOT = Path(__file__).resolve().parents[1]
-PROMPT_VARIANT = "v2_scale_explicit_no_example_values"
+DEFAULT_PROMPT_VARIANT = "v3_behavioral_anchors_evidence_first"
+CALIBRATION_PROMPT_VARIANTS = (
+    "v2_scale_explicit_no_example_values",
+    "v3_behavioral_anchors_evidence_first",
+)
 
 
 def read_json(path: Path) -> Any:
@@ -187,7 +191,9 @@ def stop_server(process: subprocess.Popen[bytes]) -> None:
         process.wait(timeout=30)
 
 
-def calibrated_complete(path: Path, judge: dict[str, Any]) -> bool:
+def calibrated_complete(
+    path: Path, judge: dict[str, Any], *, prompt_variant: str
+) -> bool:
     if not path.is_file():
         return False
     name = model_name(judge)
@@ -207,19 +213,24 @@ def calibrated_complete(path: Path, judge: dict[str, Any]) -> bool:
             len(matches) != 1
             or matches[0].get("error")
             or not matches[0].get("scores")
-            or matches[0].get("judge_prompt_variant") != PROMPT_VARIANT
+            or matches[0].get("judge_prompt_variant") != prompt_variant
         ):
             return False
     return True
 
 
 def judge_config(
-    base: dict[str, Any], judge: dict[str, Any], *, port: int, parallel: int
+    base: dict[str, Any],
+    judge: dict[str, Any],
+    *,
+    port: int,
+    parallel: int,
+    prompt_variant: str,
 ) -> dict[str, Any]:
     config = deepcopy(base)
     compatible = deepcopy(judge)
     compatible["inference_backend"] = "openai_compatible"
-    compatible["judge_prompt_variant"] = PROMPT_VARIANT
+    compatible["judge_prompt_variant"] = prompt_variant
     if compatible.get("model_family") == "gpt_oss":
         compatible["max_tokens"] = 8192
         compatible["max_seq_length"] = 32768
@@ -266,6 +277,11 @@ def main() -> int:
     parser.add_argument("--vllm", type=Path, default=ROOT / ".local/venv-vllm/bin/vllm")
     parser.add_argument("--port", type=int, default=8000)
     parser.add_argument("--parallel", type=int, default=32)
+    parser.add_argument(
+        "--prompt-variant",
+        choices=CALIBRATION_PROMPT_VARIANTS,
+        default=DEFAULT_PROMPT_VARIANT,
+    )
     args = parser.parse_args()
     args.output_dir.mkdir(parents=True, exist_ok=True)
     for executable in (args.runner_python, args.vllm):
@@ -303,14 +319,20 @@ def main() -> int:
     for index, judge in enumerate(judges, start=1):
         identifier = slug(model_name(judge))
         output = args.output_dir / f"after_{index:02d}_{identifier}.json"
-        if calibrated_complete(output, judge):
+        if calibrated_complete(output, judge, prompt_variant=args.prompt_variant):
             print(f"calibrated judge already complete: {model_name(judge)}", flush=True)
             current = output
             continue
         generated_config = args.output_dir / f"config_{index:02d}_{identifier}.json"
         write_json(
             generated_config,
-            judge_config(base, judge, port=args.port, parallel=args.parallel),
+            judge_config(
+                base,
+                judge,
+                port=args.port,
+                parallel=args.parallel,
+                prompt_variant=args.prompt_variant,
+            ),
         )
         server_log = args.output_dir / f"server_{index:02d}_{identifier}.log"
         driver_log = args.output_dir / f"driver_{index:02d}_{identifier}.log"
@@ -342,7 +364,7 @@ def main() -> int:
             )
         finally:
             stop_server(server)
-        if not calibrated_complete(output, judge):
+        if not calibrated_complete(output, judge, prompt_variant=args.prompt_variant):
             raise RuntimeError(f"Calibration incomplete for {model_name(judge)}")
         current = output
         print(f"calibrated judge complete: {model_name(judge)}", flush=True)
@@ -358,7 +380,7 @@ def main() -> int:
             for result in row.get("judge_results") or []
             if not result.get("error")
             and result.get("scores")
-            and result.get("judge_prompt_variant") == PROMPT_VARIANT
+            and result.get("judge_prompt_variant") == args.prompt_variant
         }
         if successful != expected:
             raise RuntimeError(
@@ -382,7 +404,7 @@ def main() -> int:
         completion,
         {
             "ok": True,
-            "prompt_variant": PROMPT_VARIANT,
+            "prompt_variant": args.prompt_variant,
             "row_count": 120,
             "judge_count": 4,
             "successful_judgments": 480,
