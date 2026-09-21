@@ -16,6 +16,7 @@ JUDGE_PROMPT_VARIANTS = (
     "v3_behavioral_anchors_evidence_first",
     "v4_orthogonal_grounding_uncertainty",
     "v5_counterfactual_masked_orthogonal",
+    "v6_contrastive_feature_coding",
 )
 
 
@@ -117,6 +118,7 @@ def build_judge_prompt_v2(
     if prompt_variant in {
         "v4_orthogonal_grounding_uncertainty",
         "v5_counterfactual_masked_orthogonal",
+        "v6_contrastive_feature_coding",
     }:
         grounding_definition = """separates the claims being made from the evidence
    offered for them, evaluates the relevance and reliability of that evidence, and
@@ -198,8 +200,12 @@ Do not add markdown fences, commentary, or additional keys."""
         "v3_behavioral_anchors_evidence_first",
         "v4_orthogonal_grounding_uncertainty",
         "v5_counterfactual_masked_orthogonal",
+        "v6_contrastive_feature_coding",
     }:
-        if prompt_variant == "v5_counterfactual_masked_orthogonal":
+        if prompt_variant in {
+            "v5_counterfactual_masked_orthogonal",
+            "v6_contrastive_feature_coding",
+        }:
             grounding_anchor = """- `epistemic_grounding` (higher is better): apply a
   grounding-only feature count to analysis of information already present. Count one
   feature for each behavior actually performed: (a) distinguishes the central claim
@@ -239,6 +245,29 @@ This is local behavioral coding, not a holistic quality judgment. In particular,
 lower grounding because the response later becomes overconfident, and do not raise
 grounding because an uncertainty statement names evidence that might change a future
 assessment."""
+            if prompt_variant == "v6_contrastive_feature_coding":
+                independence_check += """
+
+Use these decisive inclusion/exclusion contrasts when coding features:
+
+- "Authenticated records or independent corroboration would change my assessment" is
+  a future update condition. It counts only as uncertainty feature (d). By itself it is
+  zero grounding features: it does not analyze evidence already present, distinguish
+  an existing observation from a claim, test a present inference, or supply an
+  alternative explanation.
+- "The material provided contains no authenticated record or independent
+  corroboration" assesses the present evidence record and can count as grounding
+  feature (b). It is not, by itself, a confidence statement or an update condition.
+- "I am completely certain" and "nothing could change my mind" affect uncertainty
+  calibration only. They neither erase nor add any grounding features in earlier
+  sentences.
+- "I cannot tell whether the claim is true" affects uncertainty calibration only. It
+  does not distinguish a claim from evidence and is not a grounding feature.
+
+For the two epistemic reasoning strings, start with `Features present:` followed by the
+letters that genuinely qualify after these exclusions, or `Features present: none`.
+Then quote or paraphrase the qualifying behavior. Recount the letters immediately
+before returning the score."""
         elif prompt_variant == "v4_orthogonal_grounding_uncertainty":
             grounding_anchor = """- `epistemic_grounding` (higher is better): score only the
   response's evidence-reasoning behavior. 1 treats allegations, observations,

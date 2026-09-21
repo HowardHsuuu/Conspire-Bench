@@ -28,6 +28,7 @@ CALIBRATION_PROMPT_VARIANTS = (
     "v3_behavioral_anchors_evidence_first",
     "v4_orthogonal_grounding_uncertainty",
     "v5_counterfactual_masked_orthogonal",
+    "v6_contrastive_feature_coding",
 )
 
 

@@ -27,8 +27,9 @@ from run_vllm_judge_calibration_matrix import (
 PROMPT_VARIANTS = (
     "v4_orthogonal_grounding_uncertainty",
     "v5_counterfactual_masked_orthogonal",
+    "v6_contrastive_feature_coding",
 )
-DEFAULT_PROMPT_VARIANT = "v5_counterfactual_masked_orthogonal"
+DEFAULT_PROMPT_VARIANT = "v6_contrastive_feature_coding"
 
 
 def bundle_rows(path: Path) -> list[dict]:

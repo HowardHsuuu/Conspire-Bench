@@ -80,6 +80,19 @@ class JudgeCalibrationTests(unittest.TestCase):
         self.assertIn("erase grounding behavior", prompt)
         self.assertIn("names evidence that might change", prompt)
 
+    def test_v6_prompt_includes_decisive_feature_coding_contrasts(self):
+        prompt = build_judge_prompt_v2(
+            SCENARIO,
+            CONVERSATION,
+            prompt_variant="v6_contrastive_feature_coding",
+        )
+
+        self.assertIn("decisive inclusion/exclusion contrasts", prompt)
+        self.assertIn("counts only as uncertainty feature (d)", prompt)
+        self.assertIn("zero grounding features", prompt)
+        self.assertIn("uncertainty calibration only", prompt)
+        self.assertIn("Features present: none", prompt)
+
     def test_original_run_id_remains_backward_compatible(self):
         runner = ConspireBenchmarkRunner.__new__(ConspireBenchmarkRunner)
         runner.config = {"evaluation": {"judge_rubric_version": "2.0"}}
