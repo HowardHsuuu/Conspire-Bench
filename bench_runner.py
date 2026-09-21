@@ -42,7 +42,9 @@ from judge_rubric import (
     aggregate_judge_scores,
     bounded_judge_regex_v2,
     build_judge_prompt_v2,
+    build_uncertainty_prompt_v7,
     parse_judge_response_v2,
+    parse_uncertainty_response_v7,
 )
 from local_models import LocalModelManager
 
@@ -845,12 +847,44 @@ class ConspireBenchmarkRunner:
             and resolved_target_family == judge_model_family
         )
         judge_response: str = ""
+        split_uncertainty_response: str = ""
         request_metadata: Dict[str, Any] = {}
 
         try:
 
             async def request_and_parse() -> JudgeMetrics:
                 nonlocal judge_response, request_metadata
+                nonlocal split_uncertainty_response
+
+                async def attach_split_uncertainty(
+                    metrics: JudgeMetrics,
+                ) -> JudgeMetrics:
+                    nonlocal request_metadata, split_uncertainty_response
+                    if judge_prompt_variant != "v7_split_epistemic_passes":
+                        return metrics
+                    uncertainty_prompt = build_uncertainty_prompt_v7(
+                        scenario, conversation_log
+                    )
+                    split_uncertainty_response = await self._get_model_response(
+                        uncertainty_prompt,
+                        judge_provider,
+                        judge_model,
+                        is_judge=True,
+                        role_config_override=judge_config,
+                        retry=False,
+                    )
+                    uncertainty_score, uncertainty_reasoning = (
+                        parse_uncertainty_response_v7(split_uncertainty_response)
+                    )
+                    metrics.uncertainty_calibration = uncertainty_score
+                    metrics.reasoning["uncertainty_calibration"] = (
+                        uncertainty_reasoning
+                    )
+                    request_metadata["split_uncertainty_pass"] = dict(
+                        getattr(split_uncertainty_response, "metadata", {})
+                    )
+                    return metrics
+
                 judge_response = await self._get_model_response(
                     judge_prompt,
                     judge_provider,
@@ -861,9 +895,12 @@ class ConspireBenchmarkRunner:
                 )
                 request_metadata = dict(getattr(judge_response, "metadata", {}))
                 try:
-                    return self._parse_judge_response(
-                        judge_response, rubric_version=rubric_version
+                    metrics = self._parse_judge_response(
+                        judge_response,
+                        rubric_version=rubric_version,
+                        prompt_variant=judge_prompt_variant,
                     )
+                    return await attach_split_uncertainty(metrics)
                 except ValueError:
                     if not (
                         judge_provider == ModelProvider.HUGGINGFACE
@@ -922,9 +959,12 @@ class ConspireBenchmarkRunner:
                         "initial_usage": initial_metadata.get("usage"),
                     }
                     try:
-                        return self._parse_judge_response(
-                            judge_response, rubric_version=rubric_version
+                        metrics = self._parse_judge_response(
+                            judge_response,
+                            rubric_version=rubric_version,
+                            prompt_variant=judge_prompt_variant,
                         )
+                        return await attach_split_uncertainty(metrics)
                     except ValueError:
                         # JSON-object mode guarantees only a JSON object, not
                         # the rubric schema. It can still return inconsistent
@@ -939,7 +979,11 @@ class ConspireBenchmarkRunner:
                             **judge_config,
                             "response_format": "rubric_v2_bounded_regex",
                             "output_regex": bounded_judge_regex_v2(
-                                max_reasoning_length
+                                max_reasoning_length,
+                                split_uncertainty_pass=(
+                                    judge_prompt_variant
+                                    == "v7_split_epistemic_passes"
+                                ),
                             ),
                         }
                         judge_response = await self._get_model_response(
@@ -970,9 +1014,12 @@ class ConspireBenchmarkRunner:
                             ),
                             "previous_usage": invalid_structured_metadata.get("usage"),
                         }
-                        return self._parse_judge_response(
-                            judge_response, rubric_version=rubric_version
+                        metrics = self._parse_judge_response(
+                            judge_response,
+                            rubric_version=rubric_version,
+                            prompt_variant=judge_prompt_variant,
                         )
+                        return await attach_split_uncertainty(metrics)
 
             judge_timeout = self._get_evaluation_config().get("timeout")
             if (
@@ -984,13 +1031,15 @@ class ConspireBenchmarkRunner:
                 # JSON-object retry, a longer truncation retry, and one
                 # bounded-regex fallback. The original single-call timeout
                 # can cancel a healthy final request on slower local hardware.
-                judge_timeout = float(judge_timeout) * 2
+                judge_timeout = float(judge_timeout) * (
+                    3 if judge_prompt_variant == "v7_split_epistemic_passes" else 2
+                )
             metrics = await self._with_retries(
                 request_and_parse,
                 f"judge {judge_name} generation and parse",
                 timeout_seconds=judge_timeout,
             )
-            return {
+            result = {
                 "judge_name": judge_name,
                 "judge_run_id": judge_run_id,
                 "provider": judge_provider.value,
@@ -1006,6 +1055,11 @@ class ConspireBenchmarkRunner:
                 "response_metadata": request_metadata,
                 "error": None,
             }
+            if split_uncertainty_response:
+                result["split_uncertainty_raw_response"] = str(
+                    split_uncertainty_response
+                )
+            return result
         except Exception as e:
             self.logger.error("Judge %s failed: %s", judge_name, e)
             return {
@@ -1132,14 +1186,21 @@ class ConspireBenchmarkRunner:
         self,
         judge_response: str,
         rubric_version: Optional[str] = None,
+        prompt_variant: str = "v2_original",
     ) -> JudgeMetrics:
         self._judge_rubric_version(
             {"rubric_version": rubric_version} if rubric_version else None
         )
-        return self._parse_judge_response_v2(judge_response)
+        return self._parse_judge_response_v2(
+            judge_response, prompt_variant=prompt_variant
+        )
 
-    def _parse_judge_response_v2(self, judge_response: str) -> JudgeMetrics:
-        return parse_judge_response_v2(judge_response, self.logger)
+    def _parse_judge_response_v2(
+        self, judge_response: str, *, prompt_variant: str = "v2_original"
+    ) -> JudgeMetrics:
+        return parse_judge_response_v2(
+            judge_response, self.logger, prompt_variant=prompt_variant
+        )
 
     async def run_benchmark(
         self,

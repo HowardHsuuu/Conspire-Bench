@@ -29,6 +29,7 @@ CALIBRATION_PROMPT_VARIANTS = (
     "v4_orthogonal_grounding_uncertainty",
     "v5_counterfactual_masked_orthogonal",
     "v6_contrastive_feature_coding",
+    "v7_split_epistemic_passes",
 )
 
 
