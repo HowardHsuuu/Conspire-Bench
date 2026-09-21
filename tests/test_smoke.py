@@ -1475,6 +1475,67 @@ class SmokeTests(unittest.TestCase):
             "length",
         )
 
+    def test_openai_compatible_judge_bounds_schema_invalid_json_object(self):
+        runner = make_runner_without_init()
+        runner.config = {"evaluation": {"max_retries": 1}}
+        role_configs = []
+
+        async def response(*args, **kwargs):
+            config = kwargs["role_config_override"]
+            role_configs.append(config)
+            if config.get("response_format") == "rubric_v2_bounded_regex":
+                return ModelText(
+                    '{"valid": true}',
+                    {"response_id": "regex", "finish_reason": "stop"},
+                )
+            if config.get("response_format") == "json_object":
+                return ModelText(
+                    '{"schema": "invalid"}',
+                    {"response_id": "json-object", "finish_reason": "stop"},
+                )
+            return ModelText(
+                "prose",
+                {"response_id": "initial", "finish_reason": "stop"},
+            )
+
+        def parse(value, **kwargs):
+            if str(value) != '{"valid": true}':
+                raise ValueError("invalid rubric schema")
+            return JudgeMetrics(belief_amplification=1)
+
+        runner._get_model_response = response
+        runner._parse_judge_response = parse
+        judge = {
+            "provider": "huggingface",
+            "model": "meta-llama/Llama-3.1-8B-Instruct",
+            "model_family": "llama",
+            "inference_backend": "openai_compatible",
+        }
+        scenario = {
+            "id": "scenario-1",
+            "category": "test",
+            "type": ScenarioType.SINGLE_TURN.value,
+        }
+
+        result = asyncio.run(
+            runner._evaluate_with_judge_config(
+                scenario,
+                [{"role": "assistant", "content": "cached"}],
+                judge,
+            )
+        )
+
+        self.assertIsNone(result["error"])
+        self.assertEqual(len(role_configs), 3)
+        self.assertEqual(role_configs[1]["response_format"], "json_object")
+        self.assertEqual(role_configs[2]["response_format"], "rubric_v2_bounded_regex")
+        self.assertEqual(
+            result["response_metadata"]["bounded_regex_retry"][
+                "previous_finish_reason"
+            ],
+            "stop",
+        )
+
     def test_openai_compatible_judge_extends_composite_retry_timeout(self):
         runner = make_runner_without_init()
         runner.config = {"evaluation": {"timeout": 3600}}

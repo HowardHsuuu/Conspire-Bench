@@ -867,8 +867,7 @@ class ConspireBenchmarkRunner:
                 except ValueError:
                     if not (
                         judge_provider == ModelProvider.HUGGINGFACE
-                        and judge_config.get("inference_backend")
-                        == "openai_compatible"
+                        and judge_config.get("inference_backend") == "openai_compatible"
                     ):
                         raise
 
@@ -903,9 +902,7 @@ class ConspireBenchmarkRunner:
                         max_seq_length // 2,
                     )
                     if retry_max_tokens > max_tokens:
-                        retry_config["truncation_retry_max_tokens"] = (
-                            retry_max_tokens
-                        )
+                        retry_config["truncation_retry_max_tokens"] = retry_max_tokens
                     judge_response = await self._get_model_response(
                         judge_prompt,
                         judge_provider,
@@ -914,17 +911,13 @@ class ConspireBenchmarkRunner:
                         role_config_override=retry_config,
                         retry=False,
                     )
-                    request_metadata = dict(
-                        getattr(judge_response, "metadata", {})
-                    )
+                    request_metadata = dict(getattr(judge_response, "metadata", {}))
                     request_metadata["structured_output_retry"] = {
                         "response_format": "json_object",
                         "truncation_retry_max_tokens": retry_config.get(
                             "truncation_retry_max_tokens"
                         ),
-                        "initial_finish_reason": initial_metadata.get(
-                            "finish_reason"
-                        ),
+                        "initial_finish_reason": initial_metadata.get("finish_reason"),
                         "initial_response_id": initial_metadata.get("response_id"),
                         "initial_usage": initial_metadata.get("usage"),
                     }
@@ -933,14 +926,14 @@ class ConspireBenchmarkRunner:
                             judge_response, rubric_version=rubric_version
                         )
                     except ValueError:
-                        if request_metadata.get("finish_reason") != "length":
-                            raise
-
-                        # JSON-object mode can stall on syntactic whitespace
-                        # even after the rationale is brief. This final
-                        # retry preserves the prompt and rubric while
-                        # bounding both rationale length and JSON syntax.
-                        truncated_metadata = request_metadata
+                        # JSON-object mode guarantees only a JSON object, not
+                        # the rubric schema. It can still return inconsistent
+                        # present/subtype values, prose-shaped objects, or a
+                        # truncated object. This final retry preserves the
+                        # prompt and rubric while bounding rationale length,
+                        # syntax, allowed ranges, and harmful-label
+                        # consistency.
+                        invalid_structured_metadata = request_metadata
                         max_reasoning_length = 500
                         bounded_config = {
                             **judge_config,
@@ -957,9 +950,7 @@ class ConspireBenchmarkRunner:
                             role_config_override=bounded_config,
                             retry=False,
                         )
-                        request_metadata = dict(
-                            getattr(judge_response, "metadata", {})
-                        )
+                        request_metadata = dict(getattr(judge_response, "metadata", {}))
                         request_metadata["structured_output_retry"] = {
                             "response_format": "json_object",
                             "truncation_retry_max_tokens": retry_config.get(
@@ -968,18 +959,16 @@ class ConspireBenchmarkRunner:
                             "initial_finish_reason": initial_metadata.get(
                                 "finish_reason"
                             ),
-                            "initial_response_id": initial_metadata.get(
-                                "response_id"
-                            ),
+                            "initial_response_id": initial_metadata.get("response_id"),
                             "initial_usage": initial_metadata.get("usage"),
                         }
                         request_metadata["bounded_regex_retry"] = {
                             "response_format": "structured_outputs.regex",
                             "max_reasoning_length": max_reasoning_length,
-                            "previous_finish_reason": truncated_metadata.get(
+                            "previous_finish_reason": invalid_structured_metadata.get(
                                 "finish_reason"
                             ),
-                            "previous_usage": truncated_metadata.get("usage"),
+                            "previous_usage": invalid_structured_metadata.get("usage"),
                         }
                         return self._parse_judge_response(
                             judge_response, rubric_version=rubric_version

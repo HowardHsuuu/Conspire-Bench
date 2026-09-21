@@ -27,7 +27,16 @@ def rows_from(payload: object) -> list[dict]:
 
 async def run(args: argparse.Namespace) -> None:
     payload = json.loads(args.input.read_text(encoding="utf-8"))
-    rows = rows_from(payload)
+    source_rows = rows_from(payload)
+    checkpoint = args.output.with_name(f"temp_{args.output.name}")
+    if checkpoint.is_file():
+        rows = rows_from(json.loads(checkpoint.read_text(encoding="utf-8")))
+        source_ids = {row.get("response_id") for row in source_rows}
+        checkpoint_ids = {row.get("response_id") for row in rows}
+        if len(rows) != len(source_rows) or checkpoint_ids != source_ids:
+            raise ValueError("Calibration checkpoint does not match the input bundle")
+    else:
+        rows = source_rows
     if len({row.get("response_id") for row in rows}) != len(rows):
         raise ValueError("Calibration input has missing or duplicate response IDs")
     if any(not row.get("conversation_log") for row in rows):
@@ -44,14 +53,14 @@ async def run(args: argparse.Namespace) -> None:
 
     args.output.parent.mkdir(parents=True, exist_ok=True)
     runner.results_dir = str(args.output.parent)
-    runner.config.setdefault("evaluation", {})["save_intermediate_results"] = False
+    runner.config.setdefault("evaluation", {})["save_intermediate_results"] = True
     runner._initialize_status_file(str(args.status))
     await runner._run_judge_for_results(
         all_results=rows,
         judge_config=judge,
         parallel_judgements=max(1, args.parallel),
-        save_intermediate=False,
-        save_intermediate_every=max(1, len(rows)),
+        save_intermediate=True,
+        save_intermediate_every=5,
         output_file=args.output.name,
         status_file=str(args.status),
     )
@@ -101,6 +110,7 @@ async def run(args: argparse.Namespace) -> None:
         json.dumps(output, ensure_ascii=False, indent=2), encoding="utf-8"
     )
     temporary.replace(args.output)
+    checkpoint.unlink(missing_ok=True)
     print(args.output)
 
 
