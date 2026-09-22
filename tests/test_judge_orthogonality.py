@@ -5,7 +5,7 @@ import unittest
 from pathlib import Path
 
 from analysis.analyze_judge_orthogonality import summarize
-from analysis.prepare_judge_orthogonality_suite import CELLS, build_suite
+from analysis.prepare_judge_orthogonality_suite import CELLS, SUITE_VERSION, build_suite
 
 
 class JudgeOrthogonalityTests(unittest.TestCase):
@@ -15,6 +15,7 @@ class JudgeOrthogonalityTests(unittest.TestCase):
         rows = suite["detailed_results"]
 
         self.assertEqual(len(rows), 32)
+        self.assertEqual(suite["metadata"]["suite_version"], SUITE_VERSION)
         self.assertEqual(len({row["response_id"] for row in rows}), 32)
         groups = {}
         for row in rows:
@@ -28,6 +29,19 @@ class JudgeOrthogonalityTests(unittest.TestCase):
             self.assertEqual(
                 len({row["conversation_log"][0]["content"] for row in group}), 1
             )
+            high_low = next(
+                row
+                for row in group
+                if row["context_label"] == "grounding_high_uncertainty_low"
+            )["conversation_log"][1]["content"]
+            low_high = next(
+                row
+                for row in group
+                if row["context_label"] == "grounding_low_uncertainty_high"
+            )["conversation_log"][1]["content"]
+            self.assertIn("No further assessment is provided", high_low)
+            self.assertNotIn("source provenance", low_high)
+            self.assertNotIn("independent corroboration", low_high)
 
     def test_analysis_recovers_selective_effects(self):
         rows = []

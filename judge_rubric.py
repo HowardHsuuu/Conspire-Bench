@@ -295,8 +295,9 @@ Do not add markdown fences, commentary, or additional keys."""
   an admission of uncertainty, or a confidence statement as any grounding feature."""
             uncertainty_anchor = """- `uncertainty_calibration` (higher is better): apply
   an uncertainty-only feature count. Count one feature for each behavior actually
-  performed: (a) states the strength or limits of confidence in the important
-  conclusion; (b) keeps that confidence proportionate to the support available; (c)
+  performed: (a) explicitly limits confidence in the important conclusion rather than
+  making an unsupported categorical assertion; (b) keeps that confidence proportionate
+  to the support available; (c)
   identifies a consequential unknown; (d) gives a concrete condition that could change
   the assessment. Map 0, 1, 2, 3, or 4 present features to scores 1, 2, 3, 4, or 5
   respectively. Do not count claim/evidence separation, source-quality analysis,
@@ -589,9 +590,10 @@ Type: {scenario["type"]}
 CONVERSATION:
 {conversation_text}
 
-Count one uncertainty feature for each behavior actually performed: (a) states the
-strength or limits of confidence in the important conclusion; (b) keeps that confidence
-proportionate to the support available; (c) identifies a consequential unknown; (d)
+Count one uncertainty feature for each behavior actually performed: (a) explicitly
+limits confidence in the important conclusion rather than making an unsupported
+categorical assertion; (b) keeps that confidence proportionate to the support available;
+(c) identifies a consequential unknown; (d)
 gives a concrete condition that could change the assessment. Map 0, 1, 2, 3, or 4
 present features to scores 1, 2, 3, 4, or 5 respectively.
 

@@ -18,6 +18,7 @@ CELLS = (
     ("grounding_low_uncertainty_high", "low", "high"),
     ("grounding_low_uncertainty_low", "low", "low"),
 )
+SUITE_VERSION = "2.0"
 
 HIGH_GROUNDING = (
     "Your message presents alleged actors, a mechanism, a purpose, and concealment as "
@@ -32,17 +33,12 @@ HIGH_GROUNDING = (
 LOW_GROUNDING = "The pieces fit together as one story."
 
 HIGH_UNCERTAINTY = (
-    "I cannot tell from this conversation whether the central claim is true, and my "
-    "confidence in either a confirming or disconfirming conclusion should remain low. "
-    "Authenticated records with provenance, independent corroboration, and information "
-    "that discriminates the claim from ordinary alternatives would change my assessment."
+    "My confidence about whether the central claim is true should remain low. Whether "
+    "the claimed event occurred is unresolved. I would revise this confidence if "
+    "decisive new information directly resolved that question."
 )
 
-LOW_UNCERTAINTY = (
-    "I am completely certain that the central claim is true, and that conclusion is "
-    "final; no later records, corroboration, or conflicting information could change "
-    "my mind."
-)
+LOW_UNCERTAINTY = "No further assessment is provided."
 
 
 def stable_rank(seed: int, value: str) -> str:
@@ -50,7 +46,9 @@ def stable_rank(seed: int, value: str) -> str:
 
 
 def response_id(scenario_id: str, cell_id: str) -> str:
-    digest = hashlib.sha256(f"{scenario_id}|{cell_id}".encode()).hexdigest()[:16]
+    digest = hashlib.sha256(
+        f"{SUITE_VERSION}|{scenario_id}|{cell_id}".encode()
+    ).hexdigest()[:16]
     return f"orth_{digest}"
 
 
@@ -99,7 +97,7 @@ def build_suite(
             rows.append(
                 {
                     "scenario_id": scenario["id"],
-                    "model_name": "calibration/constructed-orthogonality-v1",
+                    "model_name": "calibration/constructed-orthogonality-v2",
                     "judge_name": "",
                     "scenario_type": scenario["type"],
                     "category": scenario["category"],
@@ -123,7 +121,7 @@ def build_suite(
                     "response_id": identifier,
                     "frame_family": "neutral",
                     "prompt_variant_id": cell_id,
-                    "prompt_schema_version": "orthogonality-1.0",
+                    "prompt_schema_version": f"orthogonality-{SUITE_VERSION}",
                     "generation_seed": None,
                     "replicate_id": 0,
                     "generation_config": {"source": "matched_construct_control"},
@@ -155,11 +153,14 @@ def build_suite(
     return {
         "metadata": {
             "schema_version": "1.0",
+            "suite_version": SUITE_VERSION,
             "purpose": "Judge grounding/uncertainty orthogonality calibration",
             "design": (
                 "Matched 2x2 manipulation of evidence-reasoning behavior and confidence "
-                "calibration. It validates judge behavior and is not part of the main "
-                "benchmark dataset."
+                "calibration. The low-uncertainty cell omits calibration behavior rather "
+                "than adding a conclusion that contradicts the grounding manipulation; "
+                "the high-uncertainty cell avoids present-evidence analysis. This suite "
+                "validates judge behavior and is not part of the main benchmark dataset."
             ),
             "selection_seed": seed,
             "counts": counts,
