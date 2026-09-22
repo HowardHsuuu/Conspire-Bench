@@ -5,7 +5,6 @@ from __future__ import annotations
 
 import argparse
 import hashlib
-import json
 import os
 import subprocess
 from pathlib import Path
@@ -29,8 +28,9 @@ PROMPT_VARIANTS = (
     "v5_counterfactual_masked_orthogonal",
     "v6_contrastive_feature_coding",
     "v7_split_epistemic_passes",
+    "v8_span_evidenced_split_passes",
 )
-DEFAULT_PROMPT_VARIANT = "v7_split_epistemic_passes"
+DEFAULT_PROMPT_VARIANT = "v8_span_evidenced_split_passes"
 
 
 def bundle_rows(path: Path) -> list[dict]:
@@ -105,7 +105,9 @@ def main() -> int:
             prompt_variant=args.prompt_variant,
             expected_rows=expected_rows,
         ):
-            print(f"orthogonality judge already complete: {model_name(judge)}", flush=True)
+            print(
+                f"orthogonality judge already complete: {model_name(judge)}", flush=True
+            )
             current = output
             continue
         generated_config = args.output_dir / f"config_{index:02d}_{identifier}.json"

@@ -30,6 +30,7 @@ CALIBRATION_PROMPT_VARIANTS = (
     "v5_counterfactual_masked_orthogonal",
     "v6_contrastive_feature_coding",
     "v7_split_epistemic_passes",
+    "v8_span_evidenced_split_passes",
 )
 
 
@@ -209,9 +210,10 @@ def calibrated_complete(
         rows = bundle_rows(path)
     except (OSError, ValueError, json.JSONDecodeError):
         return False
-    if len(rows) != expected_rows or len(
-        {row.get("response_id") for row in rows}
-    ) != expected_rows:
+    if (
+        len(rows) != expected_rows
+        or len({row.get("response_id") for row in rows}) != expected_rows
+    ):
         return False
     for row in rows:
         matches = [

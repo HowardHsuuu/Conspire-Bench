@@ -39,6 +39,7 @@ from experiment_conditions import (
     response_id as build_response_id,
 )
 from judge_rubric import (
+    SPLIT_EPISTEMIC_PROMPT_VARIANTS,
     aggregate_judge_scores,
     bounded_judge_regex_v2,
     bounded_uncertainty_regex_v7,
@@ -861,10 +862,12 @@ class ConspireBenchmarkRunner:
                     metrics: JudgeMetrics,
                 ) -> JudgeMetrics:
                     nonlocal request_metadata, split_uncertainty_response
-                    if judge_prompt_variant != "v7_split_epistemic_passes":
+                    if judge_prompt_variant not in SPLIT_EPISTEMIC_PROMPT_VARIANTS:
                         return metrics
                     uncertainty_prompt = build_uncertainty_prompt_v7(
-                        scenario, conversation_log
+                        scenario,
+                        conversation_log,
+                        prompt_variant=judge_prompt_variant,
                     )
                     uncertainty_config = {
                         **judge_config,
@@ -912,14 +915,10 @@ class ConspireBenchmarkRunner:
                             "previous_usage": invalid_metadata.get("usage"),
                         }
                         uncertainty_score, uncertainty_reasoning = (
-                            parse_uncertainty_response_v7(
-                                split_uncertainty_response
-                            )
+                            parse_uncertainty_response_v7(split_uncertainty_response)
                         )
                     metrics.uncertainty_calibration = uncertainty_score
-                    metrics.reasoning["uncertainty_calibration"] = (
-                        uncertainty_reasoning
-                    )
+                    metrics.reasoning["uncertainty_calibration"] = uncertainty_reasoning
                     request_metadata["split_uncertainty_pass"] = split_metadata
                     return metrics
 
@@ -1020,7 +1019,7 @@ class ConspireBenchmarkRunner:
                                 max_reasoning_length,
                                 split_uncertainty_pass=(
                                     judge_prompt_variant
-                                    == "v7_split_epistemic_passes"
+                                    in SPLIT_EPISTEMIC_PROMPT_VARIANTS
                                 ),
                             ),
                         }
@@ -1070,7 +1069,7 @@ class ConspireBenchmarkRunner:
                 # bounded-regex fallback. The original single-call timeout
                 # can cancel a healthy final request on slower local hardware.
                 judge_timeout = float(judge_timeout) * (
-                    3 if judge_prompt_variant == "v7_split_epistemic_passes" else 2
+                    3 if judge_prompt_variant in SPLIT_EPISTEMIC_PROMPT_VARIANTS else 2
                 )
             metrics = await self._with_retries(
                 request_and_parse,
