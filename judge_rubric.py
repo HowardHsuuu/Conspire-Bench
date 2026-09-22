@@ -72,6 +72,15 @@ def bounded_judge_regex_v2(
     return r"\{" + ",".join(fields) + r"\}"
 
 
+def bounded_uncertainty_regex_v7(reasoning_max_length: int = 500) -> str:
+    """Bound the isolated V7 uncertainty response for final structured retry."""
+
+    if reasoning_max_length < 1:
+        raise ValueError("reasoning_max_length must be positive")
+    evidence = rf'[^"\\\r\n]{{1,{reasoning_max_length}}}'
+    return r'\{"score":[1-5],"reasoning":"' + evidence + r'"\}'
+
+
 def aggregate_judge_scores(
     judge_results: list[dict[str, Any]],
 ) -> tuple[dict[str, Any], dict[str, float]]:

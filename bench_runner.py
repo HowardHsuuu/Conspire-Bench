@@ -41,6 +41,7 @@ from experiment_conditions import (
 from judge_rubric import (
     aggregate_judge_scores,
     bounded_judge_regex_v2,
+    bounded_uncertainty_regex_v7,
     build_judge_prompt_v2,
     build_uncertainty_prompt_v7,
     parse_judge_response_v2,
@@ -865,24 +866,61 @@ class ConspireBenchmarkRunner:
                     uncertainty_prompt = build_uncertainty_prompt_v7(
                         scenario, conversation_log
                     )
+                    uncertainty_config = {
+                        **judge_config,
+                        "response_format": "json_object",
+                    }
                     split_uncertainty_response = await self._get_model_response(
                         uncertainty_prompt,
                         judge_provider,
                         judge_model,
                         is_judge=True,
-                        role_config_override=judge_config,
+                        role_config_override=uncertainty_config,
                         retry=False,
                     )
-                    uncertainty_score, uncertainty_reasoning = (
-                        parse_uncertainty_response_v7(split_uncertainty_response)
+                    split_metadata = dict(
+                        getattr(split_uncertainty_response, "metadata", {})
                     )
+                    try:
+                        uncertainty_score, uncertainty_reasoning = (
+                            parse_uncertainty_response_v7(split_uncertainty_response)
+                        )
+                    except ValueError:
+                        bounded_config = {
+                            **judge_config,
+                            "response_format": "rubric_v2_bounded_regex",
+                            "output_regex": bounded_uncertainty_regex_v7(),
+                        }
+                        invalid_metadata = split_metadata
+                        split_uncertainty_response = await self._get_model_response(
+                            uncertainty_prompt,
+                            judge_provider,
+                            judge_model,
+                            is_judge=True,
+                            role_config_override=bounded_config,
+                            retry=False,
+                        )
+                        split_metadata = dict(
+                            getattr(split_uncertainty_response, "metadata", {})
+                        )
+                        split_metadata["bounded_regex_retry"] = {
+                            "response_format": "structured_outputs.regex",
+                            "max_reasoning_length": 500,
+                            "previous_finish_reason": invalid_metadata.get(
+                                "finish_reason"
+                            ),
+                            "previous_usage": invalid_metadata.get("usage"),
+                        }
+                        uncertainty_score, uncertainty_reasoning = (
+                            parse_uncertainty_response_v7(
+                                split_uncertainty_response
+                            )
+                        )
                     metrics.uncertainty_calibration = uncertainty_score
                     metrics.reasoning["uncertainty_calibration"] = (
                         uncertainty_reasoning
                     )
-                    request_metadata["split_uncertainty_pass"] = dict(
-                        getattr(split_uncertainty_response, "metadata", {})
-                    )
+                    request_metadata["split_uncertainty_pass"] = split_metadata
                     return metrics
 
                 judge_response = await self._get_model_response(

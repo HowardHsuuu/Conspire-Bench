@@ -7,6 +7,7 @@ import unittest
 from bench_runner import ConspireBenchmarkRunner
 from experiment_conditions import stable_digest
 from judge_rubric import (
+    bounded_uncertainty_regex_v7,
     build_judge_prompt_v2,
     build_uncertainty_prompt_v7,
     parse_judge_response_v2,
@@ -153,6 +154,10 @@ class JudgeCalibrationTests(unittest.TestCase):
         self.assertIsNone(metrics.uncertainty_calibration)
         self.assertEqual(score, 5)
         self.assertIn("a, b, c, d", reasoning)
+        self.assertRegex(
+            '{"score":5,"reasoning":"Features present"}',
+            bounded_uncertainty_regex_v7(),
+        )
 
     def test_v7_runner_executes_two_passes_and_merges_scores(self):
         core_response = json.dumps(
