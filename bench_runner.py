@@ -362,6 +362,13 @@ class ConspireBenchmarkRunner:
                 return await operation()
             except Exception as e:
                 if attempt >= max_retries:
+                    if isinstance(e, TimeoutError) and not str(e).strip():
+                        timeout_detail = (
+                            f" after {float(timeout):g} seconds" if timeout else ""
+                        )
+                        raise TimeoutError(
+                            f"{operation_name} timed out{timeout_detail}"
+                        ) from e
                     raise
 
                 wait_seconds = retry_delay * attempt
@@ -1098,7 +1105,8 @@ class ConspireBenchmarkRunner:
                 )
             return result
         except Exception as e:
-            self.logger.error("Judge %s failed: %s", judge_name, e)
+            error_message = str(e).strip() or type(e).__name__
+            self.logger.error("Judge %s failed: %s", judge_name, error_message)
             return {
                 "judge_name": judge_name,
                 "judge_run_id": judge_run_id,
@@ -1115,7 +1123,7 @@ class ConspireBenchmarkRunner:
                 # diagnosis. It is still excluded from all score aggregation.
                 "raw_response": str(judge_response),
                 "response_metadata": request_metadata,
-                "error": str(e),
+                "error": error_message,
             }
 
     async def _evaluate_with_judges(
@@ -1614,24 +1622,35 @@ class ConspireBenchmarkRunner:
             pending.append(asyncio.create_task(evaluate_one(index, result)))
 
         completed = 0
-        for task in asyncio.as_completed(pending):
-            index, judge_result, elapsed = await task
-            result = all_results[index]
-            self._merge_judge_result(result, judge_result)
-            completed += 1
-            model_name_for_status = (
-                result.get("model_name") or result.get("target_model") or ""
-            )
-            self._write_status_row(
-                status_file,
-                result.get("scenario_id", ""),
-                model_name_for_status,
-                result.get("context_label"),
-                "judge_error" if judge_result.get("error") else "judge_ok",
-                elapsed,
-                judge_result.get("error"),
-            )
-            if save_intermediate and completed % save_intermediate_every == 0:
+        try:
+            for task in asyncio.as_completed(pending):
+                index, judge_result, elapsed = await task
+                result = all_results[index]
+                self._merge_judge_result(result, judge_result)
+                completed += 1
+                model_name_for_status = (
+                    result.get("model_name") or result.get("target_model") or ""
+                )
+                self._write_status_row(
+                    status_file,
+                    result.get("scenario_id", ""),
+                    model_name_for_status,
+                    result.get("context_label"),
+                    (
+                        "judge_error"
+                        if judge_result.get("error") is not None
+                        else "judge_ok"
+                    ),
+                    elapsed,
+                    judge_result.get("error"),
+                )
+                if save_intermediate and completed % save_intermediate_every == 0:
+                    self._save_results(all_results, f"temp_{output_file}")
+        finally:
+            # Always persist the tail of a stage. Without this final write, a
+            # 13,005-row run checkpointed every 500 rows loses its last five
+            # completed judgments if final validation rejects another row.
+            if save_intermediate:
                 self._save_results(all_results, f"temp_{output_file}")
 
     async def run_benchmark_phased(

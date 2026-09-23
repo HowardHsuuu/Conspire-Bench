@@ -223,7 +223,7 @@ def calibrated_complete(
         ]
         if (
             len(matches) != 1
-            or matches[0].get("error")
+            or matches[0].get("error") is not None
             or not matches[0].get("scores")
             or matches[0].get("judge_prompt_variant") != prompt_variant
         ):
@@ -408,7 +408,7 @@ def main() -> int:
         successful = {
             result.get("judge_name")
             for result in row.get("judge_results") or []
-            if not result.get("error")
+            if result.get("error") is None
             and result.get("scores")
             and result.get("judge_prompt_variant") == args.prompt_variant
         }

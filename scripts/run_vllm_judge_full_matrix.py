@@ -92,7 +92,7 @@ def validate_final_panel(
             for result in row.get("judge_results") or []
             if result.get("judge_name") in expected_names
             and result.get("judge_prompt_variant") == prompt_variant
-            and not result.get("error")
+            and result.get("error") is None
             and result.get("scores")
         ]
         if {result.get("judge_name") for result in matches} != expected_names:

@@ -25,6 +25,22 @@ def rows_from(payload: object) -> list[dict]:
     return rows
 
 
+def incomplete_result_reason(
+    result: dict, *, judge_run_id: str, prompt_variant: str
+) -> str | None:
+    """Return a precise reason when a calibrated judgment is incomplete."""
+
+    if result.get("error") is not None:
+        return str(result.get("error")).strip() or "judge error (empty message)"
+    if not result.get("scores"):
+        return "missing scores"
+    if result.get("judge_run_id") != judge_run_id:
+        return "judge_run_id mismatch"
+    if result.get("judge_prompt_variant") != prompt_variant:
+        return "judge_prompt_variant mismatch"
+    return None
+
+
 async def run(args: argparse.Namespace) -> None:
     payload = json.loads(args.input.read_text(encoding="utf-8"))
     source_rows = rows_from(payload)
@@ -78,15 +94,15 @@ async def run(args: argparse.Namespace) -> None:
                 f"Expected one {judge_name} result for {row.get('response_id')}"
             )
         result = matches[0]
-        if (
-            result.get("error")
-            or not result.get("scores")
-            or result.get("judge_run_id") != judge_run_id
-            or result.get("judge_prompt_variant") != prompt_variant
-        ):
+        incomplete_reason = incomplete_result_reason(
+            result,
+            judge_run_id=judge_run_id,
+            prompt_variant=prompt_variant,
+        )
+        if incomplete_reason is not None:
             raise RuntimeError(
                 f"Incomplete calibrated result for {row.get('response_id')}: "
-                f"{result.get('error') or 'metadata mismatch'}"
+                f"{incomplete_reason}"
             )
 
     source_metadata = payload.get("metadata") if isinstance(payload, dict) else {}
