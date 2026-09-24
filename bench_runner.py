@@ -1071,12 +1071,14 @@ class ConspireBenchmarkRunner:
                 and judge_config.get("inference_backend") == "openai_compatible"
                 and judge_timeout
             ):
-                # This one operation may contain the ordinary response, a
-                # JSON-object retry, a longer truncation retry, and one
-                # bounded-regex fallback. The original single-call timeout
-                # can cancel a healthy final request on slower local hardware.
+                # Budget in units of the ordinary max-token request: the
+                # initial response (1), JSON response (1), its possible 3x
+                # truncation retry (3), and bounded-regex fallback (1). Split
+                # epistemic variants may add two more bounded requests. The
+                # original single-call timeout can otherwise cancel a healthy
+                # final request on slower local hardware.
                 judge_timeout = float(judge_timeout) * (
-                    3 if judge_prompt_variant in SPLIT_EPISTEMIC_PROMPT_VARIANTS else 2
+                    8 if judge_prompt_variant in SPLIT_EPISTEMIC_PROMPT_VARIANTS else 6
                 )
             metrics = await self._with_retries(
                 request_and_parse,

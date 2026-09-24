@@ -1568,7 +1568,7 @@ class SmokeTests(unittest.TestCase):
         )
 
         self.assertIsNone(result["error"])
-        self.assertEqual(captured, [7200.0])
+        self.assertEqual(captured, [21600.0])
 
     def test_same_family_only_results_never_become_primary_scores(self):
         runner = make_runner_without_init()
