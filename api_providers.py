@@ -216,14 +216,20 @@ async def call_openai_compatible(
     response = await clients["openai_compatible"].chat.completions.create(**request)
     choice = response.choices[0]
     retry_metadata: dict[str, Any] | None = None
+    retry_on_truncation = bool(role_config.get("retry_on_truncation", True))
     retry_max_tokens = role_config.get("truncation_retry_max_tokens")
-    if retry_max_tokens is None and role_config.get("model_family") == "gpt_oss":
+    if (
+        retry_on_truncation
+        and retry_max_tokens is None
+        and role_config.get("model_family") == "gpt_oss"
+    ):
         retry_max_tokens = min(
             max_tokens * 2,
             int(role_config.get("max_seq_length", max_tokens * 2)),
         )
     if (
-        getattr(choice, "finish_reason", None) == "length"
+        retry_on_truncation
+        and getattr(choice, "finish_reason", None) == "length"
         and retry_max_tokens is not None
         and int(retry_max_tokens) > max_tokens
     ):

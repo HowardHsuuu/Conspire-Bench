@@ -237,6 +237,53 @@ class SmokeTests(unittest.TestCase):
             },
         )
 
+    def test_openai_compatible_can_disable_length_truncation_retry(self):
+        requests = []
+
+        class Message:
+            content = '{"truncated":'
+
+        class Choice:
+            message = Message()
+            finish_reason = "length"
+
+        class Response:
+            choices = [Choice()]
+            model = "openai/gpt-oss-120b"
+            id = "chatcmpl-truncated"
+            usage = {"completion_tokens": 4000}
+
+        class Completions:
+            async def create(self, **kwargs):
+                requests.append(kwargs)
+                return Response()
+
+        class Chat:
+            completions = Completions()
+
+        class Client:
+            chat = Chat()
+
+        response = asyncio.run(
+            call_openai_compatible(
+                {"openai_compatible": Client()},
+                "openai/gpt-oss-120b",
+                [{"role": "user", "content": "score this"}],
+                max_tokens=4000,
+                temperature=0.0,
+                role_config={
+                    "model_family": "gpt_oss",
+                    "max_seq_length": 32768,
+                    "retry_on_truncation": False,
+                },
+            )
+        )
+
+        self.assertEqual(str(response), '{"truncated":')
+        self.assertEqual(len(requests), 1)
+        self.assertEqual(response.metadata["finish_reason"], "length")
+        self.assertNotIn("truncation_retry", response.metadata)
+
     def test_openai_compatible_call_preserves_greedy_huggingface_sampling(self):
         captured = {}
 
@@ -1315,19 +1362,20 @@ class SmokeTests(unittest.TestCase):
         self.assertEqual(len(role_configs), 2)
         self.assertNotIn("response_format", role_configs[0])
         self.assertEqual(role_configs[1]["response_format"], "json_object")
-        self.assertEqual(role_configs[1]["truncation_retry_max_tokens"], 12000)
+        self.assertFalse(role_configs[1]["retry_on_truncation"])
+        self.assertNotIn("truncation_retry_max_tokens", role_configs[1])
         self.assertEqual(
             result["response_metadata"]["structured_output_retry"],
             {
                 "response_format": "json_object",
-                "truncation_retry_max_tokens": 12000,
+                "retry_on_truncation": False,
                 "initial_finish_reason": "stop",
                 "initial_response_id": "initial",
                 "initial_usage": {"completion_tokens": 20},
             },
         )
 
-    def test_openai_compatible_judge_bounds_truncated_json_retry(self):
+    def test_openai_compatible_judge_disables_runaway_json_retry(self):
         runner = make_runner_without_init()
         runner.config = {"evaluation": {"max_retries": 1}}
         role_configs = []
@@ -1378,12 +1426,11 @@ class SmokeTests(unittest.TestCase):
         result = evaluate()
         self.assertIsNone(result["error"])
         self.assertEqual(len(role_configs), 2)
-        # Only 3,768 tokens remain after this prompt; requesting more than
-        # the existing cap would exceed the model's context window.
+        self.assertFalse(role_configs[1]["retry_on_truncation"])
         self.assertNotIn("truncation_retry_max_tokens", role_configs[1])
-        self.assertIsNone(
+        self.assertFalse(
             result["response_metadata"]["structured_output_retry"][
-                "truncation_retry_max_tokens"
+                "retry_on_truncation"
             ]
         )
 
@@ -1391,12 +1438,12 @@ class SmokeTests(unittest.TestCase):
         prompt_length = 4_436
         result = evaluate()
         self.assertIsNone(result["error"])
-        self.assertEqual(role_configs[1]["truncation_retry_max_tokens"], 12_000)
-        self.assertEqual(
+        self.assertFalse(role_configs[1]["retry_on_truncation"])
+        self.assertNotIn("truncation_retry_max_tokens", role_configs[1])
+        self.assertFalse(
             result["response_metadata"]["structured_output_retry"][
-                "truncation_retry_max_tokens"
-            ],
-            12_000,
+                "retry_on_truncation"
+            ]
         )
 
     def test_openai_compatible_judge_recovers_runaway_json_reasoning(self):
@@ -1462,6 +1509,8 @@ class SmokeTests(unittest.TestCase):
         self.assertEqual(len(role_configs), 3)
         self.assertNotIn("response_format", role_configs[0])
         self.assertEqual(role_configs[1]["response_format"], "json_object")
+        self.assertFalse(role_configs[1]["retry_on_truncation"])
+        self.assertNotIn("truncation_retry_max_tokens", role_configs[1])
         self.assertEqual(role_configs[2]["response_format"], "rubric_v2_bounded_regex")
         output_regex = role_configs[2]["output_regex"]
         self.assertIn("response_appropriateness", output_regex)

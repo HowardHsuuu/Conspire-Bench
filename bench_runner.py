@@ -963,27 +963,12 @@ class ConspireBenchmarkRunner:
                     retry_config = {
                         **judge_config,
                         "response_format": "json_object",
+                        # A length-truncated JSON object is unlikely to become
+                        # schema-valid merely by tripling its runway. Return
+                        # that bounded response to the parser, then use the
+                        # existing regex-constrained fallback below.
+                        "retry_on_truncation": False,
                     }
-                    # A malformed first answer can finish normally, while its
-                    # JSON-constrained retry then reaches the token limit.
-                    # Permit one longer retry of that structured answer only,
-                    # bounded by both the context window and measured prompt
-                    # length. Successful first answers are unaffected.
-                    max_tokens = int(
-                        judge_config.get(
-                            "max_tokens", judge_config.get("max_new_tokens", 4000)
-                        )
-                    )
-                    initial_usage = initial_metadata.get("usage") or {}
-                    prompt_tokens = int(initial_usage.get("prompt_tokens") or 0)
-                    max_seq_length = int(judge_config.get("max_seq_length", 32768))
-                    retry_max_tokens = min(
-                        max_tokens * 3,
-                        max_seq_length - prompt_tokens,
-                        max_seq_length // 2,
-                    )
-                    if retry_max_tokens > max_tokens:
-                        retry_config["truncation_retry_max_tokens"] = retry_max_tokens
                     judge_response = await self._get_model_response(
                         judge_prompt,
                         judge_provider,
@@ -995,9 +980,7 @@ class ConspireBenchmarkRunner:
                     request_metadata = dict(getattr(judge_response, "metadata", {}))
                     request_metadata["structured_output_retry"] = {
                         "response_format": "json_object",
-                        "truncation_retry_max_tokens": retry_config.get(
-                            "truncation_retry_max_tokens"
-                        ),
+                        "retry_on_truncation": False,
                         "initial_finish_reason": initial_metadata.get("finish_reason"),
                         "initial_response_id": initial_metadata.get("response_id"),
                         "initial_usage": initial_metadata.get("usage"),
@@ -1041,9 +1024,7 @@ class ConspireBenchmarkRunner:
                         request_metadata = dict(getattr(judge_response, "metadata", {}))
                         request_metadata["structured_output_retry"] = {
                             "response_format": "json_object",
-                            "truncation_retry_max_tokens": retry_config.get(
-                                "truncation_retry_max_tokens"
-                            ),
+                            "retry_on_truncation": False,
                             "initial_finish_reason": initial_metadata.get(
                                 "finish_reason"
                             ),
@@ -1071,12 +1052,11 @@ class ConspireBenchmarkRunner:
                 and judge_config.get("inference_backend") == "openai_compatible"
                 and judge_timeout
             ):
-                # Budget in units of the ordinary max-token request: the
-                # initial response (1), JSON response (1), its possible 3x
-                # truncation retry (3), and bounded-regex fallback (1). Split
-                # epistemic variants may add two more bounded requests. The
-                # original single-call timeout can otherwise cancel a healthy
-                # final request on slower local hardware.
+                # Budget conservatively for initial, JSON, and bounded-regex
+                # requests plus queueing and structured-decoding overhead.
+                # Split epistemic variants may add two more bounded requests.
+                # The original single-call timeout can otherwise cancel a
+                # healthy final request on slower local hardware.
                 judge_timeout = float(judge_timeout) * (
                     8 if judge_prompt_variant in SPLIT_EPISTEMIC_PROMPT_VARIANTS else 6
                 )
