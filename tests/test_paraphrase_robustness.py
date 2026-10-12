@@ -6,9 +6,11 @@ import json
 import unittest
 from copy import deepcopy
 from pathlib import Path
+from unittest import mock
 
 from scripts.run_vllm_paraphrase_robustness import (
     FORMAL_PROMPT_VARIANT,
+    ensure_idle_gpu,
     validate_design,
     validate_final_panel,
     validate_generation_rows,
@@ -114,6 +116,11 @@ class ParaphraseRobustnessTests(unittest.TestCase):
                 self.config["judges"],
                 prompt_variant=FORMAL_PROMPT_VARIANT,
             )
+
+    def test_gb10_na_process_placeholder_is_treated_as_idle(self) -> None:
+        with mock.patch("scripts.run_vllm_paraphrase_robustness.subprocess.run") as run:
+            run.return_value.stdout = "[N/A], [N/A], [N/A]\n"
+            ensure_idle_gpu()
 
 
 if __name__ == "__main__":

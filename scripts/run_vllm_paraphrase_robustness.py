@@ -302,7 +302,11 @@ def ensure_idle_gpu() -> None:
         text=True,
         check=True,
     )
-    active = [line for line in completed.stdout.splitlines() if line.strip()]
+    active = [
+        line
+        for line in completed.stdout.splitlines()
+        if line.strip() and set(part.strip() for part in line.split(",")) != {"[N/A]"}
+    ]
     if active:
         raise RuntimeError(
             "GPU already has a compute process; refusing to overlap experiments"
