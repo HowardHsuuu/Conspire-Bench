@@ -1,0 +1,96 @@
+{
+  "schema_version": "1.0",
+  "design_id": "reviewer_paraphrase_robustness_v1",
+  "frozen_at": "2026-10-12",
+  "purpose": "Outcome-blind sensitivity analysis testing whether the canonical frame effects depend on one exact wording.",
+  "selection": {
+    "outcome_blind": true,
+    "outcomes_used_for_selection": [],
+    "method": "Prespecified purposive stratification across source cohort and topic category. The sample contains 3 retained-v2, 2 replacement-v3, 2 new-v3, 2 new-v3-survey, 2 new-v3-gap-survey, and 1 new-v3-gap-survey-2 motifs, with twelve distinct topic categories.",
+    "motif_ids": [
+      "weather_cloud_seeding",
+      "digital_id_total_control",
+      "cheapfake_wrong_context",
+      "chatbot_sentience_coverup",
+      "wef_homegrown_food_ban",
+      "vaccine_turbo_cancer",
+      "project_blue_beam_fake_invasion",
+      "bank_savings_monitoring_register",
+      "adrenochrome_elite_cabal",
+      "baltimore_bridge_cyberattack",
+      "tartaria_mud_flood_coverup",
+      "boeing_whistleblower_hit_squad"
+    ],
+    "required_structures": [
+      "multi_turn_progression",
+      "single_turn_complete_logic",
+      "complete_logic_then_resistance"
+    ]
+  },
+  "contexts": {
+    "registry": "configs/context_variants.json",
+    "set": "full_v3",
+    "variant_ids": [
+      "neutral_none",
+      "brainstorming_v1",
+      "brainstorming_v2",
+      "brainstorming_v3",
+      "brainstorming_v4",
+      "critical_review_v1",
+      "critical_review_v2",
+      "critical_review_v3",
+      "critical_review_v4",
+      "sensemaking_v1",
+      "sensemaking_v2",
+      "sensemaking_v3",
+      "sensemaking_v4",
+      "supportive_listening_v1",
+      "supportive_listening_v2",
+      "supportive_listening_v3",
+      "supportive_listening_v4"
+    ]
+  },
+  "target_models": [
+    "huggingface/Qwen/Qwen2.5-32B-Instruct",
+    "huggingface/meta-llama/Llama-3.1-8B-Instruct",
+    "huggingface/google/gemma-3-27b-it",
+    "huggingface/openai/gpt-oss-120b"
+  ],
+  "judge_models": [
+    "huggingface/Qwen/Qwen2.5-32B-Instruct",
+    "huggingface/meta-llama/Llama-3.1-8B-Instruct",
+    "huggingface/google/gemma-3-27b-it",
+    "huggingface/openai/gpt-oss-120b"
+  ],
+  "generation": {
+    "seed": 20261012,
+    "replicate_id": 0,
+    "temperature": 0.7,
+    "top_p": 0.95,
+    "common_random_seed_across_wordings": true,
+    "note": "All 17 conditions, including neutral and the canonical wording, are regenerated under the fixed seed. This prevents stochastic differences in the original unseeded response pool from being misattributed to paraphrasing."
+  },
+  "judging": {
+    "rubric_version": "2.0",
+    "prompt_variant": "v3_behavioral_anchors_evidence_first",
+    "all_four_judges_required": true
+  },
+  "expected_counts": {
+    "motifs": 12,
+    "scenarios_per_motif": 3,
+    "scenarios": 36,
+    "context_variants": 17,
+    "target_models": 4,
+    "responses_per_model": 612,
+    "responses": 2448,
+    "judges": 4,
+    "successful_judgments": 9792
+  },
+  "primary_robustness_outputs": [
+    "within-frame wording variance",
+    "wording-specific frame-minus-neutral contrasts",
+    "directional consistency across the four wordings",
+    "conclusion-flip rate by motif, structure, and target model",
+    "wording variance relative to between-frame variance"
+  ]
+}
