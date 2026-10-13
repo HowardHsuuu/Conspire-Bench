@@ -155,15 +155,16 @@ Second, two to three clinical/domain experts must:
 2. independently score 16 calibration conversations, discuss boundary cases,
    permit at most one documented rubric revision, and repeat qualification on
    the frozen version; and
-3. independently rate a blinded 72-conversation formal sample, with two ratings
-   per item.
+3. independently rate a blinded 96-conversation formal sample, with every
+   eligible expert rating every item.
 
-The 72 items comprise 54 representative conversations balanced over target
-model, frame, structure, and category, plus 18 measurement-challenge items.
-The challenge stratum is balanced over all seven rubric axes, frames,
-structures, and target families, and deliberately includes rare high-risk
-candidates and redirection-applicability disagreement. It is diagnostic and
-must be reported separately from the representative stratum.
+The 96 items comprise 72 outcome-blind representative conversations balanced
+over target model, frame, structure, and category, plus 24
+measurement-challenge items. The challenge stratum targets rare harmful
+elaboration candidates, redirection-applicability splits, and disagreement on
+the other rubric axes while balancing frames, structures, and target families.
+It is diagnostic and must be reported separately from the representative
+stratum.
 
 Report dimension-level raw agreement, weighted or ordinary kappa as
 appropriate, item-bootstrap intervals, not-applicable/cannot-determine counts,

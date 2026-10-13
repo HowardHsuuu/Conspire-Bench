@@ -31,8 +31,8 @@ def validate_human_annotation_plan(
     plan: dict[str, Any], *, require_frozen: bool = False
 ) -> list[str]:
     errors: list[str] = []
-    if plan.get("schema_version") not in {"1.0", "1.1"}:
-        errors.append("schema_version must be 1.0 or 1.1")
+    if plan.get("schema_version") not in {"1.0", "1.1", "1.2"}:
+        errors.append("schema_version must be 1.0, 1.1, or 1.2")
     if not str(plan.get("plan_version") or "").strip():
         errors.append("plan_version is required")
     if plan.get("status") not in {
@@ -95,16 +95,61 @@ def validate_human_annotation_plan(
         errors.append(
             "expert total_item_count must equal representative plus enriched counts"
         )
-    if ratings != 2:
-        errors.append("expert formal ratings_per_item must be 2")
-    if (
-        isinstance(total, int)
-        and isinstance(ratings, int)
-        and assignments != total * ratings
-    ):
-        errors.append("expert planned_assignment_count arithmetic does not match")
+    if plan.get("status") == "frozen":
+        if ratings not in {2, 3}:
+            errors.append("frozen expert formal ratings_per_item must be 2 or 3")
+        if (
+            isinstance(total, int)
+            and isinstance(ratings, int)
+            and assignments != total * ratings
+        ):
+            errors.append("expert planned_assignment_count arithmetic does not match")
+    elif ratings == "all_eligible_experts":
+        minimum_assignments = formal.get("planned_assignment_count_min")
+        maximum_assignments = formal.get("planned_assignment_count_max")
+        if isinstance(total, int) and (
+            minimum_assignments != total * 2 or maximum_assignments != total * 3
+        ):
+            errors.append(
+                "draft expert assignment range must match all eligible experts"
+            )
+        if assignments is not None:
+            errors.append(
+                "draft all-expert plan must defer planned_assignment_count until freeze"
+            )
+    elif ratings == 2:
+        # Legacy fixed two-rater plans remain readable and freezeable.
+        if isinstance(total, int) and assignments != total * ratings:
+            errors.append("expert planned_assignment_count arithmetic does not match")
+    else:
+        errors.append(
+            "draft expert formal ratings_per_item must be 2 or all_eligible_experts"
+        )
     if not str(formal.get("adjudication_policy") or "").strip():
         errors.append("expert adjudication_policy is required")
+    challenge_targets = formal.get("challenge_target_counts")
+    if challenge_targets is not None:
+        expected_challenge_groups = {
+            "harmful_elaboration_candidate",
+            "redirection_applicability_split",
+            "other_rubric_disagreement",
+        }
+        if (
+            not isinstance(challenge_targets, dict)
+            or set(challenge_targets) != expected_challenge_groups
+        ):
+            errors.append("expert challenge_target_counts has unexpected groups")
+        elif any(
+            not isinstance(value, int) or isinstance(value, bool) or value < 0
+            for value in challenge_targets.values()
+        ):
+            errors.append(
+                "expert challenge_target_counts must be non-negative integers"
+            )
+        elif isinstance(enriched, int) and sum(challenge_targets.values()) != enriched:
+            errors.append(
+                "expert challenge_target_counts must sum to the enriched count"
+            )
 
     students = plan.get("student_panel") or {}
     student_enabled = students.get("enabled", True) is True
@@ -212,6 +257,11 @@ def validate_human_annotation_plan(
                 errors.append(f"freeze_record.{field} must be a positive number")
         if freeze.get("workload_feasibility_confirmed") is not True:
             errors.append("workload feasibility must be confirmed before freeze")
+        frozen_expert_count = freeze.get("eligible_expert_count_at_freeze")
+        if plan.get("schema_version") == "1.2" and frozen_expert_count != ratings:
+            errors.append(
+                "freeze_record eligible expert count must match formal ratings_per_item"
+            )
         if not str(freeze.get("change_summary") or "").strip():
             errors.append("freeze_record.change_summary is required")
     return errors

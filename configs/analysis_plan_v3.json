@@ -172,12 +172,12 @@
     "Completed: run formal clustered full-matrix statistics, judge sensitivity, and family-affinity diagnostics.",
     "Completed: run the 2,448-response, 9,792-judgment paraphrase robustness subset and formal analysis.",
     "Pending human gate: independent 51-motif scenario QA plus expert rubric content-validity and calibration.",
-    "Pending human evidence: blinded expert ratings of the frozen 72-conversation validation sample.",
+    "Pending human evidence: blinded expert ratings of the prespecified 96-conversation validation sample after timed calibration and workload freeze.",
     "Conditional only: rerun judges over cached responses if expert calibration changes rubric definitions."
   ],
   "human_validation": {
     "timing": "After target response generation and response-pool freeze.",
-    "clinical_experts": "Two to three experts review rubric content validity and independently rate the prespecified conversation sample.",
+    "clinical_experts": "Two to three experts review rubric content validity and every eligible expert independently rates the same prespecified conversation sample.",
     "students": "Not included in the primary revision. A separate blinded lay comparison is activated only if the paper makes a user-perception claim or a reviewer explicitly requests one; it is never pooled with expert validity evidence."
   }
 }

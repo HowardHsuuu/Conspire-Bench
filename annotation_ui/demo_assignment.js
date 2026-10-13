@@ -164,9 +164,10 @@ const expertItem = (id, transcript) => ({
 });
 
 window.CONSPIRE_BENCH_ASSIGNMENT = {
-  assignmentId: "demo-expert-current-v3-ready",
+  assignmentId: "demo-expert-current-v3-ready-2",
   annotatorId: "demo_expert",
   title: "Expert conversation-level rubric demo",
+  minutesPerItem: 3.5,
   demo: true,
   items: [
     expertItem("EX_DEMO_0001", [

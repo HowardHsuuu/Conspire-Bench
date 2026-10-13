@@ -462,7 +462,11 @@ def measurement_challenge_priority(row: dict[str, Any], metric: str) -> float:
 
 
 def select_measurement_challenge_rows(
-    rows: list[dict[str, Any]], *, count: int, rng: random.Random
+    rows: list[dict[str, Any]],
+    *,
+    count: int,
+    rng: random.Random,
+    target_counts: dict[str, int] | None = None,
 ) -> list[dict[str, Any]]:
     """Select a diagnostic stratum balanced across rubric axes and design factors."""
 
@@ -487,21 +491,101 @@ def select_measurement_challenge_rows(
     structure_counts: dict[str, int] = defaultdict(int)
     family_counts: dict[str, int] = defaultdict(int)
     model_counts: dict[str, int] = defaultdict(int)
+    group_targets = target_counts or {}
+    expected_groups = {
+        "harmful_elaboration_candidate",
+        "redirection_applicability_split",
+        "other_rubric_disagreement",
+    }
+    if group_targets:
+        if set(group_targets) != expected_groups:
+            raise ValueError(
+                "measurement challenge targets must define harmful, redirection, "
+                "and other-disagreement groups"
+            )
+        if any(
+            not isinstance(value, int) or value < 0 for value in group_targets.values()
+        ):
+            raise ValueError(
+                "measurement challenge target counts must be non-negative integers"
+            )
+        if sum(group_targets.values()) != count:
+            raise ValueError("measurement challenge target counts must sum to count")
+
+    group_counts: dict[str, int] = defaultdict(int)
+    other_axes = [
+        axis
+        for axis in axes
+        if axis not in {"harmful_elaboration", "appropriate_redirection"}
+    ]
+
     while len(selected) < min(count, len(rows)):
-        available_axes = [
-            axis
-            for axis in axes
-            if any(response_id(row) not in selected_ids for row in candidates[axis])
-        ]
+        challenge_group = None
+        if group_targets:
+            available_groups = [
+                group
+                for group, target in group_targets.items()
+                if group_counts[group] < target
+            ]
+            if not available_groups:
+                break
+            challenge_group = min(
+                available_groups,
+                key=lambda group: (
+                    group_counts[group] / max(group_targets[group], 1),
+                    group,
+                ),
+            )
+            if challenge_group == "harmful_elaboration_candidate":
+                available_axes = ["harmful_elaboration"]
+            elif challenge_group == "redirection_applicability_split":
+                available_axes = ["appropriate_redirection"]
+            else:
+                available_axes = [
+                    axis
+                    for axis in other_axes
+                    if any(
+                        response_id(row) not in selected_ids for row in candidates[axis]
+                    )
+                ]
+        else:
+            available_axes = [
+                axis
+                for axis in axes
+                if any(response_id(row) not in selected_ids for row in candidates[axis])
+            ]
         if not available_axes:
             break
         axis = min(available_axes, key=lambda value: (axis_counts[value], value))
         available = [
             row for row in candidates[axis] if response_id(row) not in selected_ids
         ]
+
+        def group_candidate_penalty(
+            candidate: dict[str, Any], group: str | None = challenge_group
+        ) -> int:
+            if group == "harmful_elaboration_candidate":
+                return (
+                    0
+                    if any(
+                        bool(value)
+                        for value in _judge_metric_values(
+                            candidate, "harmful_elaboration"
+                        )
+                        if value is not None
+                    )
+                    else 1
+                )
+            if group == "redirection_applicability_split":
+                values = _judge_metric_values(candidate, "appropriate_redirection")
+                split = 0 < sum(value is not None for value in values) < len(values)
+                return 0 if split else 1
+            return 0
+
         row = min(
             available,
             key=lambda candidate: (
+                group_candidate_penalty(candidate),
                 frame_counts[frame_family(candidate)],
                 structure_counts[str(candidate.get("scenario_type") or "unknown_type")],
                 family_counts[target_model_family(candidate)],
@@ -512,6 +596,7 @@ def select_measurement_challenge_rows(
         )
         annotated = dict(row)
         annotated["_expert_challenge_axis"] = axis
+        annotated["_expert_challenge_group"] = challenge_group or "axis_balanced"
         annotated["_expert_challenge_priority"] = measurement_challenge_priority(
             row, axis
         )
@@ -538,6 +623,8 @@ def select_measurement_challenge_rows(
         selected.append(annotated)
         selected_ids.add(response_id(row))
         axis_counts[axis] += 1
+        if challenge_group:
+            group_counts[challenge_group] += 1
         frame_counts[frame_family(row)] += 1
         structure_counts[str(row.get("scenario_type") or "unknown_type")] += 1
         family_counts[target_model_family(row)] += 1
@@ -618,6 +705,7 @@ def select_expert_rows(
     representative_count: int,
     disagreement_count: int,
     seed: int,
+    challenge_target_counts: dict[str, int] | None = None,
 ) -> tuple[list[tuple[dict[str, Any], str]], dict[str, int]]:
     rng = random.Random(seed)
     grouped: dict[tuple[str, ...], list[dict[str, Any]]] = defaultdict(list)
@@ -635,7 +723,10 @@ def select_expert_rows(
     representative_ids = {response_id(row) for row in representative}
     remaining = [row for row in rows if response_id(row) not in representative_ids]
     enriched = select_measurement_challenge_rows(
-        remaining, count=disagreement_count, rng=rng
+        remaining,
+        count=disagreement_count,
+        rng=rng,
+        target_counts=challenge_target_counts,
     )
     selected = [(row, "representative") for row in representative]
     selected.extend((row, "measurement_challenge_enriched") for row in enriched)
@@ -695,6 +786,7 @@ def build_expert_items(
                 "response_id": rid,
                 "scenario_id": row.get("scenario_id"),
                 "model_name": model_name(row),
+                "target_model_family": target_model_family(row),
                 "frame_family": frame_family(row),
                 "prompt_variant_id": row.get("prompt_variant_id")
                 or row.get("context_label"),
@@ -703,6 +795,7 @@ def build_expert_items(
                 "condition_id": row.get("condition_id"),
                 "max_judge_disagreement": max_judge_disagreement(row),
                 "measurement_challenge_axis": row.get("_expert_challenge_axis"),
+                "measurement_challenge_group": row.get("_expert_challenge_group"),
                 "measurement_challenge_priority": row.get("_expert_challenge_priority"),
                 "measurement_challenge_rare_behavior": row.get(
                     "_expert_challenge_rare_behavior"
@@ -716,6 +809,39 @@ def build_expert_items(
             }
         )
     return public_items, private_keys
+
+
+def expert_sample_diagnostics(
+    selected: list[tuple[dict[str, Any], str]],
+) -> dict[str, Any]:
+    """Record auditable factor coverage without exposing blinded row identities."""
+
+    diagnostics: dict[str, Any] = {}
+    roles = ["all", *sorted({role for _, role in selected})]
+    for role in roles:
+        rows = [
+            row for row, item_role in selected if role == "all" or item_role == role
+        ]
+        diagnostics[role] = {
+            "item_count": len(rows),
+            "frame_family": dict(
+                sorted(Counter(frame_family(row) for row in rows).items())
+            ),
+            "interaction_structure": dict(
+                sorted(
+                    Counter(
+                        str(row.get("scenario_type") or "unknown_type") for row in rows
+                    ).items()
+                )
+            ),
+            "target_model_family": dict(
+                sorted(Counter(target_model_family(row) for row in rows).items())
+            ),
+            "target_model": dict(
+                sorted(Counter(model_name(row) for row in rows).items())
+            ),
+        }
+    return diagnostics
 
 
 def pair_candidates(
@@ -999,6 +1125,9 @@ def export_annotation_package(
         representative_count=representative_count,
         disagreement_count=disagreement_count,
         seed=seed,
+        challenge_target_counts=(
+            formal_sample.get("challenge_target_counts") if annotation_plan else None
+        ),
     )
     expert_items, expert_keys = build_expert_items(selected)
     candidates = pair_candidates(rows)
@@ -1073,12 +1202,22 @@ def export_annotation_package(
         "usable_response_count": len(rows),
         "expert_item_count": len(expert_items),
         "expert_sample_roles": sample_counts,
+        "expert_sample_diagnostics": expert_sample_diagnostics(selected),
         "expert_measurement_challenge_axes": dict(
             sorted(
                 Counter(
                     key["measurement_challenge_axis"]
                     for key in expert_keys
                     if key.get("measurement_challenge_axis")
+                ).items()
+            )
+        ),
+        "expert_measurement_challenge_groups": dict(
+            sorted(
+                Counter(
+                    key["measurement_challenge_group"]
+                    for key in expert_keys
+                    if key.get("measurement_challenge_group")
                 ).items()
             )
         ),

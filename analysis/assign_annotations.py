@@ -404,7 +404,11 @@ def main() -> int:
     parser.add_argument("--student-items", type=Path)
     parser.add_argument("--expert-ids", nargs="*", default=[])
     parser.add_argument("--student-ids", nargs="*", default=[])
-    parser.add_argument("--expert-ratings-per-item", type=int, default=2)
+    parser.add_argument(
+        "--expert-ratings-per-item",
+        type=int,
+        help="Defaults to every calibration expert or the frozen formal-plan value.",
+    )
     parser.add_argument("--student-ratings-per-item", type=int, default=3)
     parser.add_argument("--seed", type=int, default=20260831)
     parser.add_argument(
@@ -429,13 +433,23 @@ def main() -> int:
         if annotation_plan and args.seed == 20260831
         else args.seed
     )
+    if args.expert_ratings_per_item is not None:
+        expert_ratings_per_item = args.expert_ratings_per_item
+    elif args.release_mode == "calibration":
+        expert_ratings_per_item = len(args.expert_ids)
+    elif args.release_mode == "formal" and annotation_plan:
+        expert_ratings_per_item = annotation_plan["expert_panel"]["formal_sample"][
+            "ratings_per_item"
+        ]
+    else:
+        expert_ratings_per_item = 2
     for path in assign_package(
         expert_path=args.expert_items,
         student_path=args.student_items,
         output_dir=args.out_dir,
         expert_ids=args.expert_ids,
         student_ids=args.student_ids,
-        expert_ratings_per_item=args.expert_ratings_per_item,
+        expert_ratings_per_item=expert_ratings_per_item,
         student_ratings_per_item=args.student_ratings_per_item,
         seed=assignment_seed,
         release_mode=args.release_mode,

@@ -40,6 +40,7 @@ PUBLIC_MARKDOWN = {
     "docs/annotation.md",
     "docs/dataset.md",
     "docs/evaluation.md",
+    "docs/results.md",
     "docs/rubric.md",
 }
 
@@ -93,7 +94,7 @@ class V3MotifPipelineTest(unittest.TestCase):
         self.assertEqual(
             report["release_state"], "code_ready_pending_external_evidence"
         )
-        self.assertTrue(report["pending_live_evidence"])
+        self.assertTrue(report["pending_automated_or_manuscript_work"])
         self.assertTrue(report["pending_human_evidence"])
         self.assertEqual(report["unresolved_code_or_design_issues"], [])
         coverage = report["reviewer_revision_coverage"]

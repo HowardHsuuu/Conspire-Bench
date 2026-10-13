@@ -134,6 +134,7 @@ class FormalAnnotationWorkflowTests(unittest.TestCase):
                 (bundle_dir / "bundle_manifest.json").read_text(encoding="utf-8")
             )
             self.assertEqual(manifest["item_count"], 1)
+            self.assertEqual(manifest["planned_minutes_per_item"], 3.5)
             self.assertFalse(manifest["contains_private_key"])
 
     def test_human_judge_validity_reports_redirection_applicability_separately(self):
@@ -189,6 +190,61 @@ class FormalAnnotationWorkflowTests(unittest.TestCase):
             },
         )
 
+    def test_human_judge_validity_keeps_per_expert_results_when_consensus_is_tied(self):
+        base = {
+            "annotation_item_id": "expert_item_001",
+            "response_id": "response_001",
+            "sample_role": "representative",
+        }
+        expert_rows = [
+            {
+                **base,
+                "annotator_id": "expert_01",
+                "annotation": {
+                    "cannot_determine": False,
+                    "belief_amplification": 2,
+                    "harmful_elaboration": False,
+                },
+            },
+            {
+                **base,
+                "annotator_id": "expert_02",
+                "annotation": {
+                    "cannot_determine": False,
+                    "belief_amplification": 3,
+                    "harmful_elaboration": True,
+                },
+            },
+        ]
+        judge_scores = {
+            "response_001": {
+                "primary_cross_family_aggregate": {
+                    "belief_amplification": 2,
+                    "harmful_elaboration": False,
+                }
+            }
+        }
+
+        report = human_judge_validity(
+            expert_rows,
+            judge_scores,
+            bootstrap_iterations=20,
+        )
+
+        self.assertNotIn("primary_cross_family_aggregate", report["all"])
+        self.assertEqual(
+            report["by_annotator"]["expert_01"]["all"][
+                "primary_cross_family_aggregate"
+            ]["belief_amplification"]["n_items"],
+            1,
+        )
+        self.assertEqual(
+            report["by_annotator"]["expert_02"]["all"][
+                "primary_cross_family_aggregate"
+            ]["harmful_elaboration"]["n_items"],
+            1,
+        )
+
     def test_expert_only_plan_and_measurement_challenge_sampling(self):
         plan = json.loads(
             (ROOT / "configs" / "human_annotation_plan_v3.json").read_text(
@@ -201,29 +257,47 @@ class FormalAnnotationWorkflowTests(unittest.TestCase):
             approved_by=["pi_fixture"],
             expert_minutes_median=3.5,
             student_minutes_median=None,
+            eligible_expert_count=3,
             change_summary="No count changes in expert-only fixture.",
             frozen_at="2026-10-14T00:00:00Z",
         )
         self.assertEqual(
             validate_human_annotation_plan(frozen, require_frozen=True), []
         )
+        self.assertEqual(frozen["expert_panel"]["formal_sample"]["ratings_per_item"], 3)
+        self.assertEqual(
+            frozen["expert_panel"]["formal_sample"]["planned_assignment_count"],
+            288,
+        )
 
         rows = synthetic_results()["detailed_results"]
         selected, roles = select_expert_rows(
             rows,
-            representative_count=54,
-            disagreement_count=18,
+            representative_count=72,
+            disagreement_count=24,
             seed=24,
+            challenge_target_counts=plan["expert_panel"]["formal_sample"][
+                "challenge_target_counts"
+            ],
         )
         self.assertEqual(
             roles,
-            {"representative": 54, "measurement_challenge_enriched": 18},
+            {"representative": 72, "measurement_challenge_enriched": 24},
         )
         challenge = [
             row for row, role in selected if role == "measurement_challenge_enriched"
         ]
         axes = Counter(row["_expert_challenge_axis"] for row in challenge)
-        self.assertEqual(sum(axes.values()), 18)
+        groups = Counter(row["_expert_challenge_group"] for row in challenge)
+        self.assertEqual(sum(axes.values()), 24)
+        self.assertEqual(
+            groups,
+            {
+                "harmful_elaboration_candidate": 8,
+                "redirection_applicability_split": 8,
+                "other_rubric_disagreement": 8,
+            },
+        )
         self.assertEqual(
             set(axes),
             {
@@ -236,7 +310,21 @@ class FormalAnnotationWorkflowTests(unittest.TestCase):
                 "response_appropriateness",
             },
         )
-        self.assertLessEqual(max(axes.values()) - min(axes.values()), 1)
+        self.assertEqual(axes["harmful_elaboration"], 8)
+        self.assertEqual(axes["appropriate_redirection"], 8)
+        self.assertLessEqual(
+            max(
+                axes[axis]
+                for axis in set(axes)
+                - {"harmful_elaboration", "appropriate_redirection"}
+            )
+            - min(
+                axes[axis]
+                for axis in set(axes)
+                - {"harmful_elaboration", "appropriate_redirection"}
+            ),
+            1,
+        )
         self.assertEqual(len({row["response_id"] for row in challenge}), len(challenge))
 
     def _artifacts(
@@ -313,6 +401,20 @@ class FormalAnnotationWorkflowTests(unittest.TestCase):
                 manifest["expert_sample_roles"],
                 {"representative": 54, "measurement_challenge_enriched": 18},
             )
+            self.assertEqual(
+                manifest["expert_sample_diagnostics"]["all"]["item_count"], 72
+            )
+            self.assertEqual(
+                sum(
+                    manifest["expert_sample_diagnostics"]["all"][
+                        "interaction_structure"
+                    ].values()
+                ),
+                72,
+            )
+            self.assertEqual(
+                sum(manifest["expert_measurement_challenge_groups"].values()), 18
+            )
             self.assertEqual(manifest["student_pair_item_count"], 108)
             self.assertEqual(manifest["annotation_plan_digest"], plan_digest)
 
@@ -334,6 +436,14 @@ class FormalAnnotationWorkflowTests(unittest.TestCase):
             self.assertEqual(
                 expert_roles,
                 {"representative": 54, "measurement_challenge_enriched": 18},
+            )
+            self.assertEqual(
+                {
+                    row["target_model_family"]
+                    for row in keys
+                    if row["item_type"] == "expert_conversation"
+                },
+                {"unknown_family"},
             )
 
             roster_csv = directory / "roster.csv"

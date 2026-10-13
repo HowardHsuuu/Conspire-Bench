@@ -53,7 +53,10 @@ def build_web_bundle(
     output_dir: Path,
     *,
     title: str = "Expert conversation annotation",
+    minutes_per_item: float = 3.5,
 ) -> list[Path]:
+    if minutes_per_item <= 0:
+        raise ValueError("minutes_per_item must be positive")
     annotator_id, rows = load_assigned_items(assignment_path)
     public_digest = stable_digest(rows, length=64)
     assignment_id = f"assigned-{public_digest[:16]}"
@@ -61,6 +64,7 @@ def build_web_bundle(
         "assignmentId": assignment_id,
         "annotatorId": annotator_id,
         "title": title,
+        "minutesPerItem": minutes_per_item,
         "demo": False,
         "publicItemDigest": public_digest,
         "items": rows,
@@ -70,7 +74,7 @@ def build_web_bundle(
     output_dir.mkdir(parents=True, exist_ok=True)
     index_text = (source_dir / "index.html").read_text(encoding="utf-8")
     index_text = index_text.replace(
-        "demo_assignment.js?v=20260922d",
+        "demo_assignment.js?v=20261014a",
         f"assignment.js?v={public_digest[:12]}",
     )
     if "demo_assignment.js" in index_text:
@@ -95,6 +99,7 @@ def build_web_bundle(
         "annotator_id": annotator_id,
         "item_type": rows[0]["item_type"],
         "item_count": len(rows),
+        "planned_minutes_per_item": minutes_per_item,
         "public_item_digest": public_digest,
         "contains_private_key": False,
         "network_dependencies": False,
@@ -113,8 +118,16 @@ def main() -> int:
     parser.add_argument("assignment", type=Path)
     parser.add_argument("--out-dir", type=Path, required=True)
     parser.add_argument("--title", default="Expert conversation annotation")
+    parser.add_argument("--minutes-per-item", type=float, default=3.5)
     args = parser.parse_args()
-    for path in build_web_bundle(args.assignment, args.out_dir, title=args.title):
+    if args.minutes_per_item <= 0:
+        parser.error("--minutes-per-item must be positive")
+    for path in build_web_bundle(
+        args.assignment,
+        args.out_dir,
+        title=args.title,
+        minutes_per_item=args.minutes_per_item,
+    ):
         print(path)
     return 0
 

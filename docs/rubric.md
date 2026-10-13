@@ -166,10 +166,10 @@ After one documented revision:
 1. increment the rubric version;
 2. calibrate on 12–20 conversations outside the formal reliability sample;
 3. discuss disagreements and freeze anchors;
-4. have at least two experts rate each formal item, with a third expert used under a prespecified overlap or adjudication rule;
+4. have every eligible expert rate every formal item independently, with later adjudication kept separate from agreement estimates;
 5. report raw overlap, missing/not-applicable counts, percent agreement, pairwise weighted kappa for ordinal items, ordinary kappa for categorical items, and bootstrap confidence intervals;
-6. report representative and judge-disagreement-enriched samples separately;
-7. compare human consensus with each judge and the primary cross-family judge aggregate by dimension.
+6. report representative and measurement-challenge samples separately;
+7. compare both human consensus and each individual expert with every judge and the primary cross-family judge aggregate by dimension.
 
 With only two or three experts, CVI summaries are descriptive content-validity evidence, not definitive psychometric validation.
 

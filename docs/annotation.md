@@ -19,13 +19,14 @@ Formal annotation starts only after accepted scenario QA and target generation a
 `configs/human_annotation_plan_v3.json` is the authoritative pre-outcome plan. The current initial-validation design is:
 
 - 16 expert calibration conversations, independently rated by every eligible expert;
-- 72 formal expert conversations: 54 deterministic balanced representative items across target model, frame, scenario type, and topic category, plus 18 non-overlapping measurement-challenge items balanced across all seven rubric axes, frames, structures, and target families;
-- two independent expert ratings per formal conversation, for 144 planned expert assignments (72 each with two experts, or 48 each with three experts);
+- 96 formal expert conversations: 72 deterministic, outcome-blind representative items balanced across target model, frame, scenario type, and topic category, plus 24 non-overlapping measurement-challenge items;
+- all eligible experts independently rate every formal conversation, for 192 assignments with two experts or 288 with three experts and complete 96-item overlap for every expert pair;
+- the diagnostic challenge stratum targets eight harmful-elaboration candidates, eight redirection-applicability splits, and eight high-disagreement cases spread over the other rubric axes while balancing frames, structures, and target families;
 - no student assignments in the primary revision.
 
-This is a deliberately bounded initial content-validity/agreement study, not a powered clinical-effectiveness study. Representative and measurement-challenge expert results must be reported separately. A third expert may adjudicate unresolved items only after the independent reliability data are locked; adjudication must not replace the original ratings in agreement estimates.
+This is a deliberately bounded initial content-validity/agreement study, not a powered clinical-effectiveness study. Representative and measurement-challenge expert results must be reported separately. Every available expert first rates the same items independently. If only two experts are available, a third qualified expert may adjudicate unresolved items only after the independent reliability data are locked; adjudication must not replace the original ratings in agreement estimates. Human-versus-judge results are also reported per expert so that unresolved consensus items do not disappear without an explicit missingness count.
 
-The 72-item expert sample is a feasibility/coverage compromise for a two-to-three-person clinical/domain panel. As orientation rather than a power guarantee, a simple agreement proportion over 72 independent items has a worst-case normal-approximation 95% half-width of about 11.5 percentage points; the actual analysis uses item bootstrap intervals, and the 18-item challenge stratum remains explicitly descriptive. The design therefore supports an initial validation claim, not definitive psychometric or clinical validation.
+The 96-item expert sample is a feasibility/coverage compromise for a two-to-three-person clinical/domain panel. The 72-item representative stratum has a worst-case Wilson 95% half-width of about 11.3 percentage points for a simple agreement proportion, compared with about 12.9 points under the previous 54-item representative design. The actual analysis uses item-bootstrap intervals, and the 24-item challenge stratum remains explicitly descriptive. At the planning value of 3.5 minutes per conversation, formal rating takes about 5.6 hours per expert, excluding breaks and calibration. If the timed calibration median exceeds 4.5 minutes, feasibility must be reconsidered before the plan is frozen and before any formal outcomes are inspected. The design supports an initial validation claim, not definitive psychometric, clinical, per-model, or downstream-outcome validation.
 
 Time the expert calibration and annotation UI before the final freeze. Counts may change only for documented content-validity, feasibility, roster, ethics, compensation, or annotator-welfare reasons, before formal outcomes are unblinded or formal ratings collected. Increment `plan_version` if the design changes.
 
@@ -55,7 +56,7 @@ Important distinction: “That sounds frightening” can validate emotion withou
 2. Experts annotate independently, then discuss disagreements and ambiguous definitions.
 3. Revise the rubric once, increment `RUBRIC_VERSION`, and rerun a second calibration set.
 4. Freeze the rubric before formal annotation. Do not silently revise definitions mid-study.
-5. Each formal item receives at least two expert ratings; use a third expert for prespecified adjudication or a random overlap subset.
+5. Every eligible expert independently rates every formal item. If only two experts complete the study, preserve their original ratings and use a separately identified third-expert adjudication only for unresolved consensus analyses.
 
 After calibration discussion, copy and complete `annotation/rubric_freeze_decision_template.private.json`. The V3 analysis plan cannot pass `scripts/validate_analysis_plan_v3.py --require-frozen` until it points to the content-validity report, calibration exclusion manifest, completed calibration decision record, approved V3 scenario-review ledger, and frozen workload plan with matching digests. This prevents a draft rubric or stale scenario catalog from being silently treated as frozen.
 
@@ -64,6 +65,7 @@ After the timed calibration/UI pilot, freeze the workload plan. Record `No count
 ```bash
 python3 analysis/freeze_human_annotation_plan.py \
   --approved-by pi_01 \
+  --eligible-expert-count 3 \
   --expert-minutes-median 3.5 \
   --change-summary "No count changes after timed pilot." \
   --output configs/human_annotation_plan_v3.frozen.json
@@ -86,7 +88,7 @@ python3 scripts/validate_analysis_plan_v3.py \
   configs/analysis_plan_v3.frozen.json --require-frozen
 ```
 
-Do not distribute one unrestricted master file and reconstruct coverage afterward. Freeze a deterministic assignment ledger before collection. With three available experts, the default assignment gives every conversation to exactly two experts while rotating pairs to balance workload and create genuine overlap among all three. If only two experts are available, both rate every selected conversation.
+Do not distribute one unrestricted master file and reconstruct coverage afterward. Freeze a deterministic assignment ledger before collection. Every eligible expert receives the same item set in an independently randomized order, which preserves complete overlap for every expert pair. The frozen plan resolves the draft `all_eligible_experts` rule to the verified roster count of two or three.
 
 Each exported package also contains `expert_rubric_feedback.json` and `.csv`. Every expert rates definition clarity, construct relevance, distinctness, and transcript observability for all seven reported outcomes, then recommends retain/revise/remove. Global questions solicit missing constructs, redundancy, difficult boundaries, clinically inappropriate assumptions, and any risk that the benchmark overclaims deployment or clinical safety. Analyze this content-validity feedback separately from response ratings.
 
@@ -134,6 +136,7 @@ The importer uses the private randomization key to decode A/B into `neutral` ver
 - The frozen private key also carries the rubric version. The importer rejects returned rows with a missing or different version, so pre-calibration and post-calibration ratings cannot be silently pooled.
 - The importer joins returned annotations to the private key and writes another private file; do not upload it to the annotation interface.
 - `annotation_ui/index.html` renders the public assignment attached to the page, retains progress locally, and exports returned JSONL in the importer's schema. Annotators do not select or upload assignment files. The page has no network dependencies and must never receive the private key.
+- The expert interface shows the transcript beside the rubric, groups the seven reported outcomes separately from trajectory diagnostics, conditionally reveals harmful-elaboration subtypes, and supports local draft recovery, progress backups, and an all-items-complete final export. “Cannot determine” pauses other fields and requires an observable-evidence rationale.
 
 Open `annotation_ui/index.html` in a current browser. If the browser restricts
 local-file APIs, run `python3 -m http.server 8000` from the repository root and

@@ -26,6 +26,7 @@ def freeze_human_plan(
     approved_by: list[str],
     expert_minutes_median: float,
     student_minutes_median: float | None,
+    eligible_expert_count: int | None = None,
     change_summary: str,
     frozen_at: str,
 ) -> dict:
@@ -41,12 +42,25 @@ def freeze_human_plan(
     if not change_summary.strip():
         raise ValueError("Record whether the timed pilot changed the plan")
     frozen = deepcopy(plan)
+    formal = frozen["expert_panel"]["formal_sample"]
+    if formal.get("ratings_per_item") == "all_eligible_experts":
+        if eligible_expert_count not in {2, 3}:
+            raise ValueError(
+                "Freezing an all-expert plan requires --eligible-expert-count 2 or 3"
+            )
+        formal["ratings_per_item"] = eligible_expert_count
+        formal["planned_assignment_count"] = (
+            formal["total_item_count"] * eligible_expert_count
+        )
+    elif eligible_expert_count is not None and eligible_expert_count not in {2, 3}:
+        raise ValueError("eligible_expert_count must be 2 or 3")
     frozen["status"] = "frozen"
     frozen["freeze_record"] = {
         "frozen_at": frozen_at,
         "approved_by": approved_by,
         "timed_calibration_completed": True,
         "expert_calibration_item_minutes_median": expert_minutes_median,
+        "eligible_expert_count_at_freeze": eligible_expert_count,
         "student_pair_ui_item_minutes_median": (
             student_minutes_median if student_enabled else None
         ),
@@ -73,6 +87,7 @@ def main() -> int:
     )
     parser.add_argument("--approved-by", action="append", required=True)
     parser.add_argument("--expert-minutes-median", type=float, required=True)
+    parser.add_argument("--eligible-expert-count", type=int, choices=(2, 3))
     parser.add_argument("--student-minutes-median", type=float)
     parser.add_argument("--change-summary", required=True)
     parser.add_argument("--output", type=Path, required=True)
@@ -82,6 +97,7 @@ def main() -> int:
         approved_by=args.approved_by,
         expert_minutes_median=args.expert_minutes_median,
         student_minutes_median=args.student_minutes_median,
+        eligible_expert_count=args.eligible_expert_count,
         change_summary=args.change_summary,
         frozen_at=datetime.now(timezone.utc).isoformat().replace("+00:00", "Z"),
     )

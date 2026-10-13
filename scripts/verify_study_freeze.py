@@ -97,8 +97,19 @@ def verify(manifest_path: Path, *, root: Path = ROOT) -> list[str]:
 
     human_plan = _read_object(root / "configs/human_annotation_plan_v3.json")
     formal = (human_plan.get("expert_panel") or {}).get("formal_sample") or {}
-    if formal.get("total_item_count") != 72:
-        errors.append("human plan must retain the frozen 72-item expert sample")
+    expected_human_sample = {
+        "representative_count": 72,
+        "measurement_challenge_enriched_count": 24,
+        "total_item_count": 96,
+        "ratings_per_item": "all_eligible_experts",
+    }
+    observed_human_sample = {
+        field: formal.get(field) for field in expected_human_sample
+    }
+    if observed_human_sample != expected_human_sample:
+        errors.append(
+            "human plan does not match the prespecified 96-item all-expert sample"
+        )
     if (human_plan.get("student_panel") or {}).get("enabled") is not False:
         errors.append("student comparison must remain disabled in the primary revision")
     return errors

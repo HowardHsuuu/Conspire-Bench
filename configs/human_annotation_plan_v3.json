@@ -1,6 +1,6 @@
 {
-  "schema_version": "1.1",
-  "plan_version": "3.0",
+  "schema_version": "1.2",
+  "plan_version": "3.1",
   "status": "draft_to_freeze_after_timed_calibration",
   "rubric_version": "2.0",
   "scope": "Expert content-validity, inter-rater, and human-versus-judge validation for the frozen Conspire-Bench V3 response pool. This is not a powered clinical-effectiveness study, a user-preference study, or deployment-safety certification.",
@@ -12,7 +12,7 @@
     "student_comparison": "Not included in the revision study because lay paired preference does not validate the expert rubric or automated judges and cannot establish frame prevalence or downstream user impact."
   },
   "sample_size_rationale": {
-    "expert": "Seventy-two double-rated conversations combine 54 coverage-balanced representative items with 18 measurement-challenge items that deliberately cover all seven rubric axes, rare high-risk behavior candidates, judge disagreement, redirection-applicability disagreement, all frames, all interaction structures, and target families. With two ratings per item this yields 144 formal ratings; uncertainty is estimated by item bootstrap and enriched-stratum estimates remain descriptive.",
+    "expert": "Ninety-six conversations combine 72 outcome-blind, coverage-balanced representative items with 24 non-overlapping measurement-challenge items. The representative stratum improves the worst-case Wilson 95% half-width for a simple agreement proportion from about 12.9 percentage points at n=54 to 11.3 points at n=72. The challenge stratum deliberately enriches rare harmful-elaboration candidates, redirection-applicability splits, and high disagreement across the remaining rubric axes; it is diagnostic and is never used as a prevalence estimate. Every eligible expert rates every item, yielding 192 assignments with two experts or 288 with three and complete 96-item overlap for every expert pair.",
     "power_boundary": "Counts support bounded descriptive validation of rubric use and automated judges. They are not powered to estimate clinical outcomes, user persuasion, frame prevalence, or small frame effects from human scores. Formal frame-effect inference remains based on the frozen full automated benchmark and is interpreted only to the extent supported by human-judge validity.",
     "student_decision": "A student paired-frame study is omitted from the main revision because it would measure comparative lay interpretation or preference rather than the reviewer-requested validity of expert constructs and LLM judges."
   },
@@ -28,11 +28,15 @@
     "calibration_item_count": 16,
     "calibration_ratings_per_item": "all_eligible_experts",
     "formal_sample": {
-      "representative_count": 54,
-      "measurement_challenge_enriched_count": 18,
-      "total_item_count": 72,
-      "ratings_per_item": 2,
-      "planned_assignment_count": 144,
+      "representative_count": 72,
+      "measurement_challenge_enriched_count": 24,
+      "total_item_count": 96,
+      "ratings_per_item": "all_eligible_experts",
+      "planned_assignment_count_min": 192,
+      "planned_assignment_count_max": 288,
+      "estimated_minutes_per_item_for_planning": 3.5,
+      "estimated_formal_hours_per_expert": 5.6,
+      "timed_calibration_reconsideration_threshold_minutes_per_item": 4.5,
       "challenge_axes": [
         "belief_amplification",
         "epistemic_grounding",
@@ -42,7 +46,12 @@
         "appropriate_redirection",
         "response_appropriateness"
       ],
-      "adjudication_policy": "A third expert may adjudicate unresolved coding questions only after the independent reliability sample is locked. Adjudication is reported separately and never replaces original ratings in agreement estimates."
+      "challenge_target_counts": {
+        "harmful_elaboration_candidate": 8,
+        "redirection_applicability_split": 8,
+        "other_rubric_disagreement": 8
+      },
+      "adjudication_policy": "Every available expert first rates all items independently. If only two experts are available, a third qualified expert may later adjudicate unresolved binary ties and ordinal disagreements only after the independent reliability data are locked. Adjudication is reported separately and never replaces original ratings in agreement estimates. Human-versus-judge analyses also report each expert separately so unresolved consensus items are not silently discarded."
     }
   },
   "student_panel": {
@@ -81,6 +90,7 @@
     "report_assignment_workload_by_annotator": true,
     "report_dimension_level_agreement_with_uncertainty": true,
     "report_human_versus_judge_validity_with_uncertainty": true,
+    "report_each_expert_and_expert_consensus": true,
     "report_each_judge_and_cross_family_aggregate": true,
     "report_redirection_applicability_agreement_separately": true,
     "report_prevalence_sensitive_metrics_with_raw_counts": true
@@ -98,7 +108,8 @@
       "quadratic-weighted kappa or binary kappa as appropriate",
       "mean absolute error for ordinal fields",
       "Spearman rank correlation for ordinal fields",
-      "item-bootstrap 95% confidence intervals"
+      "item-bootstrap 95% confidence intervals",
+      "per-expert comparisons alongside consensus so unresolved ties remain visible"
     ],
     "required_comparators": [
       "primary_cross_family_aggregate",
