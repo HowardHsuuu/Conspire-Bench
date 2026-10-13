@@ -6,7 +6,7 @@ import csv
 import json
 import random
 import sys
-from collections import defaultdict, deque
+from collections import Counter, defaultdict, deque
 from pathlib import Path
 from typing import Any, Iterable, Optional
 
@@ -361,6 +361,18 @@ def model_name(row: dict[str, Any]) -> str:
     return str(row.get("model_name") or row.get("target_model") or "unknown_model")
 
 
+def target_model_family(row: dict[str, Any]) -> str:
+    for judgment in row.get("judge_results") or []:
+        family = str(judgment.get("target_model_family") or "").strip()
+        if family:
+            return family
+    name = model_name(row).lower()
+    for family in ("qwen", "llama", "gemma", "gpt_oss"):
+        if family.replace("_", "-") in name.replace("_", "-"):
+            return family
+    return "unknown_family"
+
+
 def frame_family(row: dict[str, Any]) -> str:
     frame = row.get("frame_family")
     if frame:
@@ -404,6 +416,133 @@ def max_judge_disagreement(row: dict[str, Any]) -> float:
         except (TypeError, ValueError):
             continue
     return max(values, default=0.0)
+
+
+def _judge_metric_values(row: dict[str, Any], metric: str) -> list[Any]:
+    values = []
+    for judgment in row.get("judge_results") or []:
+        if judgment.get("error") or not isinstance(judgment.get("scores"), dict):
+            continue
+        values.append(judgment["scores"].get(metric))
+    return values
+
+
+def measurement_challenge_priority(row: dict[str, Any], metric: str) -> float:
+    """Prioritize judge disagreement and rare behavior without treating either as truth."""
+
+    values = _judge_metric_values(row, metric)
+    if metric == "appropriate_redirection":
+        applicable = [value for value in values if value is not None]
+        applicability_split = bool(applicable) and len(applicable) != len(values)
+        numeric_range = (
+            max(float(value) for value in applicable)
+            - min(float(value) for value in applicable)
+            if len(applicable) >= 2
+            else 0.0
+        )
+        return (4.0 if applicability_split else 0.0) + numeric_range
+
+    disagreement = (row.get("judge_disagreement") or {}).get(metric, 0.0)
+    try:
+        priority = float(disagreement)
+    except (TypeError, ValueError):
+        priority = 0.0
+    usable = [value for value in values if value is not None]
+    if metric == "harmful_elaboration" and any(bool(value) for value in usable):
+        priority += 2.0
+    elif metric == "response_appropriateness" and any(
+        float(value) > 0 for value in usable
+    ):
+        priority += 0.5
+    elif metric == "belief_amplification" and any(
+        float(value) >= 4 for value in usable
+    ):
+        priority += 0.5
+    return priority
+
+
+def select_measurement_challenge_rows(
+    rows: list[dict[str, Any]], *, count: int, rng: random.Random
+) -> list[dict[str, Any]]:
+    """Select a diagnostic stratum balanced across rubric axes and design factors."""
+
+    if count <= 0:
+        return []
+    axes = list(RUBRIC_DIMENSIONS)
+    random_rank = {response_id(row): rng.random() for row in rows}
+    candidates: dict[str, list[dict[str, Any]]] = {}
+    for axis in axes:
+        candidates[axis] = sorted(
+            rows,
+            key=lambda row: (
+                -measurement_challenge_priority(row, axis),
+                random_rank[response_id(row)],
+            ),
+        )
+
+    selected: list[dict[str, Any]] = []
+    selected_ids: set[str] = set()
+    axis_counts: dict[str, int] = defaultdict(int)
+    frame_counts: dict[str, int] = defaultdict(int)
+    structure_counts: dict[str, int] = defaultdict(int)
+    family_counts: dict[str, int] = defaultdict(int)
+    model_counts: dict[str, int] = defaultdict(int)
+    while len(selected) < min(count, len(rows)):
+        available_axes = [
+            axis
+            for axis in axes
+            if any(response_id(row) not in selected_ids for row in candidates[axis])
+        ]
+        if not available_axes:
+            break
+        axis = min(available_axes, key=lambda value: (axis_counts[value], value))
+        available = [
+            row for row in candidates[axis] if response_id(row) not in selected_ids
+        ]
+        row = min(
+            available,
+            key=lambda candidate: (
+                frame_counts[frame_family(candidate)],
+                structure_counts[str(candidate.get("scenario_type") or "unknown_type")],
+                family_counts[target_model_family(candidate)],
+                model_counts[model_name(candidate)],
+                -measurement_challenge_priority(candidate, axis),
+                random_rank[response_id(candidate)],
+            ),
+        )
+        annotated = dict(row)
+        annotated["_expert_challenge_axis"] = axis
+        annotated["_expert_challenge_priority"] = measurement_challenge_priority(
+            row, axis
+        )
+        annotated["_expert_challenge_rare_behavior"] = {
+            "any_harmful_elaboration": any(
+                bool(value)
+                for value in _judge_metric_values(row, "harmful_elaboration")
+                if value is not None
+            ),
+            "any_inappropriate_response": any(
+                float(value) > 0
+                for value in _judge_metric_values(row, "response_appropriateness")
+                if value is not None
+            ),
+            "redirection_applicability_split": (
+                0
+                < sum(
+                    value is not None
+                    for value in _judge_metric_values(row, "appropriate_redirection")
+                )
+                < len(_judge_metric_values(row, "appropriate_redirection"))
+            ),
+        }
+        selected.append(annotated)
+        selected_ids.add(response_id(row))
+        axis_counts[axis] += 1
+        frame_counts[frame_family(row)] += 1
+        structure_counts[str(row.get("scenario_type") or "unknown_type")] += 1
+        family_counts[target_model_family(row)] += 1
+        model_counts[model_name(row)] += 1
+    return selected
 
 
 def _round_robin_sample(
@@ -495,14 +634,14 @@ def select_expert_rows(
     representative = _round_robin_sample(grouped, representative_count, rng)
     representative_ids = {response_id(row) for row in representative}
     remaining = [row for row in rows if response_id(row) not in representative_ids]
-    rng.shuffle(remaining)
-    remaining.sort(key=max_judge_disagreement, reverse=True)
-    enriched = remaining[:disagreement_count]
+    enriched = select_measurement_challenge_rows(
+        remaining, count=disagreement_count, rng=rng
+    )
     selected = [(row, "representative") for row in representative]
-    selected.extend((row, "judge_disagreement_enriched") for row in enriched)
+    selected.extend((row, "measurement_challenge_enriched") for row in enriched)
     return selected, {
         "representative": len(representative),
-        "judge_disagreement_enriched": len(enriched),
+        "measurement_challenge_enriched": len(enriched),
     }
 
 
@@ -563,6 +702,11 @@ def build_expert_items(
                 "category": row.get("category"),
                 "condition_id": row.get("condition_id"),
                 "max_judge_disagreement": max_judge_disagreement(row),
+                "measurement_challenge_axis": row.get("_expert_challenge_axis"),
+                "measurement_challenge_priority": row.get("_expert_challenge_priority"),
+                "measurement_challenge_rare_behavior": row.get(
+                    "_expert_challenge_rare_behavior"
+                ),
                 "fact_check_status": (row.get("scenario_metadata") or {}).get(
                     "fact_check_status"
                 ),
@@ -801,9 +945,13 @@ def export_annotation_package(
         )
         annotation_plan_digest = human_annotation_plan_digest(annotation_plan)
         formal_sample = annotation_plan["expert_panel"]["formal_sample"]
+        enriched_count = formal_sample.get(
+            "measurement_challenge_enriched_count",
+            formal_sample.get("judge_disagreement_enriched_count"),
+        )
         expected = {
             "representative_count": formal_sample["representative_count"],
-            "disagreement_count": formal_sample["judge_disagreement_enriched_count"],
+            "disagreement_count": enriched_count,
             "pair_count": annotation_plan["student_panel"]["paired_item_count"],
             "seed": annotation_plan["randomization"]["sampling_seed"],
         }
@@ -863,7 +1011,7 @@ def export_annotation_package(
             )
         if sample_counts != {
             "representative": representative_count,
-            "judge_disagreement_enriched": disagreement_count,
+            "measurement_challenge_enriched": disagreement_count,
         }:
             raise ValueError("Formal expert sampling strata are incomplete")
         if len(pair_items) != pair_count:
@@ -888,9 +1036,10 @@ def export_annotation_package(
     rubric_feedback_csv_path = out_dir / "expert_rubric_feedback.csv"
     manifest_path = out_dir / "manifest.json"
     write_jsonl(expert_path, expert_items)
-    write_jsonl(pair_path, pair_items)
     write_annotation_csv(expert_csv_path, expert_items)
-    write_annotation_csv(pair_csv_path, pair_items)
+    if pair_items:
+        write_jsonl(pair_path, pair_items)
+        write_annotation_csv(pair_csv_path, pair_items)
     write_jsonl(private_path, [*expert_keys, *pair_keys])
     feedback_template = rubric_feedback_template()
     rubric_feedback_path.write_text(
@@ -924,13 +1073,21 @@ def export_annotation_package(
         "usable_response_count": len(rows),
         "expert_item_count": len(expert_items),
         "expert_sample_roles": sample_counts,
+        "expert_measurement_challenge_axes": dict(
+            sorted(
+                Counter(
+                    key["measurement_challenge_axis"]
+                    for key in expert_keys
+                    if key.get("measurement_challenge_axis")
+                ).items()
+            )
+        ),
         "pair_candidate_count": len(candidates),
         "student_pair_item_count": len(pair_items),
         "public_files": [
             expert_path.name,
-            pair_path.name,
             expert_csv_path.name,
-            pair_csv_path.name,
+            *([pair_path.name, pair_csv_path.name] if pair_items else []),
             rubric_feedback_path.name,
             rubric_feedback_csv_path.name,
         ],
@@ -946,9 +1103,8 @@ def export_annotation_package(
     )
     return [
         expert_path,
-        pair_path,
         expert_csv_path,
-        pair_csv_path,
+        *([pair_path, pair_csv_path] if pair_items else []),
         rubric_feedback_path,
         rubric_feedback_csv_path,
         private_path,
@@ -996,7 +1152,7 @@ def main() -> int:
     args = build_parser().parse_args()
     annotation_plan_path = args.annotation_plan
     if args.release_mode == "formal" and annotation_plan_path is None:
-        annotation_plan_path = ROOT / "configs" / "human_annotation_plan_v2.json"
+        annotation_plan_path = ROOT / "configs" / "human_annotation_plan_v3.json"
     planned = (
         load_human_annotation_plan(
             annotation_plan_path, require_frozen=args.release_mode == "formal"
@@ -1019,7 +1175,10 @@ def main() -> int:
             0,
             args.disagreement_count
             if args.disagreement_count is not None
-            else formal_sample.get("judge_disagreement_enriched_count", 36),
+            else formal_sample.get(
+                "measurement_challenge_enriched_count",
+                formal_sample.get("judge_disagreement_enriched_count", 36),
+            ),
         ),
         pair_count=max(
             0,

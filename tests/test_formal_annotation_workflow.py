@@ -5,12 +5,20 @@ from collections import Counter
 from pathlib import Path
 
 from analysis.assign_annotations import assign_package
-from analysis.export_annotations import export_annotation_package
+from analysis.build_annotation_web_bundle import build_web_bundle
+from analysis.export_annotations import export_annotation_package, select_expert_rows
 from analysis.freeze_annotator_roster import freeze_roster
 from analysis.freeze_human_annotation_plan import freeze_human_plan
 from analysis.freeze_response_pool import freeze_manifest as freeze_response_pool
-from analysis.human_annotation_plan import human_annotation_plan_digest
-from analysis.import_annotations import load_private_key, validate_collection_manifests
+from analysis.human_annotation_plan import (
+    human_annotation_plan_digest,
+    validate_human_annotation_plan,
+)
+from analysis.import_annotations import (
+    human_judge_validity,
+    load_private_key,
+    validate_collection_manifests,
+)
 from experiment_conditions import stable_digest
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -82,6 +90,155 @@ def synthetic_results(*, scenario_count: int = 24, model_count: int = 3) -> dict
 
 
 class FormalAnnotationWorkflowTests(unittest.TestCase):
+    def test_web_bundle_preloads_one_blinded_assignment(self):
+        with tempfile.TemporaryDirectory(dir=ROOT) as tmp:
+            directory = Path(tmp)
+            item = {
+                "annotation_item_id": "EXPERT_0001",
+                "item_type": "expert_conversation",
+                "rubric_version": "2.0",
+                "instructions": "Rate observable behavior only.",
+                "transcript": [
+                    {"role": "user", "content": "Claim"},
+                    {"role": "assistant", "content": "Response"},
+                ],
+                "response_fields": {
+                    "belief_amplification": {
+                        "type": "integer",
+                        "minimum": 1,
+                        "maximum": 5,
+                    }
+                },
+                "annotation": {},
+                "annotator_id": "expert_01",
+            }
+            assignment = directory / "expert_01.jsonl"
+            assignment.write_text(json.dumps(item) + "\n", encoding="utf-8")
+            bundle_dir = directory / "bundle"
+
+            written = build_web_bundle(
+                assignment,
+                bundle_dir,
+                title="Expert calibration",
+            )
+
+            self.assertEqual(len(written), 5)
+            index = (bundle_dir / "index.html").read_text(encoding="utf-8")
+            self.assertIn("assignment.js", index)
+            self.assertNotIn("demo_assignment.js", index)
+            assignment_js = (bundle_dir / "assignment.js").read_text(encoding="utf-8")
+            self.assertIn('"annotatorId":"expert_01"', assignment_js)
+            self.assertIn('"demo":false', assignment_js)
+            self.assertNotIn("model_name", assignment_js)
+            manifest = json.loads(
+                (bundle_dir / "bundle_manifest.json").read_text(encoding="utf-8")
+            )
+            self.assertEqual(manifest["item_count"], 1)
+            self.assertFalse(manifest["contains_private_key"])
+
+    def test_human_judge_validity_reports_redirection_applicability_separately(self):
+        base = {
+            "annotation_item_id": "expert_item_001",
+            "response_id": "response_001",
+            "sample_role": "representative",
+        }
+        expert_rows = [
+            {
+                **base,
+                "annotator_id": "expert_01",
+                "annotation": {
+                    "cannot_determine": False,
+                    "appropriate_redirection": "not_applicable",
+                },
+            },
+            {
+                **base,
+                "annotator_id": "expert_02",
+                "annotation": {
+                    "cannot_determine": False,
+                    "appropriate_redirection": "not_applicable",
+                },
+            },
+        ]
+        judge_scores = {
+            "response_001": {
+                "primary_cross_family_aggregate": {
+                    "appropriate_redirection": 2,
+                }
+            }
+        }
+
+        report = human_judge_validity(
+            expert_rows,
+            judge_scores,
+            bootstrap_iterations=20,
+        )
+
+        system = report["all"]["primary_cross_family_aggregate"]
+        self.assertNotIn("appropriate_redirection", system)
+        applicability = system["appropriate_redirection_applicability"]
+        self.assertEqual(applicability["n_items"], 1)
+        self.assertEqual(applicability["exact_agreement"], 0.0)
+        self.assertEqual(
+            applicability["contingency"],
+            {
+                "both_applicable": 0,
+                "human_only_applicable": 0,
+                "judge_only_applicable": 1,
+                "neither_applicable": 0,
+            },
+        )
+
+    def test_expert_only_plan_and_measurement_challenge_sampling(self):
+        plan = json.loads(
+            (ROOT / "configs" / "human_annotation_plan_v3.json").read_text(
+                encoding="utf-8"
+            )
+        )
+        self.assertEqual(validate_human_annotation_plan(plan), [])
+        frozen = freeze_human_plan(
+            plan,
+            approved_by=["pi_fixture"],
+            expert_minutes_median=3.5,
+            student_minutes_median=None,
+            change_summary="No count changes in expert-only fixture.",
+            frozen_at="2026-10-14T00:00:00Z",
+        )
+        self.assertEqual(
+            validate_human_annotation_plan(frozen, require_frozen=True), []
+        )
+
+        rows = synthetic_results()["detailed_results"]
+        selected, roles = select_expert_rows(
+            rows,
+            representative_count=54,
+            disagreement_count=18,
+            seed=24,
+        )
+        self.assertEqual(
+            roles,
+            {"representative": 54, "measurement_challenge_enriched": 18},
+        )
+        challenge = [
+            row for row, role in selected if role == "measurement_challenge_enriched"
+        ]
+        axes = Counter(row["_expert_challenge_axis"] for row in challenge)
+        self.assertEqual(sum(axes.values()), 18)
+        self.assertEqual(
+            set(axes),
+            {
+                "belief_amplification",
+                "epistemic_grounding",
+                "uncertainty_calibration",
+                "harmful_elaboration",
+                "supportive_engagement",
+                "appropriate_redirection",
+                "response_appropriateness",
+            },
+        )
+        self.assertLessEqual(max(axes.values()) - min(axes.values()), 1)
+        self.assertEqual(len({row["response_id"] for row in challenge}), len(challenge))
+
     def _artifacts(
         self, directory: Path, payload: dict
     ) -> tuple[Path, Path, Path, str]:
@@ -154,7 +311,7 @@ class FormalAnnotationWorkflowTests(unittest.TestCase):
             self.assertEqual(manifest["expert_item_count"], 72)
             self.assertEqual(
                 manifest["expert_sample_roles"],
-                {"representative": 54, "judge_disagreement_enriched": 18},
+                {"representative": 54, "measurement_challenge_enriched": 18},
             )
             self.assertEqual(manifest["student_pair_item_count"], 108)
             self.assertEqual(manifest["annotation_plan_digest"], plan_digest)
@@ -176,7 +333,7 @@ class FormalAnnotationWorkflowTests(unittest.TestCase):
             )
             self.assertEqual(
                 expert_roles,
-                {"representative": 54, "judge_disagreement_enriched": 18},
+                {"representative": 54, "measurement_challenge_enriched": 18},
             )
 
             roster_csv = directory / "roster.csv"

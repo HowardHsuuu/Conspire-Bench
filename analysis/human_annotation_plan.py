@@ -31,8 +31,8 @@ def validate_human_annotation_plan(
     plan: dict[str, Any], *, require_frozen: bool = False
 ) -> list[str]:
     errors: list[str] = []
-    if plan.get("schema_version") != "1.0":
-        errors.append("schema_version must be 1.0")
+    if plan.get("schema_version") not in {"1.0", "1.1"}:
+        errors.append("schema_version must be 1.0 or 1.1")
     if not str(plan.get("plan_version") or "").strip():
         errors.append("plan_version is required")
     if plan.get("status") not in {
@@ -47,7 +47,7 @@ def validate_human_annotation_plan(
     if str(plan.get("rubric_version")) != RUBRIC_VERSION:
         errors.append(f"rubric_version must be {RUBRIC_VERSION}")
     rationale = plan.get("sample_size_rationale") or {}
-    for field in ("expert", "student", "power_boundary"):
+    for field in ("expert", "power_boundary"):
         if not str(rationale.get(field) or "").strip():
             errors.append(f"sample_size_rationale.{field} is required")
 
@@ -71,7 +71,14 @@ def validate_human_annotation_plan(
 
     formal = experts.get("formal_sample") or {}
     representative = formal.get("representative_count")
-    enriched = formal.get("judge_disagreement_enriched_count")
+    legacy_enriched = formal.get("judge_disagreement_enriched_count")
+    challenge_enriched = formal.get("measurement_challenge_enriched_count")
+    if legacy_enriched is not None and challenge_enriched is not None:
+        errors.append(
+            "expert formal sample must not define both legacy disagreement and "
+            "measurement-challenge enriched counts"
+        )
+    enriched = challenge_enriched if challenge_enriched is not None else legacy_enriched
     total = formal.get("total_item_count")
     ratings = formal.get("ratings_per_item")
     assignments = formal.get("planned_assignment_count")
@@ -100,32 +107,46 @@ def validate_human_annotation_plan(
         errors.append("expert adjudication_policy is required")
 
     students = plan.get("student_panel") or {}
+    student_enabled = students.get("enabled", True) is True
     student_count = students.get("paired_item_count")
     student_ratings = students.get("ratings_per_item")
     student_assignments = students.get("planned_assignment_count")
-    if students.get("minimum_eligible_annotator_count", 0) < student_ratings:
-        errors.append(
-            "student minimum eligible count must be at least ratings_per_item"
-        )
-    if not isinstance(student_count, int) or student_count <= 0:
-        errors.append("student paired_item_count must be a positive integer")
-    if student_ratings != 3:
-        errors.append("student ratings_per_item must be 3")
-    if (
-        isinstance(student_count, int)
-        and isinstance(student_ratings, int)
-        and student_assignments != student_count * student_ratings
-    ):
-        errors.append("student planned_assignment_count arithmetic does not match")
-    workload_examples = students.get("workload_examples") or {}
-    if isinstance(student_assignments, int):
-        for count, field in (
-            (6, "six_students_items_each"),
-            (9, "nine_students_items_each"),
-            (12, "twelve_students_items_each"),
+    if student_enabled:
+        if not str(rationale.get("student") or "").strip():
+            errors.append("sample_size_rationale.student is required")
+        if students.get("minimum_eligible_annotator_count", 0) < student_ratings:
+            errors.append(
+                "student minimum eligible count must be at least ratings_per_item"
+            )
+        if not isinstance(student_count, int) or student_count <= 0:
+            errors.append("student paired_item_count must be a positive integer")
+        if student_ratings != 3:
+            errors.append("student ratings_per_item must be 3")
+        if (
+            isinstance(student_count, int)
+            and isinstance(student_ratings, int)
+            and student_assignments != student_count * student_ratings
         ):
-            if workload_examples.get(field) != student_assignments // count:
-                errors.append(f"student workload example {field} does not match")
+            errors.append("student planned_assignment_count arithmetic does not match")
+        workload_examples = students.get("workload_examples") or {}
+        if isinstance(student_assignments, int):
+            for count, field in (
+                (6, "six_students_items_each"),
+                (9, "nine_students_items_each"),
+                (12, "twelve_students_items_each"),
+            ):
+                if workload_examples.get(field) != student_assignments // count:
+                    errors.append(f"student workload example {field} does not match")
+    else:
+        if (student_count, student_ratings, student_assignments) != (0, 0, 0):
+            errors.append(
+                "disabled student panel must set item, rating, and assignment counts to zero"
+            )
+        if not str(students.get("exclusion_rationale") or "").strip():
+            errors.append("disabled student panel requires exclusion_rationale")
+        criteria = students.get("activation_criteria")
+        if not isinstance(criteria, list) or not criteria:
+            errors.append("disabled student panel requires activation_criteria")
 
     randomization = plan.get("randomization") or {}
     for field in ("calibration_sampling_seed", "sampling_seed", "assignment_seed"):
@@ -143,15 +164,20 @@ def validate_human_annotation_plan(
         "target_model",
         "category",
     }
-    if set(reporting.get("student_pair_strata") or []) != expected_pair_strata:
-        errors.append("student_pair_strata must bind frame, type, model, and category")
     if (
-        reporting.get("report_representative_and_disagreement_enriched_separately")
-        is not True
+        student_enabled
+        and set(reporting.get("student_pair_strata") or []) != expected_pair_strata
     ):
-        errors.append(
-            "representative and disagreement-enriched results must be separate"
+        errors.append("student_pair_strata must bind frame, type, model, and category")
+    separate_reporting = reporting.get(
+        "report_representative_and_challenge_enriched_separately"
+    )
+    if separate_reporting is None:
+        separate_reporting = reporting.get(
+            "report_representative_and_disagreement_enriched_separately"
         )
+    if separate_reporting is not True:
+        errors.append("representative and enriched results must be separate")
 
     change = plan.get("change_control") or {}
     if change.get("timed_calibration_required_before_final_freeze") is not True:
@@ -173,10 +199,10 @@ def validate_human_annotation_plan(
             errors.append("freeze_record.approved_by must contain unique approver IDs")
         if freeze.get("timed_calibration_completed") is not True:
             errors.append("timed calibration must be completed before freeze")
-        for field in (
-            "expert_calibration_item_minutes_median",
-            "student_pair_ui_item_minutes_median",
-        ):
+        timed_fields = ["expert_calibration_item_minutes_median"]
+        if student_enabled:
+            timed_fields.append("student_pair_ui_item_minutes_median")
+        for field in timed_fields:
             value = freeze.get(field)
             if (
                 not isinstance(value, (int, float))

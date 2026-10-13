@@ -20,7 +20,7 @@ def main() -> int:
         "plan",
         nargs="?",
         type=Path,
-        default=ROOT / "configs" / "human_annotation_plan_v2.json",
+        default=ROOT / "configs" / "human_annotation_plan_v3.json",
     )
     parser.add_argument("--require-frozen", action="store_true")
     args = parser.parse_args()

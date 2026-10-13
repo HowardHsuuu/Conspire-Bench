@@ -7,11 +7,16 @@ import argparse
 import json
 import math
 import random
+import sys
 from collections import Counter, defaultdict
 from copy import deepcopy
 from pathlib import Path
 from statistics import mean
 from typing import Any, Callable
+
+ROOT = Path(__file__).resolve().parents[1]
+if str(ROOT) not in sys.path:
+    sys.path.insert(0, str(ROOT))
 
 from rubric_v2 import RUBRIC_DIMENSIONS
 

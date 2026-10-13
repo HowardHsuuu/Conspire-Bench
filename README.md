@@ -11,10 +11,11 @@ it is not a clinical instrument, does not diagnose users, and does not measure
 downstream user outcomes.
 
 The V3 dataset, framing registry, experiment matrices, rubric implementation,
-analysis code, and blinded annotation workflow are code-complete. Full local/API
-results and human validation evidence are not yet part of the release. Run
+analysis code, and blinded annotation workflow are code-complete. The frozen
+open-model results are summarized in `docs/results.md`; multi-gigabyte raw result
+bundles remain outside Git. Human validation evidence is not yet available. Run
 `python scripts/audit_release_readiness.py` for the machine-readable boundary
-between completed code and pending external evidence.
+between completed evidence and the remaining human gates.
 
 ## Current benchmark
 
@@ -214,7 +215,9 @@ substituted for missing cross-family primary evidence. Raw judge output, request
 metadata, parsing errors, and per-judge scores are preserved.
 
 See [Evaluation](docs/evaluation.md), [Rubric](docs/rubric.md), and
-[Annotation](docs/annotation.md) for the public methods.
+[Annotation](docs/annotation.md) for the public methods. The frozen automated
+evidence, interpretation boundary, and exact human-validation target are in
+[Results](docs/results.md).
 
 ## Safety and responsible use
 

@@ -1,0 +1,134 @@
+{
+  "schema_version": "1.1",
+  "plan_version": "3.0",
+  "status": "draft_to_freeze_after_timed_calibration",
+  "rubric_version": "2.0",
+  "scope": "Expert content-validity, inter-rater, and human-versus-judge validation for the frozen Conspire-Bench V3 response pool. This is not a powered clinical-effectiveness study, a user-preference study, or deployment-safety certification.",
+  "reviewer_question_mapping": {
+    "human_validation": "Two to three clinical/domain experts independently rate a blinded stratified sample with the same observable-behavior constructs used by the automated judges.",
+    "judge_reliability": "Report expert inter-rater agreement, expert-consensus versus each judge, expert-consensus versus the cross-family aggregate, and results separately for representative and measurement-challenge strata.",
+    "rubric_construct_validity": "The same experts first assess clarity, relevance, distinctness, and transcript observability, then complete a timed independent calibration before the rubric is frozen.",
+    "scenario_construction": "A separate independent scenario reviewer completes the 51-motif circulation, narrative-fidelity, matched-structure, plausibility, and difficulty packet. Scenario QA is not inferred from response ratings.",
+    "student_comparison": "Not included in the revision study because lay paired preference does not validate the expert rubric or automated judges and cannot establish frame prevalence or downstream user impact."
+  },
+  "sample_size_rationale": {
+    "expert": "Seventy-two double-rated conversations combine 54 coverage-balanced representative items with 18 measurement-challenge items that deliberately cover all seven rubric axes, rare high-risk behavior candidates, judge disagreement, redirection-applicability disagreement, all frames, all interaction structures, and target families. With two ratings per item this yields 144 formal ratings; uncertainty is estimated by item bootstrap and enriched-stratum estimates remain descriptive.",
+    "power_boundary": "Counts support bounded descriptive validation of rubric use and automated judges. They are not powered to estimate clinical outcomes, user persuasion, frame prevalence, or small frame effects from human scores. Formal frame-effect inference remains based on the frozen full automated benchmark and is interpreted only to the extent supported by human-judge validity.",
+    "student_decision": "A student paired-frame study is omitted from the main revision because it would measure comparative lay interpretation or preference rather than the reviewer-requested validity of expert constructs and LLM judges."
+  },
+  "expert_panel": {
+    "eligible_expert_count_min": 2,
+    "eligible_expert_count_max": 3,
+    "same_panel_for_content_validity_calibration_and_formal_rating": true,
+    "eligibility": [
+      "Relevant clinical, mental-health, misinformation, or epistemic-safety expertise documented without identity disclosure in public artifacts.",
+      "Completed rubric content-validity review.",
+      "Completed independent calibration and post-discussion qualification on the frozen rubric version."
+    ],
+    "calibration_item_count": 16,
+    "calibration_ratings_per_item": "all_eligible_experts",
+    "formal_sample": {
+      "representative_count": 54,
+      "measurement_challenge_enriched_count": 18,
+      "total_item_count": 72,
+      "ratings_per_item": 2,
+      "planned_assignment_count": 144,
+      "challenge_axes": [
+        "belief_amplification",
+        "epistemic_grounding",
+        "uncertainty_calibration",
+        "harmful_elaboration",
+        "supportive_engagement",
+        "appropriate_redirection",
+        "response_appropriateness"
+      ],
+      "adjudication_policy": "A third expert may adjudicate unresolved coding questions only after the independent reliability sample is locked. Adjudication is reported separately and never replaces original ratings in agreement estimates."
+    }
+  },
+  "student_panel": {
+    "enabled": false,
+    "paired_item_count": 0,
+    "ratings_per_item": 0,
+    "planned_assignment_count": 0,
+    "exclusion_rationale": "The current reviewer questions concern rubric validity, expert inter-rater reliability, and human-versus-judge agreement. A lay A/B task would not answer those questions and could be misread as evidence about real users or clinical safety.",
+    "activation_criteria": [
+      "The revised paper makes an explicit claim about perceived helpfulness, support, credibility, or response preference that is not covered by expert ratings.",
+      "A reviewer explicitly requests a non-expert perception study after seeing the expert-validation results.",
+      "A separately approved downstream user study is designed to estimate user experience or belief impact."
+    ],
+    "task_boundary": "If activated as a separate study, students make blinded comparative judgments only; their ratings are never pooled with expert reliability or treated as clinical evidence."
+  },
+  "randomization": {
+    "calibration_sampling_seed": 20260831,
+    "sampling_seed": 24,
+    "assignment_seed": 20260831
+  },
+  "stratification_and_reporting": {
+    "representative_strata": [
+      "target_model",
+      "frame_family",
+      "scenario_type",
+      "category"
+    ],
+    "measurement_challenge_balance": [
+      "rubric_axis",
+      "frame_family",
+      "scenario_type",
+      "target_model_family"
+    ],
+    "student_pair_strata": [],
+    "report_representative_and_challenge_enriched_separately": true,
+    "report_assignment_workload_by_annotator": true,
+    "report_dimension_level_agreement_with_uncertainty": true,
+    "report_human_versus_judge_validity_with_uncertainty": true,
+    "report_each_judge_and_cross_family_aggregate": true,
+    "report_redirection_applicability_agreement_separately": true,
+    "report_prevalence_sensitive_metrics_with_raw_counts": true
+  },
+  "analysis": {
+    "expert_inter_rater": [
+      "raw exact agreement",
+      "pairwise quadratic-weighted kappa for ordinal fields",
+      "pairwise kappa for binary and nominal fields",
+      "item-bootstrap 95% confidence intervals",
+      "cannot-determine and not-applicable counts"
+    ],
+    "human_judge": [
+      "exact agreement",
+      "quadratic-weighted kappa or binary kappa as appropriate",
+      "mean absolute error for ordinal fields",
+      "Spearman rank correlation for ordinal fields",
+      "item-bootstrap 95% confidence intervals"
+    ],
+    "required_comparators": [
+      "primary_cross_family_aggregate",
+      "individual:huggingface/Qwen/Qwen2.5-32B-Instruct",
+      "individual:huggingface/meta-llama/Llama-3.1-8B-Instruct",
+      "individual:huggingface/google/gemma-3-27b-it",
+      "individual:huggingface/openai/gpt-oss-120b"
+    ],
+    "stratum_policy": "Representative estimates support general validity statements. Measurement-challenge estimates diagnose failure modes and are never pooled into prevalence estimates without separate reporting.",
+    "decision_rule": "No universal pass/fail threshold is imposed post hoc. Claims are dimension-specific: dimensions with weak expert agreement or weak human-judge agreement are reported as unreliable and are excluded from strong substantive interpretation."
+  },
+  "change_control": {
+    "timed_calibration_required_before_final_freeze": true,
+    "latest_allowed_change_point": "Before formal response outcomes are unblinded or any formal annotations are collected.",
+    "allowed_reasons": [
+      "Expert content-validity feedback requires a construct or anchor revision.",
+      "Timed calibration demonstrates that the planned workload is infeasible.",
+      "The verified eligible roster is smaller than anticipated but still meets the prespecified minimum.",
+      "A documented ethics, consent, compensation, or annotator-welfare requirement necessitates a change."
+    ],
+    "required_record": "Increment plan_version, record the reason and approver, regenerate manifests, and freeze the replacement before formal collection.",
+    "forbidden": "Do not change counts, strata, rubric definitions, exclusions, or agreement analyses after inspecting formal human ratings or human-versus-model agreement."
+  },
+  "freeze_record": {
+    "frozen_at": null,
+    "approved_by": [],
+    "timed_calibration_completed": false,
+    "expert_calibration_item_minutes_median": null,
+    "student_pair_ui_item_minutes_median": null,
+    "workload_feasibility_confirmed": false,
+    "change_summary": null
+  }
+}

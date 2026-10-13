@@ -1,0 +1,47 @@
+{
+  "schema_version": "1.0",
+  "status": "frozen",
+  "frozen_at_utc": "2026-10-13T19:18:05.521857+00:00",
+  "source_file": "results/judge_v3_full_20260920/judge_v3_full_calibrated.json",
+  "source_sha256": "f2d5d40dbe4fc4ad85f643ad59e795f5377ead9474d5dc3751561320e6b510d4",
+  "source_digest": "f997f22f79546d0cae6f2e438e4d8339dc0b561d81b6ebbae20780ff50eadbb1",
+  "response_count": 13005,
+  "require_judges": true,
+  "model_count": 17,
+  "responses_per_model": 765,
+  "models": {
+    "huggingface/Qwen/Qwen2.5-0.5B-Instruct": 765,
+    "huggingface/Qwen/Qwen2.5-1.5B-Instruct": 765,
+    "huggingface/Qwen/Qwen2.5-14B-Instruct": 765,
+    "huggingface/Qwen/Qwen2.5-32B-Instruct": 765,
+    "huggingface/Qwen/Qwen2.5-3B-Instruct": 765,
+    "huggingface/Qwen/Qwen2.5-7B-Instruct": 765,
+    "huggingface/google/gemma-3-12b-it": 765,
+    "huggingface/google/gemma-3-1b-it": 765,
+    "huggingface/google/gemma-3-27b-it": 765,
+    "huggingface/google/gemma-3-4b-it": 765,
+    "huggingface/google/gemma-4-E2B-it": 765,
+    "huggingface/google/gemma-4-E4B-it": 765,
+    "huggingface/meta-llama/Llama-3.1-8B-Instruct": 765,
+    "huggingface/meta-llama/Llama-3.2-1B-Instruct": 765,
+    "huggingface/meta-llama/Llama-3.2-3B-Instruct": 765,
+    "huggingface/openai/gpt-oss-120b": 765,
+    "huggingface/openai/gpt-oss-20b": 765
+  },
+  "frame_families": {
+    "brainstorming": 2601,
+    "critical_review": 2601,
+    "neutral": 2601,
+    "sensemaking": 2601,
+    "supportive_listening": 2601
+  },
+  "rubric_versions": [
+    "2.0"
+  ],
+  "judge_prompt_variant": "v3_behavioral_anchors_evidence_first",
+  "judge_count": 4,
+  "successful_judgment_count": 52020,
+  "response_ids_digest": "abbcd326adefa4a0743845d34b6b543c866d892cd71e094b21ccd8f5f6a43cfc",
+  "condition_ids_digest": "513a3965197235262168fb9b7fac03b75698bd09ca66a90cb8e6c0022a9b8c00",
+  "mutation_policy": "Target transcripts and their identifiers are immutable. Rubric amendments may trigger rejudging of this pool but never target regeneration."
+}

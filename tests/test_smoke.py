@@ -727,6 +727,9 @@ class SmokeTests(unittest.TestCase):
         self.assertNotIn("XMLHttpRequest", ui_script)
         self.assertNotIn("http://", ui_page)
         self.assertNotIn("https://", ui_page)
+        self.assertNotIn('type="file"', ui_page)
+        self.assertIn("demo_assignment.js", ui_page)
+        self.assertIn("CONSPIRE_BENCH_ASSIGNMENT", ui_script)
         for field in (
             "belief_amplification",
             "epistemic_grounding",

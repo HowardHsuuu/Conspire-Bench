@@ -218,7 +218,7 @@ def main() -> int:
     parser.add_argument(
         "--annotation-plan",
         type=Path,
-        default=ROOT / "configs" / "human_annotation_plan_v2.json",
+        default=ROOT / "configs" / "human_annotation_plan_v3.json",
     )
     args = parser.parse_args()
     for path in export_calibration_package(

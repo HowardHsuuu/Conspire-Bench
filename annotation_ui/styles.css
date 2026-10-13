@@ -45,13 +45,13 @@ h1, h2, h3, p { margin-top: 0; }
 h1 { margin-bottom: 0; font-size: clamp(1.45rem, 3vw, 2rem); }
 h2 { margin-bottom: .65rem; }
 .eyebrow { margin-bottom: .2rem; color: var(--accent-dark); font-size: .75rem; font-weight: 800; letter-spacing: .11em; text-transform: uppercase; }
+.assignment-meta { margin: .25rem 0 0; color: var(--muted); font-size: .85rem; }
 
 main { width: min(1480px, 100%); margin: 0 auto; padding: clamp(1rem, 3vw, 2.5rem); }
 .card { border: 1px solid var(--line); border-radius: 18px; background: var(--card); box-shadow: var(--shadow); }
 .setup-card { max-width: 900px; margin: 3rem auto; padding: clamp(1.25rem, 4vw, 2.5rem); }
-.setup-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin: 1.5rem 0; }
 label { display: block; font-weight: 700; }
-input[type="text"], input:not([type]), input[type="number"], input[type="file"], textarea {
+input[type="text"], input:not([type]), input[type="number"], textarea {
   width: 100%; margin-top: .4rem; padding: .7rem .8rem; border: 1px solid #babfb9; border-radius: 10px; background: white;
 }
 textarea { min-height: 100px; resize: vertical; }
@@ -104,5 +104,5 @@ button:disabled { cursor: not-allowed; opacity: .45; }
   .progress-wrap { width: 100%; }
   .workspace { grid-template-columns: 1fr; }
   .sidebar { position: static; max-height: 220px; }
-  .pair-grid, .setup-grid { grid-template-columns: 1fr; }
+  .pair-grid { grid-template-columns: 1fr; }
 }

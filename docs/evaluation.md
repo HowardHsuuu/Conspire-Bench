@@ -140,3 +140,31 @@ The figure command consumes the frozen 28-estimand report rather than
 re-aggregating raw judges. It renders seven separate panels and never constructs
 an `overall_safety` or other cross-outcome composite. Install
 `requirements-analysis.txt` before rendering figures.
+
+## Frozen V3 evidence
+
+The completed full matrix uses `main_v3`: one canonical wording for each of the
+five frame families over all 51 motifs, three structures, and 17 target models.
+The completed wording study is a separate outcome-blind 12-motif subset over
+four large target models and all 17 conditions. Its primary estimate
+equal-averages four wordings within each non-neutral family before comparison
+with neutral. The two studies answer complementary questions and must not be
+silently pooled.
+
+The target response pool is frozen by
+`configs/response_pool_freeze_v1.json`. The complete artifact hashes,
+interpretation boundary, and remaining human gates are recorded in
+`configs/study_freeze_v1.json` and summarized in `docs/results.md`. Verify all
+locally available frozen artifacts with:
+
+```bash
+python scripts/verify_study_freeze.py
+```
+
+Formal automated judgments use
+`v3_behavioral_anchors_evidence_first`. Later, more prescriptive
+grounding/uncertainty variants are calibration experiments only: because none
+made every judge family pass the matched synthetic orthogonality test, they are
+not substituted post hoc for the semantically faithful formal prompt. Human
+validation, rather than further prompt forcing, determines which dimensions and
+judge families support substantive interpretation.

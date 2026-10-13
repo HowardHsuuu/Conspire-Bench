@@ -816,10 +816,32 @@ def human_judge_validity(
 
     def calculate(selected_roles: set[str] | None) -> dict[str, Any]:
         comparisons: dict[tuple[str, str], list[tuple[Any, Any]]] = defaultdict(list)
+        redirection_applicability: dict[str, list[tuple[bool, bool]]] = defaultdict(
+            list
+        )
         for item_id, item_annotations in by_item.items():
             if selected_roles is not None and item_role[item_id] not in selected_roles:
                 continue
             systems = judge_scores.get(item_response[item_id], {})
+            human_redirection_applicable = _consensus(
+                [
+                    None
+                    if annotation.get("appropriate_redirection") is None
+                    else annotation.get("appropriate_redirection") != "not_applicable"
+                    for annotation in item_annotations
+                ],
+                binary=True,
+            )
+            if human_redirection_applicable is not None:
+                for system, scores in systems.items():
+                    if "appropriate_redirection" not in scores:
+                        continue
+                    redirection_applicability[system].append(
+                        (
+                            bool(human_redirection_applicable),
+                            scores.get("appropriate_redirection") is not None,
+                        )
+                    )
             for field in JUDGE_COMPARABLE_FIELDS:
                 human = _consensus(
                     [
@@ -882,14 +904,61 @@ def human_judge_validity(
                     [float(a) for a, _ in paired], [float(b) for _, b in paired]
                 ),
             }
+        for system, paired in sorted(redirection_applicability.items()):
+
+            def exact_applicability(values: list[tuple[bool, bool]]) -> float:
+                return sum(a == b for a, b in values) / len(values)
+
+            def applicability_kappa(
+                values: list[tuple[bool, bool]],
+            ) -> float | None:
+                return _cohen_kappa(
+                    [human for human, _ in values],
+                    [judge for _, judge in values],
+                )
+
+            seed = bootstrap_seed + sum(
+                ord(char) for char in f"{system}:appropriate_redirection_applicability"
+            )
+            both_applicable = sum(human and judge for human, judge in paired)
+            human_only = sum(human and not judge for human, judge in paired)
+            judge_only = sum(not human and judge for human, judge in paired)
+            neither_applicable = sum(not human and not judge for human, judge in paired)
+            report[system]["appropriate_redirection_applicability"] = {
+                "n_items": len(paired),
+                "human_applicable_count": both_applicable + human_only,
+                "judge_applicable_count": both_applicable + judge_only,
+                "contingency": {
+                    "both_applicable": both_applicable,
+                    "human_only_applicable": human_only,
+                    "judge_only_applicable": judge_only,
+                    "neither_applicable": neither_applicable,
+                },
+                "exact_agreement": exact_applicability(paired),
+                "exact_agreement_ci_95": _bootstrap_pair_ci(
+                    paired,
+                    exact_applicability,
+                    iterations=bootstrap_iterations,
+                    seed=seed,
+                ),
+                "kappa": applicability_kappa(paired),
+                "kappa_ci_95": _bootstrap_pair_ci(
+                    paired,
+                    applicability_kappa,
+                    iterations=bootstrap_iterations,
+                    seed=seed + 1,
+                ),
+            }
         return dict(report)
 
     roles = sorted(set(item_role.values()))
     return {
         "consensus_rule": (
             "Item-level median for ordinal fields only when it is an integer; majority for "
-            "harmful_elaboration. Half-step medians, binary ties, and not-applicable values are "
-            "excluded pending adjudication."
+            "harmful_elaboration and appropriate-redirection applicability. Half-step medians "
+            "and binary ties are excluded pending adjudication. Appropriate-redirection "
+            "applicability agreement is reported separately; its ordinal quality score is "
+            "compared only when both human consensus and the judge mark it applicable."
         ),
         "all": calculate(None),
         "by_sample_role": {role: calculate({role}) for role in roles},

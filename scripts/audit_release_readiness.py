@@ -33,6 +33,7 @@ from scripts.validate_experiment_configs_v3 import validate as validate_experime
 from scripts.validate_motif_narratives_v3 import validate_records
 from scripts.validate_motif_quality_review_v3 import validate_review
 from scripts.validate_primary_motif_manifest import validate_manifest
+from scripts.verify_study_freeze import verify as verify_study_freeze
 
 PUBLIC_MARKDOWN = {
     "README.md",
@@ -40,6 +41,7 @@ PUBLIC_MARKDOWN = {
     "docs/dataset.md",
     "docs/evaluation.md",
     "docs/rubric.md",
+    "docs/results.md",
 }
 
 OBSOLETE_PUBLIC_PATHS = (
@@ -258,7 +260,7 @@ def _reviewer_revision_coverage() -> list[dict[str, Any]]:
     return [
         {
             "issue": "benchmark_size_and_diversity",
-            "status": "implemented_pending_live_evidence",
+            "status": "implemented_with_frozen_automated_evidence",
             "evidence": [
                 "Conspire-Bench-v3.json: 51 motifs, 153 scenarios, 24 categories",
                 "configs/primary_motif_manifest_v3.json",
@@ -276,9 +278,9 @@ def _reviewer_revision_coverage() -> list[dict[str, Any]]:
         },
         {
             "issue": "human_validation_and_human_judge_agreement",
-            "status": "workflow_implemented_pending_human_evidence",
+            "status": "expert_only_workflow_implemented_pending_human_evidence",
             "evidence": [
-                "configs/human_annotation_plan_v2.json",
+                "configs/human_annotation_plan_v3.json",
                 "docs/annotation.md",
                 "analysis/import_annotations.py",
                 "analysis/import_rubric_feedback.py",
@@ -286,17 +288,17 @@ def _reviewer_revision_coverage() -> list[dict[str, Any]]:
         },
         {
             "issue": "judge_reliability_size_and_family_bias",
-            "status": "implemented_pending_live_and_human_evidence",
+            "status": "four_family_evidence_complete_pending_human_validation_with_fully_non_target_family_not_run",
             "evidence": [
                 "configs/experiment_v3_local_full.json: four largest-family judges",
-                "configs/experiment_v3_api_full.json: three provider-diverse judges",
+                "results/judge_v3_full_20260920: 52,020 four-family judgments",
                 "analysis/judge_family_sensitivity.py",
                 "leave-same-model-family-out primary aggregation in bench_runner.py",
             ],
         },
         {
             "issue": "single_prompt_frame_dependence_and_critical_frame_ambiguity",
-            "status": "implemented_pending_live_evidence",
+            "status": "completed_on_frozen_reviewer_sized_subset",
             "evidence": [
                 "configs/context_variants.json: 17 conditions",
                 "analysis/paraphrase_robustness.py",
@@ -305,11 +307,10 @@ def _reviewer_revision_coverage() -> list[dict[str, Any]]:
         },
         {
             "issue": "larger_open_and_deployed_models",
-            "status": "matrices_implemented_pending_live_evidence",
+            "status": "17_open_models_completed_closed_systems_out_of_scope",
             "evidence": [
                 "configs/experiment_v3_local_full.json: 17 open models",
-                "configs/experiment_v3_api_full.json: 9 API models",
-                "scripts/preflight_api_models.py",
+                "results/judge_v3_full_20260920: 13,005 completed responses",
             ],
         },
         {
@@ -319,7 +320,7 @@ def _reviewer_revision_coverage() -> list[dict[str, Any]]:
         },
         {
             "issue": "construction_to_evaluation_running_example",
-            "status": "pipeline_documented_pending_live_response_example",
+            "status": "pipeline_documented_response_example_pending_manuscript_selection",
             "evidence": ["docs/dataset.md: Running example"],
         },
         {
@@ -338,7 +339,7 @@ def _reviewer_revision_coverage() -> list[dict[str, Any]]:
         },
         {
             "issue": "variability_confidence_intervals_and_result_figures",
-            "status": "implemented_pending_live_evidence",
+            "status": "completed_for_frozen_automated_evidence",
             "evidence": [
                 "analysis/export_results.py",
                 "analysis/frame_effect_stats.py",
@@ -357,7 +358,7 @@ def build_report() -> dict[str, Any]:
     local_config = _read("configs/experiment_v3_local_full.json")
     api_config = _read("configs/experiment_v3_api_full.json")
     analysis_plan = _read("configs/analysis_plan_v3.json")
-    human_plan = _read("configs/human_annotation_plan_v2.json")
+    human_plan = _read("configs/human_annotation_plan_v3.json")
 
     checks: dict[str, list[str]] = {
         "motif_manifest": validate_manifest(manifest),
@@ -368,6 +369,9 @@ def build_report() -> dict[str, Any]:
         "model_and_judge_matrices": validate_experiments(local_config, api_config),
         "analysis_contract": validate_analysis_plan(analysis_plan),
         "public_tree_hygiene": _public_tree_errors(),
+        "frozen_automated_evidence": verify_study_freeze(
+            ROOT / "configs" / "study_freeze_v1.json"
+        ),
     }
 
     required_analysis_tools = (
@@ -400,6 +404,7 @@ def build_report() -> dict[str, Any]:
     checks["independent_scenario_review_workflow"] = scenario_review_errors
 
     required_annotation_tools = (
+        "analysis/build_annotation_web_bundle.py",
         "analysis/export_rubric_feedback.py",
         "analysis/export_calibration.py",
         "analysis/freeze_response_pool.py",
@@ -444,18 +449,15 @@ def build_report() -> dict[str, Any]:
         "unresolved_code_or_design_issues": []
         if not contract_errors
         else contract_errors,
-        "pending_live_evidence": [
-            "Generate the open-source target response matrix and local diagnostic judges.",
-            "Preflight current API model IDs, then run the API pilot and full target matrix.",
-            "Run the final cross-provider judge panel on the frozen response pool.",
-            "Produce result-dependent frame effects, paraphrase robustness, confidence intervals, judge sensitivity, usage, tables, and figures.",
-            "Select a blinded running transcript and update result-dependent manuscript tables, figures, and claims without reviving an overall-safety composite.",
+        "pending_automated_or_manuscript_work": [
+            "Select a blinded running transcript and update manuscript tables, figures, and claims from the frozen results without reviving an overall-safety composite.",
+            "Closed-source target or judge models are optional scope expansion, not a prerequisite for the frozen open-model claims or expert validation.",
         ],
         "pending_human_evidence": [
             "Complete independent V3 scenario QA for the construction-validity evidence and final analysis freeze.",
             "Obtain supervisor or ethics-process approval for consent, compensation, data retention, and annotator welfare.",
             "Run expert rubric content validation and timed calibration, then freeze rubric, workload, and analysis plans.",
-            "Collect the frozen expert conversation ratings and student paired-frame ratings, then import and analyze them.",
+            "Collect the frozen expert conversation ratings, then import and analyze inter-rater and human-versus-judge agreement by stratum and dimension.",
         ],
         "human_plan_status": human_plan.get("status"),
     }

@@ -416,7 +416,7 @@ def main() -> int:
     args = parser.parse_args()
     annotation_plan_path = args.annotation_plan
     if args.release_mode in {"calibration", "formal"} and annotation_plan_path is None:
-        annotation_plan_path = ROOT / "configs" / "human_annotation_plan_v2.json"
+        annotation_plan_path = ROOT / "configs" / "human_annotation_plan_v3.json"
     annotation_plan = (
         load_human_annotation_plan(
             annotation_plan_path, require_frozen=args.release_mode == "formal"

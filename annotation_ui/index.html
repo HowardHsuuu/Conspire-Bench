@@ -4,13 +4,14 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Conspire-Bench Annotation</title>
-  <link rel="stylesheet" href="styles.css">
+  <link rel="stylesheet" href="styles.css?v=20260922d">
 </head>
 <body>
   <header class="topbar">
     <div>
       <p class="eyebrow">Conspire-Bench · blinded review</p>
       <h1>Conversation annotation</h1>
+      <p id="assignmentMeta" class="assignment-meta">Loading assigned items…</p>
     </div>
     <div class="progress-wrap" aria-live="polite">
       <span id="progressText">No package loaded</span>
@@ -19,24 +20,11 @@
   </header>
 
   <main>
-    <section id="setup" class="card setup-card">
-      <h2>Start or resume</h2>
-      <p>Load a public <code>expert_items.jsonl</code> or <code>student_pair_items.jsonl</code> file. This page never loads the private key and makes no network requests.</p>
-      <div class="setup-grid">
-        <label>
-          Pseudonymous annotator ID
-          <input id="annotatorId" autocomplete="off" placeholder="expert_01 or student_07">
-        </label>
-        <label>
-          Public annotation package
-          <input id="fileInput" type="file" accept=".jsonl,.json,application/json,text/plain">
-        </label>
-      </div>
-      <div id="setupMessage" class="message" role="status"></div>
-      <details>
-        <summary>Privacy and scope</summary>
-        <p>Progress is stored only in this browser's local storage. Use a pseudonym, not a name or email. Rate observable assistant behavior only; do not diagnose the user. Some transcripts may be distressing—pause and follow the study's withdrawal/support procedure if needed.</p>
-      </details>
+    <section id="loadError" class="card setup-card hidden" role="alert">
+      <p class="eyebrow">Assignment unavailable</p>
+      <h2>These annotation items could not be loaded</h2>
+      <p id="loadErrorMessage"></p>
+      <p>Please use the assignment link supplied by the research team.</p>
     </section>
 
     <section id="workspace" class="workspace hidden">
@@ -71,15 +59,16 @@
 
         <section class="card export-card">
           <div>
-            <h2>Return completed ratings</h2>
-            <p>Export produces JSONL that can be passed directly to <code>analysis/import_annotations.py</code>.</p>
+            <h2 id="exportHeading">Results</h2>
+            <p id="exportDescription">Progress is saved in this browser.</p>
           </div>
-          <button id="exportButton" type="button">Export completed JSONL</button>
+          <button id="exportButton" type="button">Download completed JSONL</button>
         </section>
       </article>
     </section>
   </main>
 
-  <script src="app.js"></script>
+  <script src="demo_assignment.js?v=20260922d"></script>
+  <script src="app.js?v=20260922d"></script>
 </body>
 </html>

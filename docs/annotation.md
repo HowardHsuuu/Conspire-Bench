@@ -1,28 +1,33 @@
-# Annotation protocol v2
+# Annotation protocol v3
 
-## Two separate studies
+## Primary human-validation study
 
-Expert and student annotations answer different questions and must not be pooled into one reliability number.
+The primary revision uses clinical/domain experts only. They validate and apply
+the conversation-level rubric to observable assistant behavior; they do not
+diagnose the user or certify deployment safety.
 
-- Clinical/domain experts validate and apply the conversation-level rubric. They assess observable assistant behavior only; they do not diagnose the user or certify deployment safety.
-- Students complete blinded paired comparisons. They judge which response displays more of a named behavior. They are not asked to make clinical judgments.
+A student paired-frame comparison is not part of the primary revision because
+it would measure lay interpretation or preference rather than expert-rubric or
+LLM-judge validity. It is an optional separate study only under the activation
+criteria in `configs/human_annotation_plan_v3.json`; student and expert ratings
+must never be pooled.
 
 Formal annotation starts only after accepted scenario QA and target generation are frozen. `analysis/export_annotations.py` enforces this in `formal` mode; use `pilot` only for UI testing or rubric calibration.
 
 ## Prespecified sample and workload
 
-`configs/human_annotation_plan_v2.json` is the authoritative pre-outcome plan. The current initial-validation design is:
+`configs/human_annotation_plan_v3.json` is the authoritative pre-outcome plan. The current initial-validation design is:
 
 - 16 expert calibration conversations, independently rated by every eligible expert;
-- 72 formal expert conversations: 54 deterministic balanced representative items across target model, frame, scenario type, and topic category, plus 18 non-overlapping judge-disagreement-enriched items;
+- 72 formal expert conversations: 54 deterministic balanced representative items across target model, frame, scenario type, and topic category, plus 18 non-overlapping measurement-challenge items balanced across all seven rubric axes, frames, structures, and target families;
 - two independent expert ratings per formal conversation, for 144 planned expert assignments (72 each with two experts, or 48 each with three experts);
-- 108 deterministic balanced, blinded student A/B pairs across comparison frame, scenario type, target model, and topic category, with three independent ratings per pair, for 324 assignments (54 each with six students, 36 each with nine, or 27 each with twelve).
+- no student assignments in the primary revision.
 
-This is a deliberately bounded initial content-validity/agreement study, not a powered clinical-effectiveness study. Representative and disagreement-enriched expert results must be reported separately. A third expert may adjudicate unresolved items only after the independent reliability data are locked; adjudication must not replace the original ratings in agreement estimates.
+This is a deliberately bounded initial content-validity/agreement study, not a powered clinical-effectiveness study. Representative and measurement-challenge expert results must be reported separately. A third expert may adjudicate unresolved items only after the independent reliability data are locked; adjudication must not replace the original ratings in agreement estimates.
 
-The 72-item expert sample is a feasibility/coverage compromise for a two-to-three-person clinical/domain panel. As orientation rather than a power guarantee, a simple agreement proportion over 72 independent items has a worst-case normal-approximation 95% half-width of about 11.5 percentage points; the actual analysis uses item bootstrap intervals, and the 18-item disagreement-enriched stratum remains explicitly descriptive. The design therefore supports an initial validation claim, not definitive psychometric or clinical validation.
+The 72-item expert sample is a feasibility/coverage compromise for a two-to-three-person clinical/domain panel. As orientation rather than a power guarantee, a simple agreement proportion over 72 independent items has a worst-case normal-approximation 95% half-width of about 11.5 percentage points; the actual analysis uses item bootstrap intervals, and the 18-item challenge stratum remains explicitly descriptive. The design therefore supports an initial validation claim, not definitive psychometric or clinical validation.
 
-Time the calibration and a student-pair UI pilot before the final freeze. Counts may change only for a documented feasibility, roster, ethics, compensation, or annotator-welfare reason, before formal outcomes are unblinded or formal ratings collected. Increment `plan_version` if the design changes.
+Time the expert calibration and annotation UI before the final freeze. Counts may change only for documented content-validity, feasibility, roster, ethics, compensation, or annotator-welfare reasons, before formal outcomes are unblinded or formal ratings collected. Increment `plan_version` if the design changes.
 
 The current pre-generation gate is the digest-bound V3 circulation, narrative,
 quality-boundary, identity-treatment, and interaction-catalog audit. It is
@@ -60,11 +65,10 @@ After the timed calibration/UI pilot, freeze the workload plan. Record `No count
 python3 analysis/freeze_human_annotation_plan.py \
   --approved-by pi_01 \
   --expert-minutes-median 3.5 \
-  --student-minutes-median 1.2 \
   --change-summary "No count changes after timed pilot." \
-  --output configs/human_annotation_plan_v2.frozen.json
+  --output configs/human_annotation_plan_v3.frozen.json
 python3 analysis/validate_human_annotation_plan.py \
-  configs/human_annotation_plan_v2.frozen.json --require-frozen
+  configs/human_annotation_plan_v3.frozen.json --require-frozen
 ```
 
 After committing the final rubric-derived amendments, create the frozen analysis plan with the checked freezer. It refuses a dirty worktree and recomputes dataset, model-config, human-annotation-plan, context-registry, and expert-artifact digests:
@@ -75,7 +79,7 @@ python3 analysis/freeze_analysis_plan_v3.py \
   --calibration-exclusion-manifest annotation/calibration/calibration_exclusion_manifest.private.json \
   --calibration-decision-record annotation/rubric_freeze_decision.private.json \
   --scenario-review-approval annotation/scenario_review_v3/approval.private.json \
-  --human-annotation-plan configs/human_annotation_plan_v2.frozen.json \
+  --human-annotation-plan configs/human_annotation_plan_v3.frozen.json \
   --approved-by pi_01 \
   --output configs/analysis_plan_v3.frozen.json
 python3 scripts/validate_analysis_plan_v3.py \
@@ -99,17 +103,23 @@ python analysis/import_rubric_feedback.py \
 
 The report includes raw counts, per-criterion means and sample SDs, the share of experts rating each criterion 4–5, descriptive scale-level CVI summaries, and all qualitative revision requests. With a panel of only two or three experts, these quantities are descriptive and must not be presented as definitive psychometric validation.
 
-Report percent agreement and pairwise weighted kappa for ordinal items, ordinary kappa for categorical items, missing/not-applicable counts, true pairwise overlap, bootstrap confidence intervals, and the adjudication rule. Keep representative and judge-disagreement-enriched strata separate as well as reporting the combined sample. When `--source-results` is supplied, the importer compares item-level expert consensus with the cross-family primary judge aggregate and each individual judge by dimension. Half-step ordinal medians, binary ties, and not-applicable values remain unresolved pending adjudication rather than being forced into a consensus. Do not interpret a high LLM–LLM agreement as expert validation.
+Report percent agreement and pairwise weighted kappa for ordinal items, ordinary kappa for categorical items, missing/not-applicable counts, true pairwise overlap, bootstrap confidence intervals, and the adjudication rule. Keep representative and measurement-challenge strata separate as well as reporting the combined sample. When `--source-results` is supplied, the importer compares item-level expert consensus with the cross-family primary judge aggregate and each individual judge by dimension. Half-step ordinal medians, binary ties, and not-applicable values remain unresolved pending adjudication rather than being forced into a consensus. Do not interpret a high LLM–LLM agreement as expert validation.
 
-## Student paired comparison
+## Optional student paired comparison
 
-The A/B order is randomized and the model, frame, scenario metadata, automated scores, and expected behavior are hidden. Students answer five concrete questions: fact/speculation separation, unsupported elaboration, belief persuasiveness, evidential friction, and support without endorsement.
+This module remains implemented but disabled. Activate it only if the revised
+paper makes a user-perception claim, a reviewer explicitly requests a lay
+comparison after expert validation, or a separate approved user study is
+designed. It cannot substitute for expert validation or establish downstream
+belief effects.
+
+If activated, the A/B order is randomized and the model, frame, scenario metadata, automated scores, and expected behavior are hidden. Students answer five concrete questions: fact/speculation separation, unsupported elaboration, belief persuasiveness, evidential friction, and support without endorsement.
 
 Training should use examples that are not in the formal sample. Require a brief qualification quiz and log exclusions before looking at model results. Each pair should receive multiple independent ratings; preregister the minimum number and the aggregation rule. “No material difference” and “cannot determine” are valid outcomes and must not be forced into A or B.
 
-Use `annotation/annotator_roster_template.private.csv` to record only pseudonymous IDs. For experts, formal eligibility requires verified expertise, completed content-validity review, completed rubric calibration, and the frozen rubric version. For students, it requires completed training, the frozen rubric version, and a quiz proportion at or above the prespecified threshold. The roster freezer computes eligibility rather than trusting a manually entered eligible flag, records exclusions, and rejects direct identity columns such as names or email addresses.
+Use `annotation/annotator_roster_template.private.csv` to record only pseudonymous IDs. For experts, formal eligibility requires verified expertise, completed content-validity review, completed rubric calibration, and the frozen rubric version. If a separate student study is activated, student eligibility requires completed training, the frozen rubric version, and a quiz proportion at or above the prespecified threshold. The roster freezer computes eligibility rather than trusting a manually entered eligible flag, records exclusions, and rejects direct identity columns such as names or email addresses.
 
-The default formal assignment uses three independent student ratings per pair. Change that number only before seeing outcomes, record the rationale, and ensure it does not exceed the number of qualified students. Assignment rotation balances workloads; it does not replace qualification or exclusion rules.
+An activated student study uses three independent ratings per pair. Change that number only before seeing outcomes, record the rationale, and ensure it does not exceed the number of qualified students. Assignment rotation balances workloads; it does not replace qualification or exclusion rules.
 
 The importer uses the private randomization key to decode A/B into `neutral` versus `comparison`. It reports raw response counts, item-level plurality with unresolved ties, Wilson intervals, pairwise student agreement, and the share of directional answers selecting position A. Inspect the position-A diagnostic before interpreting a frame preference.
 
@@ -123,13 +133,17 @@ The importer uses the private randomization key to decode A/B into `neutral` ver
 - Randomization seed, source digest, rubric version, and readiness result are recorded in `manifest.json`.
 - The frozen private key also carries the rubric version. The importer rejects returned rows with a missing or different version, so pre-calibration and post-calibration ratings cannot be silently pooled.
 - The importer joins returned annotations to the private key and writes another private file; do not upload it to the annotation interface.
-- `annotation_ui/index.html` can load either public JSONL file, retain progress locally, and export returned JSONL in the importer's schema. It has no network dependencies and must never receive the private key.
+- `annotation_ui/index.html` renders the public assignment attached to the page, retains progress locally, and exports returned JSONL in the importer's schema. Annotators do not select or upload assignment files. The page has no network dependencies and must never receive the private key.
 
 Open `annotation_ui/index.html` in a current browser. If the browser restricts
 local-file APIs, run `python3 -m http.server 8000` from the repository root and
-open `http://localhost:8000/annotation_ui/`. Load only the assigned expert or
-student JSONL file. Progress remains in that browser's local storage; export the
-completed JSONL for import by the research team.
+open `http://localhost:8000/annotation_ui/`. The repository preview immediately
+opens a small blinded expert conversation-level assignment drawn from the current response
+pool. A deployed study replaces `window.CONSPIRE_BENCH_ASSIGNMENT` with the
+public items and pseudonymous annotator ID belonging to that assignment link;
+the private randomization key is never sent to the page. Progress remains in
+that browser's local storage; the preview can export completed JSONL for import
+by the research team.
 
 ## Commands
 
@@ -149,7 +163,8 @@ Pilot package for UI/rubric testing:
 ```bash
 python analysis/export_annotations.py results/run.json \
   --out-dir annotation/pilot --release-mode pilot \
-  --representative-count 20 --disagreement-count 10 --pair-count 30
+  --representative-count 20 --disagreement-count 10 --pair-count 0 \
+  --annotation-plan configs/human_annotation_plan_v3.json
 ```
 
 Export a 12–20 item calibration set from a draft/pilot response pool. Its strata are automated-score candidates for coverage, not answer keys:
@@ -157,7 +172,7 @@ Export a 12–20 item calibration set from a draft/pilot response pool. Its stra
 ```bash
 python3 analysis/export_calibration.py results/pilot_draft.json \
   --out-dir annotation/calibration \
-  --annotation-plan configs/human_annotation_plan_v2.json
+  --annotation-plan configs/human_annotation_plan_v3.json
 ```
 
 Experts first rate these independently, then discuss disagreements. Keep `calibration_key.private.jsonl` and `calibration_exclusion_manifest.private.json` internal. If the draft/pilot and main pools share response IDs, the formal exporter removes them; if they do not overlap, the manifest still documents that calibration was a separate frozen set.
@@ -185,13 +200,15 @@ python analysis/assign_annotations.py \
 Formal package (blocked unless every source row is versioned and accepted scenario QA is present):
 
 ```bash
-python analysis/freeze_response_pool.py results/frozen.json \
-  --output annotation/freeze_manifest.json
-python3 analysis/export_annotations.py results/frozen.json \
+python analysis/freeze_response_pool.py \
+  results/judge_v3_full_20260920/judge_v3_full_calibrated.json \
+  --output configs/response_pool_freeze_v1.json
+python3 analysis/export_annotations.py \
+  results/judge_v3_full_20260920/judge_v3_full_calibrated.json \
   --out-dir annotation/formal --release-mode formal \
-  --freeze-manifest annotation/freeze_manifest.json \
+  --freeze-manifest configs/response_pool_freeze_v1.json \
   --calibration-exclusion-manifest annotation/calibration/calibration_exclusion_manifest.private.json \
-  --annotation-plan configs/human_annotation_plan_v2.frozen.json
+  --annotation-plan configs/human_annotation_plan_v3.frozen.json
 ```
 
 Freeze per-annotator assignments and produce blinded JSONL/CSV files:
@@ -199,16 +216,26 @@ Freeze per-annotator assignments and produce blinded JSONL/CSV files:
 ```bash
 python3 analysis/assign_annotations.py \
   --expert-items annotation/formal/expert_items.jsonl \
-  --student-items annotation/formal/student_pair_items.jsonl \
   --expert-ids expert_01 expert_02 expert_03 \
-  --student-ids student_01 student_02 student_03 student_04 student_05 student_06 \
   --release-mode formal \
   --roster-manifest annotation/annotator_roster_manifest.private.json \
-  --annotation-plan configs/human_annotation_plan_v2.frozen.json \
+  --annotation-plan configs/human_annotation_plan_v3.frozen.json \
   --out-dir annotation/assigned
 ```
 
-Distribute only the corresponding file under `annotation/assigned/expert/` or `annotation/assigned/student/`. The assignment seed, exact expected ratings, per-annotator workloads, public item-set digests, roster digest, and assignment digest are recorded in the private manifest. Changing the eligible roster therefore requires a newly frozen assignment manifest rather than silently adding a rater.
+Distribute only the corresponding file under `annotation/assigned/expert/`. The assignment seed, exact expected ratings, per-annotator workloads, public item-set digests, roster digest, and assignment digest are recorded in the private manifest. Changing the eligible roster therefore requires a newly frozen assignment manifest rather than silently adding a rater.
+
+To give an annotator a web page with their items already attached, build one
+bundle per pseudonymous assignment. The annotator opens `index.html`; they do
+not select or upload an assignment file. The bundle contains no private key or
+model/frame labels and has no network dependency:
+
+```bash
+python3 analysis/build_annotation_web_bundle.py \
+  annotation/assigned/expert/expert_01.jsonl \
+  --out-dir annotation/web/expert_01 \
+  --title "Conspire-Bench expert annotation"
+```
 
 Import one or more returned files and calculate agreement:
 
@@ -218,8 +245,7 @@ python analysis/import_annotations.py \
   --assignment-manifest annotation/assigned/assignment_manifest.private.json \
   --roster-manifest annotation/annotator_roster_manifest.private.json \
   --expert returned/expert_01.jsonl --expert returned/expert_02.jsonl \
-  --student returned/student_batch_01.jsonl \
-  --source-results results/frozen.json \
+  --source-results results/judge_v3_full_20260920/judge_v3_full_calibrated.json \
   --out-dir annotation/analysis
 ```
 

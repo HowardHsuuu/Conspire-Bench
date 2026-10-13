@@ -85,6 +85,7 @@ def build_frozen_plan(
     local_config = _read(root / str(artifacts["local_config"]))
     api_config = _read(root / str(artifacts["api_config"]))
     contexts = _read(root / str(artifacts["context_registry"]))
+    paraphrase_plan = _read(root / str(artifacts["paraphrase_robustness_config"]))
     human_plan = _read(root / str(artifacts["human_annotation_plan"]))
     frozen["freeze_record"] = {
         "frozen_at": frozen_at,
@@ -94,6 +95,9 @@ def build_frozen_plan(
         "local_config_digest": stable_digest(local_config, length=64),
         "api_config_digest": stable_digest(api_config, length=64),
         "context_registry_digest": stable_digest(contexts, length=64),
+        "paraphrase_robustness_config_digest": stable_digest(
+            paraphrase_plan, length=64
+        ),
         "human_annotation_plan_digest": stable_digest(human_plan, length=64),
         "design_digest": design_digest(frozen),
     }

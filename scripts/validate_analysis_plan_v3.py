@@ -175,6 +175,7 @@ def _validate_frozen_evidence(
         "local_config_digest",
         "api_config_digest",
         "context_registry_digest",
+        "paraphrase_robustness_config_digest",
         "human_annotation_plan_digest",
         "design_digest",
     )
@@ -212,6 +213,10 @@ def _validate_frozen_evidence(
         "context_registry_digest": stable_digest(
             _read(_resolve(str(artifacts["context_registry"]), root)), length=64
         ),
+        "paraphrase_robustness_config_digest": stable_digest(
+            _read(_resolve(str(artifacts["paraphrase_robustness_config"]), root)),
+            length=64,
+        ),
         "human_annotation_plan_digest": stable_digest(
             _read(_resolve(str(artifacts["human_annotation_plan"]), root)), length=64
         ),
@@ -231,6 +236,7 @@ def validate(
         errors.append("design_version must be v3")
     allowed_statuses = {
         "ready_for_local_generation_pending_human_rubric_freeze",
+        "automated_evidence_frozen_pending_human_rubric_freeze",
         "frozen",
     }
     if plan.get("status") not in allowed_statuses:
@@ -251,6 +257,7 @@ def validate(
         "local_config",
         "api_config",
         "human_annotation_plan",
+        "paraphrase_robustness_config",
         "rubric_version",
     )
     artifact_errors: list[str] = []
@@ -267,6 +274,7 @@ def validate(
     quality = _read(_resolve(artifacts["motif_quality_review"], root))
     narratives = _read(_resolve(artifacts["motif_narratives"], root))
     identity_policy = _read(_resolve(artifacts["identity_policy"], root))
+    paraphrase_plan = _read(_resolve(artifacts["paraphrase_robustness_config"], root))
     errors.extend(
         validate_interactions(
             catalog,
@@ -289,6 +297,21 @@ def validate(
         errors.append("canonical context set must contain the five v3 frame families")
     if len(full) != 17:
         errors.append("full context set must contain 17 nested wording conditions")
+    paraphrase_counts = paraphrase_plan.get("expected_counts") or {}
+    expected_paraphrase_counts = {
+        "motifs": 12,
+        "scenarios": 36,
+        "context_variants": 17,
+        "target_models": 4,
+        "responses": 2448,
+        "judges": 4,
+        "successful_judgments": 9792,
+    }
+    for field, expected in expected_paraphrase_counts.items():
+        if paraphrase_counts.get(field) != expected:
+            errors.append(f"paraphrase robustness {field} must be {expected}")
+    if (paraphrase_plan.get("selection") or {}).get("outcome_blind") is not True:
+        errors.append("paraphrase robustness motif selection must be outcome-blind")
 
     outcome_ids = [item.get("id") for item in plan.get("rubric_outcomes", [])]
     if tuple(outcome_ids) != RUBRIC_DIMENSIONS:
@@ -308,10 +331,14 @@ def validate(
         or grid.get("total_frame_by_outcome_estimands") != 28
     ):
         errors.append("estimand grid must declare 28 coequal estimands")
-    if (plan.get("wording_aggregation") or {}).get(
-        "canonical_variant_privilege"
-    ) is not False:
-        errors.append("canonical wording must not be privileged in the full analysis")
+    wording = plan.get("wording_aggregation") or {}
+    if wording.get("canonical_variant_privilege") != "primary_full_matrix_only":
+        errors.append(
+            "wording policy must distinguish the canonical full matrix from the "
+            "nested-paraphrase robustness subset"
+        )
+    if not wording.get("primary_full_matrix") or not wording.get("robustness_subset"):
+        errors.append("wording policy must document both completed estimands")
 
     overlap_plan = (plan.get("uncertainty_and_multiplicity") or {}).get(
         "overlap_sensitivity"

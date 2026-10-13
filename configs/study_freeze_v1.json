@@ -1,0 +1,119 @@
+{
+  "schema_version": "1.0",
+  "freeze_id": "conspire_bench_v3_automated_evidence_20261014",
+  "status": "automated_evidence_frozen_pending_human_validation",
+  "scope": "A diagnostic matched benchmark of how user-established conversational roles alter assistant epistemic posture toward circulating conspiracy narratives. It is not a prevalence estimate, truth-adjudication system, clinical instrument, user-outcome study, model leaderboard, or deployment certification.",
+  "design": {
+    "motifs": 51,
+    "interaction_structures": 3,
+    "canonical_frame_families": 5,
+    "target_models": 17,
+    "canonical_responses": 13005,
+    "judge_families": 4,
+    "canonical_judgments": 52020,
+    "paraphrase_motifs": 12,
+    "paraphrase_scenarios": 36,
+    "paraphrase_conditions": 17,
+    "paraphrase_target_models": 4,
+    "paraphrase_responses": 2448,
+    "paraphrase_judgments": 9792
+  },
+  "analysis_choices": {
+    "full_matrix": "Five canonical frame conditions over every motif, structure, and target model.",
+    "paraphrase_robustness": "Outcome-blind 12-motif subset over four large target models; equal-average four wordings within each non-neutral frame family before comparing with neutral.",
+    "outcomes": "Seven coequal rubric outcomes; no overall-safety composite.",
+    "primary_judge_summary": "Cross-family aggregate excluding the target model family; all individual and same-family judgments retained for sensitivity only.",
+    "uncertainty": "Motif-cluster bootstrap intervals and motif-level sign tests; BH-FDR across 28 frame-by-outcome tests.",
+    "controls": "Matched non-conspiracy controls are outside the primary experiment."
+  },
+  "frozen_artifacts": [
+    {
+      "path": "Conspire-Bench-v3.json",
+      "sha256": "64c0b52a9e2fc61e0b9ffc54f044e2bac2a46728478bff5f6a19d52f6b9766cd"
+    },
+    {
+      "path": "configs/context_variants.json",
+      "sha256": "66aee557147ab13cf2bcd18169488a2b5ff799cb4efacf903ebe3388d1a33699"
+    },
+    {
+      "path": "configs/experiment_v3_local_full.json",
+      "sha256": "78c5523656801bda7a5338994692660a5e635d72f20c47f827330f675c5a5314"
+    },
+    {
+      "path": "configs/response_pool_freeze_v1.json",
+      "sha256": "40967d4b443573644a3bab12f1185becbb2c548593e066c93398392c7443c7b6"
+    },
+    {
+      "path": "results/judge_v3_full_20260920/judge_v3_full.completed.json",
+      "sha256": "871c6b4dc5af3bf3f71fab6918d04b87f022025f7ef789a9a7304b6cfa75da22"
+    },
+    {
+      "path": "results/judge_v3_full_20260920/judge_v3_full_calibrated.json",
+      "sha256": "f2d5d40dbe4fc4ad85f643ad59e795f5377ead9474d5dc3751561320e6b510d4"
+    },
+    {
+      "path": "results/judge_v3_full_20260920/formal_analysis_v1/statistics.json",
+      "sha256": "4a17f7ec6d6179ae865ba8de541ac3267083419a32b9bf62b73cba92193eb092"
+    },
+    {
+      "path": "results/judge_v3_full_20260920/formal_analysis_v1/frame_effects_main_v3.json",
+      "sha256": "4792ea02817e65e200af2f31cc85ff3eb67aec94e3357aff6ebbf434aa5396b3"
+    },
+    {
+      "path": "configs/paraphrase_robustness_v1.json",
+      "sha256": "dccee2997c4f0f6dd5cb49ef0edc3bdce3b8ea1ce3be45276c697a71986cd48f"
+    },
+    {
+      "path": "results/paraphrase_robustness_v1_20261012/paraphrase_v1.completed.json",
+      "sha256": "ec2b047c7667b7a1a47a5d2e28edc19623adca2480ef7f691c62e30b08cac045"
+    },
+    {
+      "path": "results/paraphrase_robustness_v1_20261012/paraphrase_v1_four_judges.json",
+      "sha256": "9560c717608c8d22ee4e42fb1454f697c93d9488a076df7f8b627e8af8558cdc"
+    },
+    {
+      "path": "results/paraphrase_robustness_v1_20261012/analysis/statistics.json",
+      "sha256": "3db7504576fd5724eb93972a855b91e16d5b2ff042536343f93ba451e660e03c"
+    },
+    {
+      "path": "results/judge_orthogonality_v8_suite2_20260922/judge_orthogonality_analysis.json",
+      "sha256": "9ce06385d2345f0fcff048ed3eb032e40770b5f6dda3530f363599a9f4c7dd25"
+    }
+  ],
+  "supported_story": [
+    "Conversational role is a substantive experimental factor: matched frame changes shift amplification, grounding, uncertainty calibration, support, and global appropriateness rather than merely changing style.",
+    "Brainstorming reliably increases belief amplification and weakens grounding and uncertainty calibration. Its effect on the stricter binary harmful-elaboration outcome is small and not reliable in the full matrix.",
+    "Critical review reliably improves grounding and uncertainty calibration. Its canonical reduction in amplification is strong in the full matrix but is not stable enough across the paraphrase subset to claim wording-invariant suppression of amplification.",
+    "Sensemaking can increase amplification while weakening epistemic boundaries, but several sensemaking effects are less stable across paraphrases than the brainstorming and supportive-listening effects.",
+    "Supportive listening creates a measurable tradeoff: much stronger supportive engagement accompanies higher perceived amplification and weaker grounding/calibration, without a robust increase in novel harmful elaboration.",
+    "Interaction trajectory matters at least as much as the opening frame: progressive and especially resistance conversations are harder than matched single-turn prompts.",
+    "Larger models generally improve baseline epistemic behavior within the Qwen and Gemma series, but frame sensitivity does not disappear monotonically with scale and cross-family scaling claims are not warranted.",
+    "Judge-family disagreement and family-associated scoring shifts are material. They are measurement limitations and hypotheses, not proof that any judge is correct or that self-family preference is causal."
+  ],
+  "claim_restrictions": [
+    "Do not describe the current automated scores as human-validated until formal expert results are available.",
+    "Do not interpret appropriate_redirection substantively before experts validate cue applicability; judge families applied not-applicable very differently.",
+    "Do not claim all frame effects are invariant to wording; report canonical and paraphrase-subset estimates together.",
+    "Do not claim frame prevalence, real-user preference, belief change, clinical benefit or harm, or deployment safety.",
+    "Do not rank models with a single aggregate score or claim universal monotonic scaling.",
+    "Do not treat synthetic orthogonality tests or judge-prompt consistency instructions as human validity evidence.",
+    "Do not call the automated panel fully target-independent: every judge family appears elsewhere in the target matrix, although the primary score excludes the matching target family."
+  ],
+  "human_evidence_required": [
+    "Independent 51-motif scenario QA for circulation match, narrative fidelity, construct alignment, matched structures, identity treatment, plausibility, and difficulty.",
+    "Two to three experts complete rubric content-validity review and a 16-item timed independent calibration.",
+    "After any one-time rubric amendment, freeze the rubric and expert workload before formal outcomes are inspected.",
+    "Two independent expert ratings for 54 representative and 18 measurement-challenge conversations, with representative and enriched strata reported separately.",
+    "Dimension-level expert agreement and expert-consensus agreement with the cross-family aggregate and every individual judge, with uncertainty and raw applicability/prevalence counts."
+  ],
+  "student_study_decision": {
+    "included": false,
+    "reason": "A lay paired-frame comparison does not answer the reviewers' core questions about rubric validity, expert agreement, or LLM-judge accuracy, and it cannot establish frame prevalence or downstream user outcomes.",
+    "activate_only_if": [
+      "The paper adds a claim about perceived support, helpfulness, credibility, or response preference.",
+      "A reviewer explicitly requests non-expert perception evidence after expert validation.",
+      "A separate approved downstream user study is designed."
+    ]
+  },
+  "next_gate": "Expert content-validity and calibration may begin. Formal response annotation remains locked until independent scenario QA, any rubric amendments, workload timing, ethics/consent/compensation/welfare review, and final plan freeze are complete."
+}

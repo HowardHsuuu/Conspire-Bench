@@ -77,6 +77,21 @@ function parseJsonl(text) {
   return rows;
 }
 
+function parseAssignment(assignment) {
+  if (!assignment || !Array.isArray(assignment.items)) {
+    throw new Error("No assignment was attached to this link.");
+  }
+  const rows = parseJsonl(JSON.stringify(assignment.items));
+  const assignedIds = [...new Set(rows.map((item) => String(item.annotator_id || "").trim()).filter(Boolean))];
+  if (assignedIds.length > 1) throw new Error("This assignment contains items for more than one annotator.");
+  const annotatorId = String(assignment.annotatorId || assignedIds[0] || "").trim();
+  if (!annotatorId) throw new Error("This assignment does not include a pseudonymous annotator ID.");
+  if (assignedIds.length === 1 && assignedIds[0] !== annotatorId) {
+    throw new Error("The assignment ID does not match its annotation items.");
+  }
+  return { rows, annotatorId };
+}
+
 function transcriptHtml(messages, heading) {
   const bubbles = messages.map((message) => `
     <div class="message-bubble ${message.role === "assistant" ? "assistant" : ""}">
@@ -264,38 +279,34 @@ function exportJsonl() {
   URL.revokeObjectURL(url);
 }
 
-$("fileInput").addEventListener("change", async (event) => {
-  const file = event.target.files[0];
-  if (!file) return;
+async function startAssignedWork() {
   try {
-    const text = await file.text();
-    const items = parseJsonl(text);
-    const assignedIds = [...new Set(items.map((item) => String(item.annotator_id || "").trim()).filter(Boolean))];
-    if (assignedIds.length > 1) throw new Error("This file contains assignments for more than one annotator.");
-    let annotatorId = $("annotatorId").value.trim();
-    if (assignedIds.length === 1) {
-      if (annotatorId && annotatorId !== assignedIds[0]) {
-        throw new Error("The entered annotator ID does not match this assigned package.");
-      }
-      annotatorId = assignedIds[0];
-      $("annotatorId").value = annotatorId;
-      $("annotatorId").disabled = true;
-    }
-    if (!annotatorId) throw new Error("Enter a pseudonymous annotator ID first.");
-    state.items = items;
+    const assignment = window.CONSPIRE_BENCH_ASSIGNMENT;
+    const { rows, annotatorId } = parseAssignment(assignment);
+    const packageText = JSON.stringify({ assignmentId: assignment.assignmentId || "", items: rows });
+    state.items = rows;
     state.itemType = state.items[0].item_type;
     state.annotatorId = annotatorId;
-    state.packageKey = await digestText(text);
+    state.packageKey = await digestText(packageText);
     state.responses = {};
     state.index = 0;
     restore();
-    $("setup").classList.add("hidden");
+    const label = String(assignment.title || "Assigned annotation");
+    const mode = assignment.demo ? "Demo" : "Assigned study";
+    $("assignmentMeta").textContent = `${mode} · ${label} · ${annotatorId}`;
+    $("exportHeading").textContent = assignment.demo ? "Demo results" : "Return ratings";
+    $("exportDescription").textContent = assignment.demo
+      ? "This preview saves progress in this browser. Downloaded JSONL can be checked with the research import pipeline."
+      : "Progress is saved only in this browser. Download the completed JSONL and return it through the secure channel specified by the research team.";
     $("workspace").classList.remove("hidden");
     render();
   } catch (error) {
-    $("setupMessage").textContent = error.message;
+    $("progressText").textContent = "Assignment unavailable";
+    $("assignmentMeta").textContent = "No items loaded";
+    $("loadErrorMessage").textContent = error.message;
+    $("loadError").classList.remove("hidden");
   }
-});
+}
 
 $("annotationForm").addEventListener("submit", (event) => { event.preventDefault(); saveCurrent(true); });
 $("previousButton").addEventListener("click", () => { if (state.index > 0) { state.index -= 1; persist(); render(); } });
@@ -305,3 +316,5 @@ $("clearProgress").addEventListener("click", () => {
   if (!confirm("Clear all saved ratings for this annotator and package?")) return;
   localStorage.removeItem(storageKey()); state.responses = {}; state.index = 0; render();
 });
+
+startAssignedWork();
