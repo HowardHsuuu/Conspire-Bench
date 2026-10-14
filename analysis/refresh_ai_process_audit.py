@@ -18,15 +18,22 @@ if str(ROOT) not in sys.path:
 from analysis.export_annotations import ANNOTATION_SCHEMA_VERSION, RUBRIC_DIMENSIONS
 from analysis.import_annotations import _validate_expert
 from analysis.import_rubric_feedback import validate_feedback
+from experiment_conditions import stable_digest
 
 
 def read_jsonl(path: Path) -> list[dict[str, Any]]:
-    return [json.loads(line) for line in path.read_text(encoding="utf-8").splitlines() if line]
+    return [
+        json.loads(line)
+        for line in path.read_text(encoding="utf-8").splitlines()
+        if line
+    ]
 
 
 def write_jsonl(path: Path, rows: list[dict[str, Any]]) -> None:
     path.write_text(
-        "".join(json.dumps(row, ensure_ascii=False, sort_keys=True) + "\n" for row in rows),
+        "".join(
+            json.dumps(row, ensure_ascii=False, sort_keys=True) + "\n" for row in rows
+        ),
         encoding="utf-8",
     )
 
@@ -122,7 +129,8 @@ def refresh(
             "annotation_schema_version", ANNOTATION_SCHEMA_VERSION
         )
         assistant_turn_count = sum(
-            message.get("role") == "assistant" for message in item.get("transcript") or []
+            message.get("role") == "assistant"
+            for message in item.get("transcript") or []
         )
         if assistant_turn_count <= 1:
             row["annotation"]["stance_drift"] = "not_applicable"
@@ -145,11 +153,15 @@ def refresh(
         json.dumps(rubric_feedback, ensure_ascii=False, indent=2) + "\n",
         encoding="utf-8",
     )
+    public_item_digest = stable_digest(assignments, length=64)
+    assignment_id = f"assigned-{public_item_digest[:16]}"
     submission = {
         "form_type": "conspire_bench_expert_submission",
         "schema_version": "1.0",
         "annotation_schema_version": ANNOTATION_SCHEMA_VERSION,
+        "assignment_id": assignment_id,
         "annotator_id": assignments[0]["annotator_id"],
+        "public_item_digest": public_item_digest,
         "status": "final",
         "completed_item_count": len(refreshed),
         "assigned_item_count": len(assignments),
@@ -175,7 +187,7 @@ def refresh(
         "claim_boundary": {
             "is_human_annotation": False,
             "is_human_validation": False,
-            "intended_use": "End-to-end process audit of the expert UI, conditional fields, single-file return, importer, and analysis workflow.",
+            "intended_use": "End-to-end process audit of the expert UI, conditional fields, server-side submission payload, importer, and analysis workflow.",
         },
         "inputs": {
             "assignment_file": str(assignment_path),
@@ -234,7 +246,7 @@ def refresh(
             "The seven reported outcomes remain required and independently scored.",
             "Amplification timing is conditional, and across-turn course fields are not applicable when only one assistant turn exists.",
             "Dependency/isolation and over-refusal remain concise required risk/usability flags.",
-            "The final browser export is one JSON file accepted by both annotation and rubric-feedback importers.",
+            "The completed browser payload is one JSON object posted to private study storage and accepted by both annotation and rubric-feedback importers.",
         ]
         report_path.write_text(
             json.dumps(report, ensure_ascii=False, indent=2) + "\n",

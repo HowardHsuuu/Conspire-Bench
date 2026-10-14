@@ -52,6 +52,12 @@ const state = {
   rubricFeedback: null,
   rubricReviewComplete: false,
   storageAvailable: true,
+  assignmentId: "",
+  publicItemDigest: "",
+  demo: false,
+  submissionReceipt: null,
+  submitting: false,
+  submissionError: "",
 };
 
 const $ = (id) => document.getElementById(id);
@@ -88,7 +94,7 @@ function storageKey() {
 function markStorageUnavailable() {
   state.storageAvailable = false;
   $("storageWarning").classList.remove("hidden");
-  $("saveStatus").textContent = "Backups required";
+  $("saveStatus").textContent = "Keep this tab open";
 }
 
 function probeStorage() {
@@ -104,7 +110,7 @@ function probeStorage() {
 }
 
 function setSaveStatus(message) {
-  $("saveStatus").textContent = state.storageAvailable ? message : "Backups required";
+  $("saveStatus").textContent = state.storageAvailable ? message : "Keep this tab open";
 }
 
 function persist() {
@@ -116,6 +122,7 @@ function persist() {
       started: state.started,
       rubricFeedback: state.rubricFeedback,
       rubricReviewComplete: state.rubricReviewComplete,
+      submissionReceipt: state.submissionReceipt,
     }));
   } catch (_) {
     markStorageUnavailable();
@@ -139,6 +146,7 @@ function restore() {
     state.started = parsed.started === true;
     state.rubricFeedback = parsed.rubricFeedback || null;
     state.rubricReviewComplete = parsed.rubricReviewComplete === true;
+    state.submissionReceipt = parsed.submissionReceipt || null;
   } catch (_) {
     try { localStorage.removeItem(storageKey()); } catch (_) { markStorageUnavailable(); }
   }
@@ -181,6 +189,9 @@ function parseAssignment(assignment) {
   if (!annotatorId) throw new Error("This assignment does not include a pseudonymous annotator ID.");
   if (assignedIds.length === 1 && assignedIds[0] !== annotatorId) {
     throw new Error("The assignment ID does not match its annotation items.");
+  }
+  if (!assignment.demo && !String(assignment.assignmentId || "").trim()) {
+    throw new Error("This assignment does not include a submission identifier.");
   }
   return { rows, annotatorId };
 }
@@ -378,7 +389,14 @@ function renderForm(item) {
     const byName = new Map(entries);
     const core = CORE_FIELDS.filter((field) => byName.has(field)).map((field) => [field, byName.get(field)]);
     const timing = TIMING_FIELDS.filter((field) => byName.has(field)).map((field) => [field, byName.get(field)]);
-    const course = COURSE_FIELDS.filter((field) => byName.has(field)).map((field) => [field, byName.get(field)]);
+    const course = COURSE_FIELDS.filter((field) => byName.has(field)).map((field) => {
+      const schema = byName.get(field);
+      if (!["stance_drift", "escalation_pattern"].includes(field)) return [field, schema];
+      return [field, {
+        ...schema,
+        choices: (schema.choices || []).filter((choice) => choice !== "not_applicable"),
+      }];
+    });
     const risks = RISK_FIELDS.filter((field) => byName.has(field)).map((field) => [field, byName.get(field)]);
     const quality = QUALITY_FIELDS.filter((field) => byName.has(field)).map((field) => [field, byName.get(field)]);
     const known = new Set([...CORE_FIELDS, ...TIMING_FIELDS, ...COURSE_FIELDS, ...RISK_FIELDS, ...QUALITY_FIELDS]);
@@ -435,10 +453,27 @@ function updateProgress() {
   $("progressText").textContent = `${completed} of ${state.items.length} complete${drafted ? ` · ${drafted} draft` : ""}`;
   $("progressBar").max = state.items.length;
   $("progressBar").value = completed;
-  $("backupButton").disabled = completed === 0 && !state.rubricReviewComplete;
-  $("exportButton").disabled = completed !== state.items.length;
-  if (completed === state.items.length) {
-    $("exportDescription").textContent = "All items are complete. Download the final JSON submission and return it through the secure channel specified by the research team.";
+  const submitButton = $("submitButton");
+  const receipt = $("submissionReceipt");
+  submitButton.disabled = state.demo || state.submitting || completed !== state.items.length || !state.rubricReviewComplete;
+  submitButton.textContent = state.submitting
+    ? "Submitting…"
+    : (state.submissionReceipt ? "Resubmit corrected annotation" : "Submit completed annotation");
+  receipt.classList.toggle("hidden", !state.submissionReceipt);
+  receipt.textContent = state.submissionReceipt
+    ? `Received ${new Date(state.submissionReceipt.received_at_utc).toLocaleString()} · receipt ${state.submissionReceipt.id.slice(0, 12)}`
+    : "";
+  $("submissionDescription").classList.toggle("error", Boolean(state.submissionError));
+  if (state.submissionError) {
+    $("submissionDescription").textContent = state.submissionError;
+  } else if (state.demo) {
+    $("submissionDescription").textContent = "This local preview does not send data. Formal assignments submit directly to the research team.";
+  } else if (state.submissionReceipt) {
+    $("submissionDescription").textContent = "Submission received. The research team—not the annotator—downloads the stored JSON.";
+  } else if (completed === state.items.length && state.rubricReviewComplete) {
+    $("submissionDescription").textContent = "All items are complete. Submit once; no file download or email attachment is required.";
+  } else {
+    $("submissionDescription").textContent = "Progress is saved in this browser. Submission unlocks after every item is complete.";
   }
 }
 
@@ -603,11 +638,17 @@ function updateConditionalControls() {
   }
 }
 
+function markSubmissionStale() {
+  if (state.submissionReceipt) state.submissionReceipt = null;
+  state.submissionError = "";
+}
+
 function captureDraft() {
   const item = state.items[state.index];
   if (!item || !$("annotationForm")) return;
   updateConditionalControls();
   const values = readLooseValues(item);
+  markSubmissionStale();
   state.responses[item.annotation_item_id] = { ...values, __complete: false };
   persist();
   setSaveStatus("Draft saved locally");
@@ -636,6 +677,7 @@ function saveCurrent(advance) {
   const item = state.items[state.index];
   try {
     const values = formValues(item);
+    markSubmissionStale();
     state.responses[item.annotation_item_id] = { ...values, __complete: true };
     if (advance && state.index < state.items.length - 1) state.index += 1;
     persist();
@@ -660,38 +702,55 @@ function completedRows() {
   });
 }
 
-function downloadRows({ final }) {
+function buildSubmission() {
   const rows = completedRows();
-  if (!rows.length) {
-    showFormError(new Error("Complete at least one item before downloading a backup."));
-    return;
+  if (rows.length !== state.items.length || !state.rubricReviewComplete) {
+    throw new Error("Complete the rubric review and every assigned conversation before submitting.");
   }
-  if (final && rows.length !== state.items.length) {
-    showFormError(new Error("Complete every item before downloading the final submission."));
-    return;
-  }
-  if (final && !confirm(`Download the final submission with all ${rows.length} completed items?`)) return;
-  const submission = {
+  return {
     form_type: "conspire_bench_expert_submission",
     schema_version: "1.0",
     annotation_schema_version: state.items[0]?.annotation_schema_version || "2.1",
-    assignment_id: window.CONSPIRE_BENCH_ASSIGNMENT?.assignmentId || "",
+    assignment_id: state.assignmentId,
     annotator_id: state.annotatorId,
-    public_item_digest: state.packageKey,
-    status: final ? "final" : "in_progress_backup",
+    public_item_digest: state.publicItemDigest,
+    status: "final",
     completed_item_count: rows.length,
     assigned_item_count: state.items.length,
     rubric_feedback: state.rubricFeedback,
     annotations: rows,
   };
-  const blob = new Blob([`${JSON.stringify(submission, null, 2)}\n`], { type: "application/json" });
-  const url = URL.createObjectURL(blob);
-  const link = document.createElement("a");
-  link.href = url;
-  const suffix = final ? "final" : `backup-${rows.length}-of-${state.items.length}`;
-  link.download = `${state.itemType}-${state.annotatorId}-${suffix}.json`;
-  link.click();
-  window.setTimeout(() => URL.revokeObjectURL(url), 1000);
+}
+
+async function submitFinal() {
+  if (state.demo || state.submitting) return;
+  try {
+    const submission = buildSubmission();
+    const verb = state.submissionReceipt ? "Replace the prior submission" : "Submit the completed assignment";
+    if (!confirm(`${verb} with all ${submission.annotations.length} completed items?`)) return;
+    state.submitting = true;
+    state.submissionError = "";
+    updateProgress();
+    const response = await fetch("/api/submit", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(submission),
+      credentials: "same-origin",
+    });
+    const payload = await response.json().catch(() => ({}));
+    if (!response.ok || !payload.receipt) {
+      throw new Error(payload.error || "The submission could not be stored. Please try again or contact the research team.");
+    }
+    state.submissionReceipt = payload.receipt;
+    state.submissionError = "";
+    persist();
+    setSaveStatus("Submission received");
+  } catch (error) {
+    state.submissionError = error.message;
+  } finally {
+    state.submitting = false;
+    updateProgress();
+  }
 }
 
 function navigate(delta) {
@@ -722,6 +781,7 @@ function showRubricReviewPage() {
 }
 
 function captureRubricDraft() {
+  markSubmissionStale();
   state.rubricFeedback = readRubricReview({ validate: false });
   state.rubricReviewComplete = false;
   persist();
@@ -745,10 +805,15 @@ async function startAssignedWork() {
     state.itemType = state.items[0].item_type;
     state.annotatorId = annotatorId;
     state.packageKey = publicItemDigest.slice(0, 16);
+    state.assignmentId = String(assignment.assignmentId || "");
+    state.publicItemDigest = publicItemDigest;
+    state.demo = assignment.demo === true;
     state.responses = {};
     state.index = 0;
     state.rubricFeedback = null;
     state.rubricReviewComplete = state.itemType !== "expert_conversation";
+    state.submissionReceipt = null;
+    state.submissionError = "";
     state.storageAvailable = probeStorage();
     restore();
     const label = String(assignment.title || "Assigned annotation");
@@ -762,10 +827,7 @@ async function startAssignedWork() {
     $("beginButton").textContent = state.rubricReviewComplete
       ? (Object.keys(state.responses).length ? "Continue conversations" : "Begin conversations")
       : (state.rubricFeedback ? "Continue rubric review" : "Review rubric");
-    $("exportHeading").textContent = assignment.demo ? "Demo results" : "Return ratings";
-    $("exportDescription").textContent = assignment.demo
-      ? "This preview saves progress in this browser. The final submission contains the rubric review and all completed ratings in one file."
-      : "Progress is saved only in this browser. Download backups during long assignments and return only the final submission file.";
+    $("submissionHeading").textContent = assignment.demo ? "Demo submission" : "Submit ratings";
     $("progressBar").max = state.items.length;
     $("welcome").classList.remove("hidden");
     updateProgress();
@@ -791,6 +853,7 @@ $("rubricReviewForm").addEventListener("input", (event) => {
 $("rubricReviewForm").addEventListener("submit", (event) => {
   event.preventDefault();
   try {
+    markSubmissionStale();
     state.rubricFeedback = readRubricReview({ validate: true });
     state.rubricReviewComplete = true;
     persist();
@@ -803,8 +866,7 @@ $("rubricReviewForm").addEventListener("submit", (event) => {
 $("annotationForm").addEventListener("submit", (event) => { event.preventDefault(); saveCurrent(true); });
 $("previousButton").addEventListener("click", () => navigate(-1));
 $("nextButton").addEventListener("click", () => navigate(1));
-$("backupButton").addEventListener("click", () => downloadRows({ final: false }));
-$("exportButton").addEventListener("click", () => downloadRows({ final: true }));
+$("submitButton").addEventListener("click", submitFinal);
 $("clearProgress").addEventListener("click", () => {
   if (!confirm("Clear the rubric review and all locally saved conversation ratings? This cannot be undone.")) return;
   if (state.storageAvailable) {
@@ -813,6 +875,8 @@ $("clearProgress").addEventListener("click", () => {
   state.responses = {};
   state.rubricFeedback = null;
   state.rubricReviewComplete = false;
+  state.submissionReceipt = null;
+  state.submissionError = "";
   state.index = 0;
   state.started = false;
   $("workspace").classList.add("hidden");

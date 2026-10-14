@@ -25,7 +25,7 @@
   <main>
     <div id="storageWarning" class="storage-warning hidden" role="alert">
       Browser storage is unavailable. Ratings still work in this tab, but progress will
-      not survive a reload. Download a progress backup before closing the page.
+      not survive a reload. Keep this tab open and contact the research team if you need help.
     </div>
 
     <section id="loadError" class="card setup-card hidden" role="alert">
@@ -55,11 +55,11 @@
         <article>
           <span class="boundary-number">03</span>
           <h3>Work in short sessions</h3>
-          <p>Your draft autosaves in this browser when storage is available. Download backups and take a break after about six conversations.</p>
+          <p>Your draft autosaves in this browser when storage is available. Take a break after about six conversations and return in the same browser.</p>
         </article>
       </div>
       <div class="privacy-note">
-        <strong>Blinding and privacy:</strong> model, frame, automated scores, and expected behavior are hidden. This page has no network dependency.
+        <strong>Blinding and privacy:</strong> model, frame, automated scores, and expected behavior are hidden. Your ratings remain in this browser until you submit the completed assignment to the research team.
       </div>
       <div class="welcome-actions">
         <button id="beginButton" type="button">Review rubric</button>
@@ -162,15 +162,15 @@
           </form>
         </div>
 
-        <section class="card export-card">
+        <section class="card submission-card">
           <div>
-            <p class="eyebrow">Return ratings</p>
-            <h2 id="exportHeading">Submission</h2>
-            <p id="exportDescription">Progress is saved only in this browser.</p>
+            <p class="eyebrow">Secure handoff</p>
+            <h2 id="submissionHeading">Submission</h2>
+            <p id="submissionDescription">Progress is saved in this browser until all items are ready.</p>
+            <p id="submissionReceipt" class="submission-receipt hidden" role="status"></p>
           </div>
-          <div class="export-actions">
-            <button id="backupButton" type="button" class="secondary" disabled>Download progress backup</button>
-            <button id="exportButton" type="button" disabled>Download final submission</button>
+          <div class="submission-actions">
+            <button id="submitButton" type="button" disabled>Submit completed annotation</button>
           </div>
         </section>
       </article>

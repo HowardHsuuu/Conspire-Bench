@@ -719,11 +719,11 @@ class SmokeTests(unittest.TestCase):
             self.assertEqual(json.loads(result_path.read_text()), {"version": 2})
             self.assertEqual(list(Path(temporary).glob("result.json.tmp-*")), [])
 
-    def test_annotation_ui_is_local_and_rubric_anchored(self):
+    def test_annotation_ui_is_same_origin_and_rubric_anchored(self):
         ui_script = (ROOT / "annotation_ui" / "app.js").read_text(encoding="utf-8")
         ui_page = (ROOT / "annotation_ui" / "index.html").read_text(encoding="utf-8")
 
-        self.assertNotIn("fetch(", ui_script)
+        self.assertIn('fetch("/api/submit"', ui_script)
         self.assertNotIn("XMLHttpRequest", ui_script)
         self.assertNotIn("http://", ui_page)
         self.assertNotIn("https://", ui_page)
@@ -732,9 +732,12 @@ class SmokeTests(unittest.TestCase):
         self.assertIn("CONSPIRE_BENCH_ASSIGNMENT", ui_script)
         self.assertIn("publicItemDigest", ui_script)
         self.assertIn("probeStorage", ui_script)
-        self.assertIn("final JSON submission", ui_script)
+        self.assertIn("Submit completed annotation", ui_page)
+        self.assertIn("no file download", ui_script)
+        self.assertNotIn("downloadRows", ui_script)
         self.assertNotIn("final JSONL", ui_script)
-        self.assertIn("Download a progress backup", ui_page)
+        self.assertNotIn("Download a progress backup", ui_page)
+        self.assertNotIn("Download backups", ui_page)
         for field in (
             "belief_amplification",
             "epistemic_grounding",

@@ -48,6 +48,11 @@ def _javascript_assignment(payload: dict[str, Any]) -> str:
     return '"use strict";\nwindow.CONSPIRE_BENCH_ASSIGNMENT = ' + encoded + ";\n"
 
 
+def _javascript_constraints(payload: dict[str, Any]) -> str:
+    encoded = json.dumps(payload, ensure_ascii=True, separators=(",", ":"))
+    return "export const ASSIGNMENT_CONSTRAINTS = Object.freeze(" + encoded + ");\n"
+
+
 def build_web_bundle(
     assignment_path: Path,
     output_dir: Path,
@@ -84,13 +89,49 @@ def build_web_bundle(
     index_path = output_dir / "index.html"
     index_path.write_text(index_text, encoding="utf-8")
     written.append(index_path)
-    for name in ("app.js", "styles.css", "vercel.json", "robots.txt"):
+    for name in (
+        "app.js",
+        "styles.css",
+        "vercel.json",
+        "robots.txt",
+        "package.json",
+        "package-lock.json",
+    ):
         destination = output_dir / name
         shutil.copyfile(source_dir / name, destination)
         written.append(destination)
     assignment_output = output_dir / "assignment.js"
     assignment_output.write_text(_javascript_assignment(payload), encoding="utf-8")
     written.append(assignment_output)
+
+    api_output_dir = output_dir / "api"
+    api_output_dir.mkdir(parents=True, exist_ok=True)
+    for name in ("submit.js", "submission_validation.js"):
+        destination = api_output_dir / name
+        shutil.copyfile(source_dir / "api" / name, destination)
+        written.append(destination)
+    constraints = {
+        "assignmentId": assignment_id,
+        "annotatorId": annotator_id,
+        "publicItemDigest": public_digest,
+        "itemType": rows[0]["item_type"],
+        "annotationSchemaVersion": rows[0].get("annotation_schema_version"),
+        "rubricVersion": rows[0].get("rubric_version"),
+        "expectedItemCount": len(rows),
+        "items": [
+            {
+                "annotationItemId": row["annotation_item_id"],
+                "assistantTurnCount": sum(
+                    message.get("role") == "assistant"
+                    for message in row.get("transcript") or []
+                ),
+            }
+            for row in rows
+        ],
+    }
+    constraints_path = api_output_dir / "assignment_constraints.js"
+    constraints_path.write_text(_javascript_constraints(constraints), encoding="utf-8")
+    written.append(constraints_path)
 
     manifest = {
         "schema_version": "1.0",
@@ -102,11 +143,14 @@ def build_web_bundle(
         "planned_minutes_per_item": minutes_per_item,
         "public_item_digest": public_digest,
         "contains_private_key": False,
-        "network_dependencies": False,
+        "network_dependencies": True,
         "annotation_schema_version": rows[0].get("annotation_schema_version"),
-        "rubric_content_validity_included": rows[0]["item_type"] == "expert_conversation",
-        "submission_format": "single_json_with_rubric_feedback_and_annotations",
-        "files": [path.name for path in written],
+        "rubric_content_validity_included": rows[0]["item_type"]
+        == "expert_conversation",
+        "submission_format": "server_posted_json_with_rubric_feedback_and_annotations",
+        "submission_storage": "private_vercel_blob",
+        "researcher_download_location": "vercel_storage_dashboard",
+        "files": [path.relative_to(output_dir).as_posix() for path in written],
     }
     manifest_path = output_dir / "bundle_manifest.json"
     manifest_path.write_text(

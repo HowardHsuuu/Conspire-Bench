@@ -195,10 +195,11 @@ button { padding: .68rem .9rem; border: 1px solid var(--accent); border-radius: 
 button:hover:not(:disabled) { background: var(--accent-dark); }
 button.secondary { color: var(--accent-dark); background: white; }
 button:disabled { cursor: not-allowed; opacity: .45; }
-.export-card { display: flex; justify-content: space-between; gap: 1rem; align-items: center; margin-top: 1.1rem; padding: 1.1rem 1.25rem; }
-.export-card h2 { margin-bottom: .25rem; }
-.export-card p { margin-bottom: 0; color: var(--muted); }
-.export-actions { display: flex; gap: .55rem; }
+.submission-card { display: flex; justify-content: space-between; gap: 1rem; align-items: center; margin-top: 1.1rem; padding: 1.1rem 1.25rem; }
+.submission-card h2 { margin-bottom: .25rem; }
+.submission-card p { margin-bottom: 0; color: var(--muted); }
+.submission-actions { display: flex; gap: .55rem; }
+.submission-receipt { margin-top: .5rem !important; color: var(--accent-dark) !important; font-weight: 750; }
 
 @media (max-width: 1220px) {
   .review-grid { grid-template-columns: 1fr; }
@@ -221,11 +222,11 @@ button:disabled { cursor: not-allowed; opacity: .45; }
 }
 
 @media (max-width: 850px) {
-  .topbar, .export-card, .welcome-actions, .rubric-review-heading { align-items: stretch; flex-direction: column; }
+  .topbar, .submission-card, .welcome-actions, .rubric-review-heading { align-items: stretch; flex-direction: column; }
   .progress-wrap { width: 100%; min-width: 0; }
   .study-boundaries { grid-template-columns: 1fr; }
   .pair-grid { grid-template-columns: 1fr; }
-  .export-actions { flex-direction: column; }
+  .submission-actions { flex-direction: column; }
   .form-actions { grid-template-columns: 1fr; }
   .validity-grid, .overall-validity, .optional-feedback-grid { grid-template-columns: 1fr; }
   .rubric-review-actions { flex-direction: column-reverse; }

@@ -137,9 +137,11 @@ The importer uses the private randomization key to decode A/B into `neutral` ver
 - Randomization seed, source digest, rubric version, and readiness result are recorded in `manifest.json`.
 - The frozen private key also carries the rubric version. The importer rejects returned rows with a missing or different version, so pre-calibration and post-calibration ratings cannot be silently pooled.
 - The importer joins returned annotations to the private key and writes another private file; do not upload it to the annotation interface.
-- `annotation_ui/index.html` renders the public assignment attached to the page, retains progress locally, and exports one final JSON submission containing the one-time rubric content-validity review plus conversation annotations. Annotators do not select or upload assignment files. The page has no network dependencies and must never receive the private key.
+- `annotation_ui/index.html` renders the public assignment attached to the page and retains draft progress locally. On a deployed formal assignment, the annotator submits the completed rubric review and conversation annotations directly to the same-origin `/api/submit` endpoint; the annotator does not download, upload, or email JSON files.
+- The submission function validates the frozen assignment ID, public digest, annotator pseudonym, item set/order, schema versions, rubric content-validity review, conditional fields, and exact completion count before writing a timestamped JSON object to a private Vercel Blob store. The private key is never sent to the browser or stored with the public bundle.
+- The research team downloads submissions from the authenticated Vercel Storage dashboard. The Blob store must be private and connected to the deployment so `BLOB_READ_WRITE_TOKEN` is supplied only to the server function.
 - The expert interface shows the transcript beside the rubric, groups the seven reported outcomes separately from timing, across-turn course, and risk/usability checks, and requires only applicable fields. Harmful-elaboration subtypes and first-amplification turn are conditional; across-turn fields are automatically not applicable for one-assistant-turn transcripts. “Cannot determine” pauses other fields and requires an observable-evidence rationale.
-- The same final JSON can be supplied to `import_rubric_feedback.py` and `import_annotations.py`, so the expert returns one file rather than maintaining parallel forms.
+- After the research team downloads a stored submission, the same JSON can be supplied to `import_rubric_feedback.py` and `import_annotations.py`; the expert never has to maintain parallel forms or transfer a file.
 
 Open `annotation_ui/index.html` in a current browser. If the browser restricts
 local-file APIs, run `python3 -m http.server 8000` from the repository root and
@@ -148,8 +150,8 @@ opens a small blinded expert conversation-level assignment drawn from the curren
 pool. A deployed study replaces `window.CONSPIRE_BENCH_ASSIGNMENT` with the
 public items and pseudonymous annotator ID belonging to that assignment link;
 the private randomization key is never sent to the page. Progress remains in
-that browser's local storage; the preview can export completed JSONL for import
-by the research team.
+that browser's local storage. The repository preview does not transmit data;
+server submission is enabled only in a deployed assignment with private storage.
 
 ## Commands
 

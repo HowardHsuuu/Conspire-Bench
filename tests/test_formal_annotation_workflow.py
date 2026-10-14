@@ -214,7 +214,7 @@ class FormalAnnotationWorkflowTests(unittest.TestCase):
                 title="Expert calibration",
             )
 
-            self.assertEqual(len(written), 7)
+            self.assertEqual(len(written), 12)
             index = (bundle_dir / "index.html").read_text(encoding="utf-8")
             self.assertIn("assignment.js", index)
             self.assertNotIn("demo_assignment.js", index)
@@ -222,6 +222,16 @@ class FormalAnnotationWorkflowTests(unittest.TestCase):
             self.assertIn('"annotatorId":"expert_01"', assignment_js)
             self.assertIn('"demo":false', assignment_js)
             self.assertNotIn("model_name", assignment_js)
+            constraints_js = (
+                bundle_dir / "api" / "assignment_constraints.js"
+            ).read_text(encoding="utf-8")
+            self.assertIn('"annotatorId":"expert_01"', constraints_js)
+            self.assertIn('"expectedItemCount":1', constraints_js)
+            self.assertNotIn("model_name", constraints_js)
+            self.assertTrue((bundle_dir / "api" / "submit.js").exists())
+            self.assertTrue((bundle_dir / "api" / "submission_validation.js").exists())
+            self.assertTrue((bundle_dir / "package.json").exists())
+            self.assertTrue((bundle_dir / "package-lock.json").exists())
             manifest = json.loads(
                 (bundle_dir / "bundle_manifest.json").read_text(encoding="utf-8")
             )
@@ -230,6 +240,12 @@ class FormalAnnotationWorkflowTests(unittest.TestCase):
             self.assertFalse(manifest["contains_private_key"])
             self.assertEqual(manifest["annotation_schema_version"], "2.1")
             self.assertTrue(manifest["rubric_content_validity_included"])
+            self.assertTrue(manifest["network_dependencies"])
+            self.assertEqual(manifest["submission_storage"], "private_vercel_blob")
+            self.assertEqual(
+                manifest["researcher_download_location"],
+                "vercel_storage_dashboard",
+            )
             self.assertIn(manifest["public_item_digest"], assignment_js)
 
     def test_combined_expert_submission_can_feed_both_importers(self):
