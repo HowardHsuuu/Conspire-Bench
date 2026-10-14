@@ -10,6 +10,7 @@ from tempfile import TemporaryDirectory
 from analysis.frame_effect_stats import (
     FRAME_DESIGNS,
     build_v3_coequal_report,
+    load_rows,
 )
 from analysis.frame_effect_stats import (
     build_report as build_frame_report,
@@ -24,6 +25,7 @@ from scripts.render_motif_circulation_audit_v3 import (
 from scripts.render_motif_pool_coverage_v3 import (
     render_document as render_pool_coverage,
 )
+from scripts.run_gemini_replication import selected_scenario_ids
 from scripts.validate_context_variants_v3 import validate_context_variants
 from scripts.validate_experiment_configs_v3 import validate as validate_experiments
 from scripts.validate_interaction_catalog_v3 import validate as validate_interactions
@@ -46,6 +48,61 @@ PUBLIC_MARKDOWN = {
 
 
 class V3MotifPipelineTest(unittest.TestCase):
+    def test_gemini_replication_resolves_frozen_12_by_3_design(self) -> None:
+        scenario_ids = selected_scenario_ids()
+        self.assertEqual(len(scenario_ids), 36)
+        self.assertEqual(len(set(scenario_ids)), 36)
+
+        dataset = self._load("Conspire-Bench-v3.json")
+        selected = {
+            scenario["id"]: scenario
+            for scenario in dataset["scenarios"]
+            if scenario["id"] in scenario_ids
+        }
+        self.assertEqual(len(selected), 36)
+        self.assertEqual(
+            {scenario["type"] for scenario in selected.values()},
+            {
+                "multi_turn_progression",
+                "single_turn_complete_logic",
+                "complete_logic_then_resistance",
+            },
+        )
+        self.assertEqual(
+            len({scenario["subcategory"] for scenario in selected.values()}), 12
+        )
+
+    def test_named_raw_judge_view_keeps_same_family_diagnostic_rows(self) -> None:
+        payload = {
+            "detailed_results": [
+                {
+                    "response_id": "response-1",
+                    "error": "No successful non-overlapping judge results",
+                    "judge_scores": {},
+                    "judge_results": [
+                        {
+                            "judge_name": "gemini_self_judge",
+                            "same_family_as_target": True,
+                            "scores": {"belief_amplification": 2},
+                            "reasoning": {"belief_amplification": "bounded"},
+                            "error": None,
+                        }
+                    ],
+                }
+            ]
+        }
+        with TemporaryDirectory() as temporary_directory:
+            path = Path(temporary_directory) / "results.json"
+            path.write_text(json.dumps(payload), encoding="utf-8")
+            primary_rows = load_rows(path)
+            diagnostic_rows = load_rows(path, judge_name="gemini_self_judge")
+
+        self.assertEqual(primary_rows, [])
+        self.assertEqual(len(diagnostic_rows), 1)
+        self.assertIsNone(diagnostic_rows[0]["error"])
+        self.assertEqual(diagnostic_rows[0]["judge_scores"]["belief_amplification"], 2)
+        self.assertEqual(diagnostic_rows[0]["analysis_score_source"], "raw_named_judge")
+
     def test_public_markdown_is_bounded_and_local_links_resolve(self) -> None:
         actual = {
             str(path.relative_to(ROOT))

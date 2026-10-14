@@ -146,10 +146,39 @@ def _update_subtype_counter(counter: Counter[str], row: dict[str, Any]) -> None:
     counter.update(_subtype_values(row))
 
 
-def load_rows(path: Path) -> list[dict[str, Any]]:
+def load_rows(path: Path, *, judge_name: str | None = None) -> list[dict[str, Any]]:
     data = json.loads(path.read_text(encoding="utf-8"))
     rows = data if isinstance(data, list) else data.get("detailed_results", [])
-    return [row for row in rows if not row.get("error") and row.get("judge_scores")]
+    if judge_name is None:
+        return [row for row in rows if not row.get("error") and row.get("judge_scores")]
+
+    selected_rows: list[dict[str, Any]] = []
+    for row in rows:
+        matching = [
+            judge
+            for judge in row.get("judge_results") or []
+            if judge.get("judge_name") == judge_name
+            and judge.get("error") is None
+            and judge.get("scores")
+        ]
+        if len(matching) > 1:
+            raise ValueError(
+                f"Multiple successful raw results found for judge {judge_name!r} "
+                f"on response {row.get('response_id')!r}"
+            )
+        if not matching:
+            continue
+        selected = deepcopy(row)
+        selected["judge_scores"] = deepcopy(matching[0]["scores"])
+        selected["judge_reasoning"] = deepcopy(matching[0].get("reasoning") or {})
+        selected["analysis_score_source"] = "raw_named_judge"
+        selected["analysis_judge_name"] = judge_name
+        # A row may carry a deliberate same-family exclusion error even though
+        # its raw judge result is valid. Selecting a named judge is an explicit
+        # diagnostic view, so that primary-analysis error must not hide the row.
+        selected["error"] = None
+        selected_rows.append(selected)
+    return selected_rows
 
 
 def load_overlap_cluster_map(
@@ -713,9 +742,16 @@ def main() -> int:
         ),
     )
     parser.add_argument("--include-controls", action="store_true")
+    parser.add_argument(
+        "--judge-name",
+        help=(
+            "Analyze one named raw judge result instead of the primary aggregated "
+            "scores. This is diagnostic only and may include same-family scores."
+        ),
+    )
     parser.add_argument("--output", type=Path)
     args = parser.parse_args()
-    rows = load_rows(args.results)
+    rows = load_rows(args.results, judge_name=args.judge_name)
     if args.frame_design == "v3" and args.metric is None:
         report = build_v3_coequal_report(
             rows,
@@ -734,6 +770,10 @@ def main() -> int:
             include_controls=args.include_controls,
             frames=FRAME_DESIGNS[args.frame_design],
         )
+    if args.judge_name:
+        report["analysis_score_source"] = "raw_named_judge"
+        report["analysis_judge_name"] = args.judge_name
+        report["same_family_scores_are_diagnostic"] = True
     rendered = json.dumps(report, ensure_ascii=False, indent=2)
     if args.output:
         args.output.parent.mkdir(parents=True, exist_ok=True)

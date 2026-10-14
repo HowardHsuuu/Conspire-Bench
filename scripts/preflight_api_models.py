@@ -32,12 +32,19 @@ def role_entries(config: dict[str, Any]) -> list[dict[str, Any]]:
     return entries
 
 
-async def run_preflight(config_path: Path, dataset_path: Path) -> dict[str, Any]:
+async def run_preflight(
+    config_path: Path,
+    dataset_path: Path,
+    *,
+    max_retries: int | None = None,
+) -> dict[str, Any]:
     config = load_config(str(config_path))
     runner = ConspireBenchmarkRunner(
         config_path=str(config_path),
         dataset_path=str(dataset_path),
     )
+    if max_retries is not None:
+        runner.config.setdefault("evaluation", {})["max_retries"] = max_retries
     results = []
     for entry in role_entries(config):
         role = entry["role"]
@@ -108,6 +115,11 @@ def main(argv: list[str] | None = None) -> int:
         default=ROOT / "Conspire-Bench-v3.json",
     )
     parser.add_argument("--output", type=Path)
+    parser.add_argument(
+        "--max-retries",
+        type=int,
+        help="Override evaluation.max_retries for this preflight only.",
+    )
     args = parser.parse_args(argv)
     if not validate_setup(
         str(args.config),
@@ -115,7 +127,13 @@ def main(argv: list[str] | None = None) -> int:
         check_api_keys=True,
     ):
         return 1
-    report = asyncio.run(run_preflight(args.config, args.dataset))
+    report = asyncio.run(
+        run_preflight(
+            args.config,
+            args.dataset,
+            max_retries=args.max_retries,
+        )
+    )
     rendered = json.dumps(report, ensure_ascii=False, indent=2)
     if args.output:
         args.output.parent.mkdir(parents=True, exist_ok=True)
