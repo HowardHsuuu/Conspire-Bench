@@ -31,8 +31,8 @@ def validate_human_annotation_plan(
     plan: dict[str, Any], *, require_frozen: bool = False
 ) -> list[str]:
     errors: list[str] = []
-    if plan.get("schema_version") not in {"1.0", "1.1", "1.2"}:
-        errors.append("schema_version must be 1.0, 1.1, or 1.2")
+    if plan.get("schema_version") not in {"1.0", "1.1", "1.2", "1.3"}:
+        errors.append("schema_version must be 1.0, 1.1, 1.2, or 1.3")
     if not str(plan.get("plan_version") or "").strip():
         errors.append("plan_version is required")
     if plan.get("status") not in {
@@ -127,6 +127,22 @@ def validate_human_annotation_plan(
         )
     if not str(formal.get("adjudication_policy") or "").strip():
         errors.append("expert adjudication_policy is required")
+    if plan.get("schema_version") == "1.3":
+        sensitivity = formal.get("planning_sensitivity") or {}
+        if sensitivity.get("representative_n") != representative:
+            errors.append("planning sensitivity n must match representative_count")
+        for field in ("alpha", "smallest_planning_association", "approximate_power"):
+            value = sensitivity.get(field)
+            if not isinstance(value, (int, float)) or isinstance(value, bool):
+                errors.append(f"planning_sensitivity.{field} must be numeric")
+        minutes = formal.get("estimated_minutes_per_item_for_planning")
+        hours = formal.get("estimated_formal_hours_per_expert")
+        if (
+            isinstance(total, int)
+            and isinstance(minutes, (int, float))
+            and round(total * minutes / 60, 1) != hours
+        ):
+            errors.append("estimated expert hours do not match item count and minutes")
     challenge_targets = formal.get("challenge_target_counts")
     if challenge_targets is not None:
         expected_challenge_groups = {

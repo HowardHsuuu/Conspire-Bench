@@ -136,6 +136,21 @@ def balanced_assignments(
         raise ValueError(f"ratings_per_item must be between 1 and {len(annotator_ids)}")
     shuffled = list(items)
     random.Random(seed).shuffle(shuffled)
+    if ratings_per_item == len(annotator_ids):
+        output: dict[str, list[dict[str, Any]]] = {}
+        for index, annotator in enumerate(annotator_ids):
+            if len(annotator_ids) == 2 and index == 1:
+                ordered = list(reversed(shuffled))
+            else:
+                offset = index * len(shuffled) // len(annotator_ids)
+                ordered = [*shuffled[offset:], *shuffled[:offset]]
+            output[annotator] = []
+            for item in ordered:
+                assigned = json.loads(json.dumps(item))
+                assigned["annotator_id"] = annotator
+                output[annotator].append(assigned)
+        return output
+
     output: dict[str, list[dict[str, Any]]] = defaultdict(list)
     for item_index, item in enumerate(shuffled):
         for offset in range(ratings_per_item):
@@ -187,8 +202,9 @@ def build_assignment_manifest(
                     "item_type": study,
                     "annotation_item_id": item["annotation_item_id"],
                     "annotator_id": annotator,
+                    "order_position": position,
                 }
-                for item in items
+                for position, item in enumerate(items, start=1)
             )
     assignment_rows.sort(
         key=lambda row: (
@@ -204,7 +220,7 @@ def build_assignment_manifest(
         {str(item.get("rubric_version")) for item in [*expert_items, *student_items]}
     )
     manifest = {
-        "schema_version": "1.1",
+        "schema_version": "1.2",
         "assignment_status": "frozen",
         "release_mode": release_mode,
         "roster_digest": roster_manifest.get("roster_digest")
@@ -230,6 +246,17 @@ def build_assignment_manifest(
         "student_annotator_ids": sorted(student_assignments),
         "expert_ratings_per_item": expert_ratings_per_item if expert_items else 0,
         "student_ratings_per_item": student_ratings_per_item if student_items else 0,
+        "order_design": (
+            "full_overlap_reversed_or_rotated"
+            if (
+                (not expert_items or expert_ratings_per_item == len(expert_assignments))
+                and (
+                    not student_items
+                    or student_ratings_per_item == len(student_assignments)
+                )
+            )
+            else "balanced_rotating_subset"
+        ),
         "assignment_counts_by_type": dict(sorted(type_counts.items())),
         "assignment_counts_by_annotator": {
             annotator: annotator_counts.get(annotator, 0)

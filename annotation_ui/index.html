@@ -4,7 +4,7 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Conspire-Bench Expert Annotation</title>
-  <link rel="stylesheet" href="styles.css?v=20261014a">
+  <link rel="stylesheet" href="styles.css?v=20261014e">
 </head>
 <body>
   <header class="topbar">
@@ -23,6 +23,11 @@
   </header>
 
   <main>
+    <div id="storageWarning" class="storage-warning hidden" role="alert">
+      Browser storage is unavailable. Ratings still work in this tab, but progress will
+      not survive a reload. Download a progress backup before closing the page.
+    </div>
+
     <section id="loadError" class="card setup-card hidden" role="alert">
       <p class="eyebrow">Assignment unavailable</p>
       <h2>These annotation items could not be loaded</h2>
@@ -50,16 +55,50 @@
         <article>
           <span class="boundary-number">03</span>
           <h3>Work in short sessions</h3>
-          <p>Your draft is stored only in this browser. Take a break at least every 12–16 conversations.</p>
+          <p>Your draft autosaves in this browser when storage is available. Download backups and take a break after about six conversations.</p>
         </article>
       </div>
       <div class="privacy-note">
         <strong>Blinding and privacy:</strong> model, frame, automated scores, and expected behavior are hidden. This page has no network dependency.
       </div>
       <div class="welcome-actions">
-        <button id="beginButton" type="button">Begin annotation</button>
+        <button id="beginButton" type="button">Review rubric</button>
         <span id="keyboardHint">While rating: ⌘/Ctrl + S saves, Alt + ←/→ navigates.</span>
       </div>
+    </section>
+
+    <section id="rubricReview" class="card rubric-review-card hidden">
+      <div class="rubric-review-heading">
+        <div>
+          <p class="eyebrow">One-time content-validity review</p>
+          <h2>Is this rubric fit for expert use?</h2>
+          <p class="lede">Before rating conversations, assess whether each reported outcome is clear, relevant, distinct, and observable from the transcript. This takes about 8–12 minutes and is completed only once.</p>
+        </div>
+        <span class="step-chip">Step 1 of 2</span>
+      </div>
+      <div class="privacy-note">
+        Rate the measurement construct—not any particular model response. Scores of 4–5 indicate adequate content validity; comments are optional unless you recommend revision or removal.
+      </div>
+      <form id="rubricReviewForm" novalidate>
+        <div id="rubricReviewFields"></div>
+        <details class="optional-feedback">
+          <summary>Optional global comments</summary>
+          <div class="optional-feedback-grid">
+            <label>Missing constructs<textarea name="missing_constructs"></textarea></label>
+            <label>Redundant constructs<textarea name="redundant_constructs"></textarea></label>
+            <label>Difficult boundary cases<textarea name="difficult_boundary_cases"></textarea></label>
+            <label>Clinically inappropriate assumptions<textarea name="clinically_inappropriate_assumptions"></textarea></label>
+            <label>Risk of overclaiming clinical or deployment safety<textarea name="risk_of_overclaiming_deployment_or_clinical_safety"></textarea></label>
+            <label>Recommended scope wording<textarea name="recommended_scope_statement"></textarea></label>
+            <label>Other comments<textarea name="overall_comments"></textarea></label>
+          </div>
+        </details>
+        <div id="rubricReviewError" class="message error" role="alert" tabindex="-1"></div>
+        <div class="rubric-review-actions">
+          <button id="backToWelcome" type="button" class="secondary">Back</button>
+          <button type="submit">Save review &amp; start conversations</button>
+        </div>
+      </form>
     </section>
 
     <section id="workspace" class="workspace hidden">
@@ -97,7 +136,7 @@
                 <p class="eyebrow">Independent rating</p>
                 <h2>Score this conversation</h2>
               </div>
-              <span class="required-note">All visible fields required unless noted</span>
+              <span class="required-note">Required fields adapt to the transcript</span>
             </div>
 
             <details class="rubric-guide">
@@ -131,14 +170,14 @@
           </div>
           <div class="export-actions">
             <button id="backupButton" type="button" class="secondary" disabled>Download progress backup</button>
-            <button id="exportButton" type="button" disabled>Download final JSONL</button>
+            <button id="exportButton" type="button" disabled>Download final submission</button>
           </div>
         </section>
       </article>
     </section>
   </main>
 
-  <script src="demo_assignment.js?v=20261014a"></script>
-  <script src="app.js?v=20261014a"></script>
+  <script src="demo_assignment.js?v=20261014e"></script>
+  <script src="app.js?v=20261014e"></script>
 </body>
 </html>

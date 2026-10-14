@@ -19,14 +19,16 @@ Formal annotation starts only after accepted scenario QA and target generation a
 `configs/human_annotation_plan_v3.json` is the authoritative pre-outcome plan. The current initial-validation design is:
 
 - 16 expert calibration conversations, independently rated by every eligible expert;
-- 96 formal expert conversations: 72 deterministic, outcome-blind representative items balanced across target model, frame, scenario type, and topic category, plus 24 non-overlapping measurement-challenge items;
-- all eligible experts independently rate every formal conversation, for 192 assignments with two experts or 288 with three experts and complete 96-item overlap for every expert pair;
-- the diagnostic challenge stratum targets eight harmful-elaboration candidates, eight redirection-applicability splits, and eight high-disagreement cases spread over the other rubric axes while balancing frames, structures, and target families;
+- 60 formal expert conversations: 45 deterministic, outcome-blind representative items balanced across target model, frame, scenario type, and topic category, plus 15 non-overlapping measurement-challenge items;
+- all eligible experts independently rate every formal conversation, for 120 assignments with two experts or 180 with three experts and complete 60-item overlap for every expert pair;
+- the diagnostic challenge stratum targets five harmful-elaboration candidates, five redirection-applicability splits, and five high-disagreement cases spread over the other rubric axes while balancing frames, structures, and target families;
 - no student assignments in the primary revision.
 
 This is a deliberately bounded initial content-validity/agreement study, not a powered clinical-effectiveness study. Representative and measurement-challenge expert results must be reported separately. Every available expert first rates the same items independently. If only two experts are available, a third qualified expert may adjudicate unresolved items only after the independent reliability data are locked; adjudication must not replace the original ratings in agreement estimates. Human-versus-judge results are also reported per expert so that unresolved consensus items do not disappear without an explicit missingness count.
 
-The 96-item expert sample is a feasibility/coverage compromise for a two-to-three-person clinical/domain panel. The 72-item representative stratum has a worst-case Wilson 95% half-width of about 11.3 percentage points for a simple agreement proportion, compared with about 12.9 points under the previous 54-item representative design. The actual analysis uses item-bootstrap intervals, and the 24-item challenge stratum remains explicitly descriptive. At the planning value of 3.5 minutes per conversation, formal rating takes about 5.6 hours per expert, excluding breaks and calibration. If the timed calibration median exceeds 4.5 minutes, feasibility must be reconsidered before the plan is frozen and before any formal outcomes are inspected. The design supports an initial validation claim, not definitive psychometric, clinical, per-model, or downstream-outcome validation.
+The 60-item expert sample is a feasibility/coverage compromise for a two-to-three-person clinical/domain panel. It is exactly balanced over the five frames (12 each) and three interaction structures (20 each), covers all 24 topic categories, and gives every expert pair complete overlap. The 45-item representative stratum has a worst-case Wilson 95% half-width of about 14.0 percentage points for a simple agreement proportion. As a planning sensitivity check rather than a pass/fail hypothesis test, the Fisher-z approximation gives about 78.4% two-sided power at alpha .05 for an association of 0.40 versus zero. The actual analysis uses item-bootstrap intervals, and the 15-item challenge stratum remains explicitly descriptive.
+
+The deterministic sample contains 103,638 transcript words. At 250 words per minute, reading alone is about 6.9 hours per expert. The honest planning value is therefore 8 minutes per conversation, not the earlier 3.5-minute assumption: formal rating is about 8 hours and the 16-item calibration plus formal set is about 10.1 hours per expert. Plan ten sessions of no more than six items, compensate experts for the full workload, and retain breaks and withdrawal rights. If the timed calibration median exceeds 10 minutes, feasibility must be reconsidered before the plan is frozen and before any formal outcomes are inspected. The design supports an initial validation claim, not definitive psychometric, clinical, per-model, or downstream-outcome validation.
 
 Time the expert calibration and annotation UI before the final freeze. Counts may change only for documented content-validity, feasibility, roster, ethics, compensation, or annotator-welfare reasons, before formal outcomes are unblinded or formal ratings collected. Increment `plan_version` if the design changes.
 
@@ -66,7 +68,7 @@ After the timed calibration/UI pilot, freeze the workload plan. Record `No count
 python3 analysis/freeze_human_annotation_plan.py \
   --approved-by pi_01 \
   --eligible-expert-count 3 \
-  --expert-minutes-median 3.5 \
+  --expert-minutes-median 8.0 \
   --change-summary "No count changes after timed pilot." \
   --output configs/human_annotation_plan_v3.frozen.json
 python3 analysis/validate_human_annotation_plan.py \
@@ -135,8 +137,9 @@ The importer uses the private randomization key to decode A/B into `neutral` ver
 - Randomization seed, source digest, rubric version, and readiness result are recorded in `manifest.json`.
 - The frozen private key also carries the rubric version. The importer rejects returned rows with a missing or different version, so pre-calibration and post-calibration ratings cannot be silently pooled.
 - The importer joins returned annotations to the private key and writes another private file; do not upload it to the annotation interface.
-- `annotation_ui/index.html` renders the public assignment attached to the page, retains progress locally, and exports returned JSONL in the importer's schema. Annotators do not select or upload assignment files. The page has no network dependencies and must never receive the private key.
-- The expert interface shows the transcript beside the rubric, groups the seven reported outcomes separately from trajectory diagnostics, conditionally reveals harmful-elaboration subtypes, and supports local draft recovery, progress backups, and an all-items-complete final export. “Cannot determine” pauses other fields and requires an observable-evidence rationale.
+- `annotation_ui/index.html` renders the public assignment attached to the page, retains progress locally, and exports one final JSON submission containing the one-time rubric content-validity review plus conversation annotations. Annotators do not select or upload assignment files. The page has no network dependencies and must never receive the private key.
+- The expert interface shows the transcript beside the rubric, groups the seven reported outcomes separately from timing, across-turn course, and risk/usability checks, and requires only applicable fields. Harmful-elaboration subtypes and first-amplification turn are conditional; across-turn fields are automatically not applicable for one-assistant-turn transcripts. “Cannot determine” pauses other fields and requires an observable-evidence rationale.
+- The same final JSON can be supplied to `import_rubric_feedback.py` and `import_annotations.py`, so the expert returns one file rather than maintaining parallel forms.
 
 Open `annotation_ui/index.html` in a current browser. If the browser restricts
 local-file APIs, run `python3 -m http.server 8000` from the repository root and
@@ -237,7 +240,8 @@ model/frame labels and has no network dependency:
 python3 analysis/build_annotation_web_bundle.py \
   annotation/assigned/expert/expert_01.jsonl \
   --out-dir annotation/web/expert_01 \
-  --title "Conspire-Bench expert annotation"
+  --title "Conspire-Bench expert annotation" \
+  --minutes-per-item 8.0
 ```
 
 Import one or more returned files and calculate agreement:

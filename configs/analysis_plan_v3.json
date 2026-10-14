@@ -172,7 +172,7 @@
     "Completed: run formal clustered full-matrix statistics, judge sensitivity, and family-affinity diagnostics.",
     "Completed: run the 2,448-response, 9,792-judgment paraphrase robustness subset and formal analysis.",
     "Pending human gate: independent 51-motif scenario QA plus expert rubric content-validity and calibration.",
-    "Pending human evidence: blinded expert ratings of the prespecified 96-conversation validation sample after timed calibration and workload freeze.",
+    "Pending human evidence: blinded expert ratings of the prespecified 60-conversation validation sample after timed calibration and workload freeze.",
     "Conditional only: rerun judges over cached responses if expert calibration changes rubric definitions."
   ],
   "human_validation": {

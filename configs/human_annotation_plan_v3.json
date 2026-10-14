@@ -1,6 +1,6 @@
 {
-  "schema_version": "1.2",
-  "plan_version": "3.1",
+  "schema_version": "1.3",
+  "plan_version": "3.3",
   "status": "draft_to_freeze_after_timed_calibration",
   "rubric_version": "2.0",
   "scope": "Expert content-validity, inter-rater, and human-versus-judge validation for the frozen Conspire-Bench V3 response pool. This is not a powered clinical-effectiveness study, a user-preference study, or deployment-safety certification.",
@@ -12,7 +12,7 @@
     "student_comparison": "Not included in the revision study because lay paired preference does not validate the expert rubric or automated judges and cannot establish frame prevalence or downstream user impact."
   },
   "sample_size_rationale": {
-    "expert": "Ninety-six conversations combine 72 outcome-blind, coverage-balanced representative items with 24 non-overlapping measurement-challenge items. The representative stratum improves the worst-case Wilson 95% half-width for a simple agreement proportion from about 12.9 percentage points at n=54 to 11.3 points at n=72. The challenge stratum deliberately enriches rare harmful-elaboration candidates, redirection-applicability splits, and high disagreement across the remaining rubric axes; it is diagnostic and is never used as a prevalence estimate. Every eligible expert rates every item, yielding 192 assignments with two experts or 288 with three and complete 96-item overlap for every expert pair.",
+    "expert": "Sixty conversations combine 45 outcome-blind, coverage-balanced representative items with 15 non-overlapping measurement-challenge items. The deterministic sample covers all 24 topic categories and is exactly balanced over the five frames (12 each) and three interaction structures (20 each); the representative stratum alone has nine items per frame and 15 per structure. Its worst-case Wilson 95% half-width for a simple agreement proportion is about 14.0 percentage points at n=45. A Fisher-z planning approximation gives about 78.4% two-sided power at alpha .05 for an association of 0.40 versus zero in the representative stratum; this is a sensitivity description, not a universal pass/fail test. The challenge stratum deliberately enriches five rare harmful-elaboration candidates, five redirection-applicability splits, and five high-disagreement cases across the remaining rubric axes; it is diagnostic and is never used as a prevalence estimate. Every eligible expert rates every item, yielding 120 assignments with two experts or 180 with three and complete 60-item overlap for every expert pair.",
     "power_boundary": "Counts support bounded descriptive validation of rubric use and automated judges. They are not powered to estimate clinical outcomes, user persuasion, frame prevalence, or small frame effects from human scores. Formal frame-effect inference remains based on the frozen full automated benchmark and is interpreted only to the extent supported by human-judge validity.",
     "student_decision": "A student paired-frame study is omitted from the main revision because it would measure comparative lay interpretation or preference rather than the reviewer-requested validity of expert constructs and LLM judges."
   },
@@ -28,15 +28,29 @@
     "calibration_item_count": 16,
     "calibration_ratings_per_item": "all_eligible_experts",
     "formal_sample": {
-      "representative_count": 72,
-      "measurement_challenge_enriched_count": 24,
-      "total_item_count": 96,
+      "representative_count": 45,
+      "measurement_challenge_enriched_count": 15,
+      "total_item_count": 60,
       "ratings_per_item": "all_eligible_experts",
-      "planned_assignment_count_min": 192,
-      "planned_assignment_count_max": 288,
-      "estimated_minutes_per_item_for_planning": 3.5,
-      "estimated_formal_hours_per_expert": 5.6,
-      "timed_calibration_reconsideration_threshold_minutes_per_item": 4.5,
+      "planned_assignment_count_min": 120,
+      "planned_assignment_count_max": 180,
+      "estimated_minutes_per_item_for_planning": 8.0,
+      "estimated_formal_hours_per_expert": 8.0,
+      "estimated_calibration_plus_formal_hours_per_expert": 10.1,
+      "deterministic_sample_transcript_word_count": 103638,
+      "planning_reading_rate_words_per_minute": 250,
+      "estimated_reading_only_hours_per_expert": 6.9,
+      "recommended_max_items_per_session": 6,
+      "recommended_session_count": 10,
+      "timed_calibration_reconsideration_threshold_minutes_per_item": 10.0,
+      "planning_sensitivity": {
+        "method": "two-sided Fisher-z approximation for a correlation against zero",
+        "representative_n": 45,
+        "alpha": 0.05,
+        "smallest_planning_association": 0.4,
+        "approximate_power": 0.784,
+        "interpretation": "Feasibility and precision check only; inference is dimension-specific with confidence intervals and no post-hoc universal pass threshold."
+      },
       "challenge_axes": [
         "belief_amplification",
         "epistemic_grounding",
@@ -47,9 +61,9 @@
         "response_appropriateness"
       ],
       "challenge_target_counts": {
-        "harmful_elaboration_candidate": 8,
-        "redirection_applicability_split": 8,
-        "other_rubric_disagreement": 8
+        "harmful_elaboration_candidate": 5,
+        "redirection_applicability_split": 5,
+        "other_rubric_disagreement": 5
       },
       "adjudication_policy": "Every available expert first rates all items independently. If only two experts are available, a third qualified expert may later adjudicate unresolved binary ties and ordinal disagreements only after the independent reliability data are locked. Adjudication is reported separately and never replaces original ratings in agreement estimates. Human-versus-judge analyses also report each expert separately so unresolved consensus items are not silently discarded."
     }

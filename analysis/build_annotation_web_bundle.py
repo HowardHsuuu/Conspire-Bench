@@ -53,7 +53,7 @@ def build_web_bundle(
     output_dir: Path,
     *,
     title: str = "Expert conversation annotation",
-    minutes_per_item: float = 3.5,
+    minutes_per_item: float = 8.0,
 ) -> list[Path]:
     if minutes_per_item <= 0:
         raise ValueError("minutes_per_item must be positive")
@@ -74,7 +74,7 @@ def build_web_bundle(
     output_dir.mkdir(parents=True, exist_ok=True)
     index_text = (source_dir / "index.html").read_text(encoding="utf-8")
     index_text = index_text.replace(
-        "demo_assignment.js?v=20261014a",
+        "demo_assignment.js?v=20261014e",
         f"assignment.js?v={public_digest[:12]}",
     )
     if "demo_assignment.js" in index_text:
@@ -84,7 +84,7 @@ def build_web_bundle(
     index_path = output_dir / "index.html"
     index_path.write_text(index_text, encoding="utf-8")
     written.append(index_path)
-    for name in ("app.js", "styles.css"):
+    for name in ("app.js", "styles.css", "vercel.json", "robots.txt"):
         destination = output_dir / name
         shutil.copyfile(source_dir / name, destination)
         written.append(destination)
@@ -103,6 +103,9 @@ def build_web_bundle(
         "public_item_digest": public_digest,
         "contains_private_key": False,
         "network_dependencies": False,
+        "annotation_schema_version": rows[0].get("annotation_schema_version"),
+        "rubric_content_validity_included": rows[0]["item_type"] == "expert_conversation",
+        "submission_format": "single_json_with_rubric_feedback_and_annotations",
         "files": [path.name for path in written],
     }
     manifest_path = output_dir / "bundle_manifest.json"
@@ -118,7 +121,7 @@ def main() -> int:
     parser.add_argument("assignment", type=Path)
     parser.add_argument("--out-dir", type=Path, required=True)
     parser.add_argument("--title", default="Expert conversation annotation")
-    parser.add_argument("--minutes-per-item", type=float, default=3.5)
+    parser.add_argument("--minutes-per-item", type=float, default=8.0)
     args = parser.parse_args()
     if args.minutes_per_item <= 0:
         parser.error("--minutes-per-item must be positive")

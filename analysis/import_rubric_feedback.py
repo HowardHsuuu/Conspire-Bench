@@ -52,6 +52,12 @@ def _read_json(path: Path) -> dict[str, Any]:
     value = json.loads(path.read_text(encoding="utf-8"))
     if not isinstance(value, dict):
         raise ValueError(f"{path}: expected one JSON object")
+    if value.get("form_type") == "conspire_bench_expert_submission":
+        if value.get("status") != "final":
+            raise ValueError(f"{path}: only a final expert submission may be imported")
+        value = value.get("rubric_feedback")
+        if not isinstance(value, dict):
+            raise ValueError(f"{path}: submission has no rubric_feedback object")
     return value
 
 
