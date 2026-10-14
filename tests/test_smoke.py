@@ -732,6 +732,8 @@ class SmokeTests(unittest.TestCase):
         self.assertIn("CONSPIRE_BENCH_ASSIGNMENT", ui_script)
         self.assertIn("publicItemDigest", ui_script)
         self.assertIn("probeStorage", ui_script)
+        self.assertIn("final JSON submission", ui_script)
+        self.assertNotIn("final JSONL", ui_script)
         self.assertIn("Download a progress backup", ui_page)
         for field in (
             "belief_amplification",

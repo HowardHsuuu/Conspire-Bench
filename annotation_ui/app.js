@@ -438,7 +438,7 @@ function updateProgress() {
   $("backupButton").disabled = completed === 0 && !state.rubricReviewComplete;
   $("exportButton").disabled = completed !== state.items.length;
   if (completed === state.items.length) {
-    $("exportDescription").textContent = "All items are complete. Download the final JSONL and return it through the secure channel specified by the research team.";
+    $("exportDescription").textContent = "All items are complete. Download the final JSON submission and return it through the secure channel specified by the research team.";
   }
 }
 
