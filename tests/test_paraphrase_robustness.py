@@ -14,6 +14,7 @@ from scripts.run_vllm_paraphrase_robustness import (
     validate_design,
     validate_final_panel,
     validate_generation_rows,
+    validate_seed_bundle,
 )
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -45,6 +46,21 @@ class ParaphraseRobustnessTests(unittest.TestCase):
             if scenario["id"] in plan["scenario_ids"]
         }
         self.assertEqual(len(categories), 12)
+
+    def test_full_design_is_a_complete_51_motif_census(self) -> None:
+        design = load("configs/paraphrase_robustness_full_v1.json")
+        plan = validate_design(design, self.config, self.dataset, self.registry)
+        self.assertTrue(design["selection"]["outcome_blind"])
+        self.assertEqual(design["selection"]["outcomes_used_for_selection"], [])
+        self.assertEqual(plan["motifs"], 51)
+        self.assertEqual(plan["scenarios"], 153)
+        self.assertEqual(plan["context_variants"], 17)
+        self.assertEqual(plan["responses"], 10404)
+        self.assertEqual(plan["successful_judgments"], 41616)
+        self.assertEqual(
+            set(plan["scenario_ids"]),
+            {scenario["id"] for scenario in self.dataset["scenarios"]},
+        )
 
     def test_design_rejects_context_drift(self) -> None:
         changed = deepcopy(self.design)
@@ -121,6 +137,65 @@ class ParaphraseRobustnessTests(unittest.TestCase):
         with mock.patch("scripts.run_vllm_paraphrase_robustness.subprocess.run") as run:
             run.return_value.stdout = "[N/A], [N/A], [N/A]\n"
             ensure_idle_gpu()
+
+    def test_verified_subset_can_seed_the_full_design(self) -> None:
+        subset_plan = validate_design(
+            self.design, self.config, self.dataset, self.registry
+        )
+        full_design = load("configs/paraphrase_robustness_full_v1.json")
+        full_plan = validate_design(
+            full_design, self.config, self.dataset, self.registry
+        )
+        rows = []
+        for model in self.design["target_models"]:
+            for scenario in subset_plan["scenario_ids"]:
+                for variant in subset_plan["variant_ids"]:
+                    identity = f"{model}|{scenario}|{variant}"
+                    rows.append(
+                        {
+                            "response_id": f"response:{identity}",
+                            "condition_id": f"condition:{identity}",
+                            "model_name": model,
+                            "scenario_id": scenario,
+                            "prompt_variant_id": variant,
+                            "generation_seed": 20261012,
+                            "replicate_id": 0,
+                            "generation_complete": True,
+                            "error": None,
+                            "conversation_log": [
+                                {"role": "assistant", "content": "response"}
+                            ],
+                            "judge_results": [
+                                {
+                                    "judge_name": name,
+                                    "judge_prompt_variant": FORMAL_PROMPT_VARIANT,
+                                    "error": None,
+                                    "scores": {"belief_amplification": 1},
+                                }
+                                for name in self.design["judge_models"]
+                            ],
+                        }
+                    )
+        from hashlib import sha256
+        from tempfile import TemporaryDirectory
+
+        with TemporaryDirectory() as temporary_directory:
+            path = Path(temporary_directory) / "seed.json"
+            path.write_text(json.dumps({"detailed_results": rows}), encoding="utf-8")
+            digest = sha256(path.read_bytes()).hexdigest()
+            report = validate_seed_bundle(
+                path,
+                expected_sha256=digest,
+                plan=full_plan,
+                config=self.config,
+                dataset=self.dataset,
+                seed=20261012,
+            )
+        self.assertEqual(report["seed_motif_count"], 12)
+        self.assertEqual(report["seed_row_count"], 2448)
+        self.assertEqual(report["seed_successful_judgments"], 9792)
+        self.assertEqual(report["remaining_generation_rows"], 7956)
+        self.assertEqual(report["remaining_successful_judgments"], 31824)
 
 
 if __name__ == "__main__":

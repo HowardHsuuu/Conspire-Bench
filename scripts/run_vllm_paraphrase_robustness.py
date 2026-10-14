@@ -12,6 +12,7 @@ import argparse
 import hashlib
 import json
 import os
+import re
 import shutil
 import subprocess
 import sys
@@ -147,6 +148,15 @@ def validate_design(
     return {**computed, "scenario_ids": scenarios, "variant_ids": variants}
 
 
+def design_output_prefix(design: dict[str, Any]) -> str:
+    prefix = str(design.get("output_prefix") or "paraphrase_v1")
+    if not re.fullmatch(r"[a-z0-9][a-z0-9_]*", prefix):
+        raise ValueError(
+            "design output_prefix must contain lowercase letters, digits, and underscores"
+        )
+    return prefix
+
+
 def validate_generation_rows(
     rows: list[dict[str, Any]],
     *,
@@ -245,6 +255,80 @@ def validate_final_panel(
     }
 
 
+def validate_seed_bundle(
+    path: Path,
+    *,
+    expected_sha256: str,
+    plan: dict[str, Any],
+    config: dict[str, Any],
+    dataset: dict[str, Any],
+    seed: int,
+) -> dict[str, Any]:
+    actual_sha256 = sha256_file(path)
+    if actual_sha256 != expected_sha256:
+        raise ValueError(
+            f"Seed SHA-256 mismatch: expected {expected_sha256}, found {actual_sha256}"
+        )
+    rows = bundle_rows(path)
+    seed_scenarios = {str(row.get("scenario_id") or "") for row in rows}
+    if "" in seed_scenarios or not seed_scenarios:
+        raise ValueError("seed bundle has a missing or empty scenario ID")
+    full_scenarios = set(plan["scenario_ids"])
+    if not seed_scenarios < full_scenarios:
+        raise ValueError(
+            "seed scenarios must be a proper subset of the expanded design"
+        )
+
+    scenarios_by_id = {
+        str(scenario["id"]): scenario for scenario in dataset.get("scenarios") or []
+    }
+    seed_motifs = {
+        str(scenarios_by_id[scenario_id].get("motif_id"))
+        for scenario_id in seed_scenarios
+    }
+    structures_by_motif: dict[str, set[str]] = {}
+    for scenario_id in seed_scenarios:
+        scenario = scenarios_by_id[scenario_id]
+        structures_by_motif.setdefault(str(scenario.get("motif_id")), set()).add(
+            str(scenario.get("type"))
+        )
+    required_structures = {
+        "multi_turn_progression",
+        "single_turn_complete_logic",
+        "complete_logic_then_resistance",
+    }
+    if any(
+        structures != required_structures for structures in structures_by_motif.values()
+    ):
+        raise ValueError(
+            "seed bundle must contain all three structures for every motif"
+        )
+
+    generation = validate_generation_rows(
+        rows,
+        model_names=set(expected_model_names(config)),
+        scenario_ids=seed_scenarios,
+        variant_ids=set(plan["variant_ids"]),
+        seed=seed,
+    )
+    judgments = validate_final_panel(
+        rows,
+        config["judges"],
+        prompt_variant=FORMAL_PROMPT_VARIANT,
+    )
+    return {
+        "seed_sha256": actual_sha256,
+        "seed_row_count": len(rows),
+        "seed_scenario_count": len(seed_scenarios),
+        "seed_motif_count": len(seed_motifs),
+        "seed_successful_judgments": judgments["successful_judgments"],
+        "seed_rows_per_model": generation["rows_per_model"],
+        "remaining_generation_rows": int(plan["responses"]) - len(rows),
+        "remaining_successful_judgments": int(plan["successful_judgments"])
+        - judgments["successful_judgments"],
+    }
+
+
 def latest_candidate(filename: str, *, include_checkpoints: bool) -> Path | None:
     names = {filename}
     if include_checkpoints:
@@ -263,7 +347,12 @@ def generation_parallelism(role: dict[str, Any], requested: int) -> int:
 
 
 def compatible_generation_config(
-    base: dict[str, Any], role: dict[str, Any], *, port: int, parallel: int
+    base: dict[str, Any],
+    role: dict[str, Any],
+    *,
+    port: int,
+    parallel: int,
+    stage_prefix: str,
 ) -> dict[str, Any]:
     config = deepcopy(base)
     compatible = deepcopy(role)
@@ -285,7 +374,7 @@ def compatible_generation_config(
         }
     )
     config.setdefault("experiment", {})["stage"] = (
-        f"paraphrase_v1_generation_{slug(model_name(role))}"
+        f"{stage_prefix}_generation_{slug(model_name(role))}"
     )
     return config
 
@@ -325,6 +414,8 @@ def generate_one_model(
     vllm: Path,
     port: int,
     requested_parallel: int,
+    output_prefix: str,
+    seed_bundle: Path | None,
 ) -> Path:
     name = model_name(role)
     identifier = slug(name)
@@ -332,9 +423,15 @@ def generate_one_model(
     config_path = output_dir / f"generation_config_{identifier}.json"
     write_json(
         config_path,
-        compatible_generation_config(base, role, port=port, parallel=parallel),
+        compatible_generation_config(
+            base,
+            role,
+            port=port,
+            parallel=parallel,
+            stage_prefix=output_prefix,
+        ),
     )
-    output_name = f"paraphrase_v1_generation_{identifier}.json"
+    output_name = f"{output_prefix}_generation_{identifier}.json"
     expected_model = {name}
     expected_scenarios = set(scenario_ids)
     expected_variants = set(variant_ids)
@@ -355,6 +452,8 @@ def generate_one_model(
             pass
 
     resume = latest_candidate(output_name, include_checkpoints=True)
+    if resume is None:
+        resume = seed_bundle
     server = start_server(
         role,
         vllm=vllm,
@@ -411,6 +510,7 @@ def judge_one_stage(
     port: int,
     parallel: int,
     expected_rows: int,
+    stage_prefix: str = "paraphrase_v1",
 ) -> Path:
     if calibrated_complete(
         output,
@@ -431,7 +531,7 @@ def judge_one_stage(
         prompt_variant=FORMAL_PROMPT_VARIANT,
     )
     stage_config.setdefault("experiment", {})["stage"] = (
-        f"paraphrase_v1_judge_{identifier}"
+        f"{stage_prefix}_judge_{identifier}"
     )
     write_json(generated_config, stage_config)
 
@@ -506,6 +606,18 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument("--port", type=int, default=8000)
     parser.add_argument("--generation-parallel", type=int, default=32)
     parser.add_argument("--judge-parallel", type=int, default=32)
+    parser.add_argument(
+        "--seed-bundle",
+        type=Path,
+        help=(
+            "Previously completed subset whose conversations and matching judge "
+            "results will be reused exactly."
+        ),
+    )
+    parser.add_argument(
+        "--expected-seed-sha256",
+        help="Required SHA-256 guard when --seed-bundle is supplied.",
+    )
     parser.add_argument("--plan-only", action="store_true")
     parser.add_argument("--stop-after-generation", action="store_true")
     return parser
@@ -522,6 +634,7 @@ def main() -> int:
     registry_path = ROOT / str((design.get("contexts") or {}).get("registry"))
     registry = read_json(registry_path)
     plan = validate_design(design, config, dataset, registry)
+    output_prefix = design_output_prefix(design)
     print(
         json.dumps(
             {key: value for key, value in plan.items() if not key.endswith("_ids")},
@@ -534,6 +647,24 @@ def main() -> int:
     print("context variants:")
     for variant in plan["variant_ids"]:
         print(f"  - {variant}")
+    seed_info: dict[str, Any] = {}
+    if bool(args.seed_bundle) != bool(args.expected_seed_sha256):
+        raise ValueError(
+            "--seed-bundle and --expected-seed-sha256 must be supplied together"
+        )
+    seed = int((design.get("generation") or {})["seed"])
+    if args.seed_bundle:
+        if not args.seed_bundle.is_file():
+            raise FileNotFoundError(args.seed_bundle)
+        seed_info = validate_seed_bundle(
+            args.seed_bundle,
+            expected_sha256=str(args.expected_seed_sha256),
+            plan=plan,
+            config=config,
+            dataset=dataset,
+            seed=seed,
+        )
+        print(json.dumps(seed_info, indent=2))
     if args.plan_only:
         print("PLAN ONLY: no model was loaded and no output was written")
         return 0
@@ -550,7 +681,6 @@ def main() -> int:
     ensure_idle_gpu()
     args.output_dir.mkdir(parents=True, exist_ok=True)
 
-    seed = int((design.get("generation") or {})["seed"])
     generated: list[Path] = []
     for role in config["models"]:
         generated.append(
@@ -565,10 +695,12 @@ def main() -> int:
                 vllm=args.vllm,
                 port=args.port,
                 requested_parallel=args.generation_parallel,
+                output_prefix=output_prefix,
+                seed_bundle=args.seed_bundle,
             )
         )
 
-    merged = args.output_dir / "paraphrase_v1_generation_merged.json"
+    merged = args.output_dir / f"{output_prefix}_generation_merged.json"
     if not merged.is_file():
         run_logged(
             [
@@ -593,7 +725,9 @@ def main() -> int:
         variant_ids=set(plan["variant_ids"]),
         seed=seed,
     )
-    generation_completion = args.output_dir / "paraphrase_v1_generation.completed.json"
+    generation_completion = (
+        args.output_dir / f"{output_prefix}_generation.completed.json"
+    )
     write_json(
         generation_completion,
         {
@@ -605,6 +739,7 @@ def main() -> int:
             "context_registry_sha256": sha256_file(registry_path),
             "merged_generation": str(merged),
             "merged_generation_sha256": sha256_file(merged),
+            **seed_info,
         },
     )
     if args.stop_after_generation:
@@ -625,9 +760,10 @@ def main() -> int:
             port=args.port,
             parallel=args.judge_parallel,
             expected_rows=plan["responses"],
+            stage_prefix=output_prefix,
         )
 
-    final = args.output_dir / "paraphrase_v1_four_judges.json"
+    final = args.output_dir / f"{output_prefix}_four_judges.json"
     temporary = final.with_suffix(final.suffix + f".tmp-{os.getpid()}")
     shutil.copyfile(current, temporary)
     temporary.replace(final)
@@ -646,7 +782,7 @@ def main() -> int:
     )
     if final_counts["successful_judgments"] != plan["successful_judgments"]:
         raise RuntimeError("final successful-judgment count differs from frozen plan")
-    completion = args.output_dir / "paraphrase_v1.completed.json"
+    completion = args.output_dir / f"{output_prefix}.completed.json"
     write_json(
         completion,
         {
@@ -662,6 +798,7 @@ def main() -> int:
             "generation_sha256": sha256_file(merged),
             "final": str(final),
             "final_sha256": sha256_file(final),
+            **seed_info,
         },
     )
     print(f"PARAPHRASE ROBUSTNESS COMPLETE: {completion}")
