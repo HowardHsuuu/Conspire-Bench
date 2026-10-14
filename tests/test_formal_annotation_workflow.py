@@ -6,6 +6,7 @@ from pathlib import Path
 
 from analysis.assign_annotations import assign_package, balanced_assignments
 from analysis.build_annotation_web_bundle import build_web_bundle
+from analysis.create_annotation_invites import create_invites
 from analysis.export_annotations import export_annotation_package, select_expert_rows
 from analysis.freeze_annotator_roster import freeze_roster
 from analysis.freeze_human_annotation_plan import freeze_human_plan
@@ -214,7 +215,7 @@ class FormalAnnotationWorkflowTests(unittest.TestCase):
                 title="Expert calibration",
             )
 
-            self.assertEqual(len(written), 12)
+            self.assertEqual(len(written), 14)
             index = (bundle_dir / "index.html").read_text(encoding="utf-8")
             self.assertIn("assignment.js", index)
             self.assertNotIn("demo_assignment.js", index)
@@ -230,6 +231,8 @@ class FormalAnnotationWorkflowTests(unittest.TestCase):
             self.assertNotIn("model_name", constraints_js)
             self.assertTrue((bundle_dir / "api" / "submit.js").exists())
             self.assertTrue((bundle_dir / "api" / "submission_validation.js").exists())
+            self.assertTrue((bundle_dir / "api" / "invite_auth.js").exists())
+            self.assertTrue((bundle_dir / "api" / "invite.js").exists())
             self.assertTrue((bundle_dir / "package.json").exists())
             self.assertTrue((bundle_dir / "package-lock.json").exists())
             manifest = json.loads(
@@ -247,6 +250,71 @@ class FormalAnnotationWorkflowTests(unittest.TestCase):
                 "vercel_storage_dashboard",
             )
             self.assertIn(manifest["public_item_digest"], assignment_js)
+
+    def test_web_bundle_supports_private_multi_expert_invites(self):
+        with tempfile.TemporaryDirectory(dir=ROOT) as tmp:
+            directory = Path(tmp)
+            item = {
+                "annotation_item_id": "EXPERT_0001",
+                "item_type": "expert_conversation",
+                "rubric_version": "2.0",
+                "annotation_schema_version": "2.1",
+                "instructions": "Rate observable behavior only.",
+                "transcript": [
+                    {"role": "user", "content": "Claim"},
+                    {"role": "assistant", "content": "Response"},
+                ],
+                "response_fields": {
+                    "belief_amplification": {
+                        "type": "integer",
+                        "minimum": 1,
+                        "maximum": 5,
+                    }
+                },
+                "annotation": {},
+                "annotator_id": "",
+            }
+            assignment = directory / "expert_items.jsonl"
+            assignment.write_text(json.dumps(item) + "\n", encoding="utf-8")
+            invite_json = directory / "invites.private.json"
+            invite_html = directory / "invites.private.html"
+            private = create_invites(
+                base_url="https://annotation.example",
+                count=3,
+                output_json=invite_json,
+                output_html=invite_html,
+            )
+            bundle_dir = directory / "bundle"
+
+            build_web_bundle(
+                assignment,
+                bundle_dir,
+                invite_manifest_path=invite_json,
+            )
+
+            self.assertEqual(invite_json.stat().st_mode & 0o777, 0o600)
+            self.assertEqual(invite_html.stat().st_mode & 0o777, 0o600)
+            assignment_js = (bundle_dir / "assignment.js").read_text(
+                encoding="utf-8"
+            )
+            constraints_js = (
+                bundle_dir / "api" / "assignment_constraints.js"
+            ).read_text(encoding="utf-8")
+            self.assertIn('"requiresInvite":true', assignment_js)
+            self.assertIn('"annotatorId":""', assignment_js)
+            for invitation in private["invitations"]:
+                self.assertNotIn(invitation["invite_code"], assignment_js)
+                self.assertNotIn(invitation["invite_code"], constraints_js)
+                self.assertIn(invitation["invite_hash"], constraints_js)
+                self.assertIn(invitation["annotator_id"], constraints_js)
+            manifest = json.loads(
+                (bundle_dir / "bundle_manifest.json").read_text(encoding="utf-8")
+            )
+            self.assertEqual(manifest["invitation_mode"], "private_fragment_links")
+            self.assertEqual(
+                manifest["annotator_ids"],
+                ["expert_01", "expert_02", "expert_03"],
+            )
 
     def test_combined_expert_submission_can_feed_both_importers(self):
         with tempfile.TemporaryDirectory(dir=ROOT) as tmp:

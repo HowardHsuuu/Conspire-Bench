@@ -54,6 +54,7 @@ const state = {
   storageAvailable: true,
   assignmentId: "",
   publicItemDigest: "",
+  inviteCode: "",
   demo: false,
   submissionReceipt: null,
   submitting: false,
@@ -178,22 +179,70 @@ function parseJsonl(text) {
   return rows;
 }
 
-function parseAssignment(assignment) {
+function parseAssignment(assignment, baseRows, invitation) {
   if (!assignment || !Array.isArray(assignment.items)) {
     throw new Error("No assignment was attached to this page.");
   }
-  const rows = parseJsonl(JSON.stringify(assignment.items));
-  const assignedIds = [...new Set(rows.map((item) => String(item.annotator_id || "").trim()).filter(Boolean))];
+  const assignedIds = [...new Set(baseRows.map((item) => String(item.annotator_id || "").trim()).filter(Boolean))];
   if (assignedIds.length > 1) throw new Error("This assignment contains items for more than one annotator.");
-  const annotatorId = String(assignment.annotatorId || assignedIds[0] || "").trim();
+  const annotatorId = String(invitation.annotatorId || assignment.annotatorId || assignedIds[0] || "").trim();
   if (!annotatorId) throw new Error("This assignment does not include a pseudonymous annotator ID.");
-  if (assignedIds.length === 1 && assignedIds[0] !== annotatorId) {
+  if (!assignment.requiresInvite && assignedIds.length === 1 && assignedIds[0] !== annotatorId) {
     throw new Error("The assignment ID does not match its annotation items.");
   }
   if (!assignment.demo && !String(assignment.assignmentId || "").trim()) {
     throw new Error("This assignment does not include a submission identifier.");
   }
+  const rowsById = new Map(baseRows.map((row) => [row.annotation_item_id, row]));
+  const itemOrder = invitation.itemOrder || baseRows.map((row) => row.annotation_item_id);
+  if (!Array.isArray(itemOrder)
+      || itemOrder.length !== baseRows.length
+      || new Set(itemOrder).size !== baseRows.length
+      || itemOrder.some((itemId) => !rowsById.has(itemId))) {
+    throw new Error("This invitation does not match the assigned conversations.");
+  }
+  const rows = itemOrder.map((itemId) => ({
+    ...rowsById.get(itemId),
+    annotator_id: annotatorId,
+  }));
   return { rows, annotatorId };
+}
+
+function inviteCodeFromFragment() {
+  const fragment = window.location.hash.startsWith("#")
+    ? window.location.hash.slice(1)
+    : window.location.hash;
+  return String(new URLSearchParams(fragment).get("invite") || "").trim();
+}
+
+async function resolveInvitation(assignment) {
+  if (!assignment.requiresInvite) {
+    return {
+      annotatorId: String(assignment.annotatorId || "").trim(),
+      itemOrder: null,
+      inviteCode: "",
+    };
+  }
+  const inviteCode = inviteCodeFromFragment();
+  if (!inviteCode) {
+    throw new Error("This invitation link is incomplete. Please reopen the private link supplied by the research team.");
+  }
+  const response = await fetch("/api/invite", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ invite_code: inviteCode }),
+    credentials: "same-origin",
+  });
+  const payload = await response.json().catch(() => ({}));
+  if (!response.ok || !payload.annotator_id || !Array.isArray(payload.item_order)) {
+    throw new Error(payload.error || "This invitation could not be verified. Please request a fresh link from the research team.");
+  }
+  return {
+    annotatorId: payload.annotator_id,
+    itemOrder: payload.item_order,
+    inviteCode,
+    assignmentId: payload.assignment_id,
+  };
 }
 
 function transcriptHtml(messages, heading) {
@@ -266,7 +315,7 @@ function expertFieldHtml(field, schema, saved) {
 function sectionHtml(title, description, entries, saved, { collapsible = false, sectionId = "" } = {}) {
   if (!entries.length) return "";
   const fields = entries.map(([field, schema]) => expertFieldHtml(field, schema, saved[field])).join("");
-  const heading = `<div class="section-heading"><h3>${escapeHtml(title)}</h3><p>${escapeHtml(description)}</p></div>`;
+  const heading = `<div class="section-heading"><div><h3>${escapeHtml(title)}</h3><p>${escapeHtml(description)}</p></div><span class="section-progress" aria-live="polite"></span></div>`;
   if (collapsible) {
     return `<details class="field-section secondary-section" ${sectionId ? `data-section="${escapeHtml(sectionId)}"` : ""}><summary>${heading}</summary>${fields}</details>`;
   }
@@ -297,8 +346,8 @@ function renderRubricReview() {
           <p>${escapeHtml(description)}</p>
           ${contentValidityOptions(`${dimension}__${field}`, prior[field])}
         </fieldset>`).join("");
-      return `<details class="rubric-dimension" ${index === 0 ? "open" : ""}>
-        <summary><span>${index + 1}</span><div><strong>${escapeHtml(schema.display_name || dimension)}</strong><small>${escapeHtml(schema.description || "")}</small></div></summary>
+      return `<details class="rubric-dimension" data-dimension="${escapeHtml(dimension)}" ${index === 0 ? "open" : ""}>
+        <summary><span class="dimension-number">${index + 1}</span><div class="dimension-copy"><strong>${escapeHtml(schema.display_name || dimension)}</strong><small>${escapeHtml(schema.description || "")}</small><span class="dimension-state">Not reviewed</span></div></summary>
         <div class="rubric-dimension-body">
           ${schema.coding_note ? `<p class="coding-note"><strong>Boundary:</strong> ${escapeHtml(schema.coding_note)}</p>` : ""}
           <div class="validity-grid">${criteria}</div>
@@ -330,6 +379,30 @@ function renderRubricReview() {
     const control = $("rubricReviewForm").elements.namedItem(field);
     if (control) control.value = saved.global_feedback?.[field] || "";
   }
+  updateRubricReviewProgress();
+}
+
+function updateRubricReviewProgress() {
+  const form = $("rubricReviewForm");
+  if (!form) return;
+  let completed = 0;
+  form.querySelectorAll(".rubric-dimension").forEach((section) => {
+    const dimension = section.dataset.dimension;
+    const criteriaComplete = CONTENT_VALIDITY_FIELDS.every(([field]) => (
+      form.querySelector(`input[name="${CSS.escape(`${dimension}__${field}`)}"]:checked`)
+    ));
+    const recommendation = form.querySelector(`input[name="${CSS.escape(`${dimension}__recommendation`)}"]:checked`)?.value;
+    const note = String(form.elements.namedItem(`${dimension}__notes`)?.value || "").trim();
+    const complete = criteriaComplete
+      && Boolean(recommendation)
+      && (!["revise", "remove"].includes(recommendation) || Boolean(note));
+    section.classList.toggle("review-complete", complete);
+    const status = section.querySelector(".dimension-state");
+    if (status) status.textContent = complete ? "Complete" : "Not complete";
+    if (complete) completed += 1;
+  });
+  $("rubricProgressText").textContent = `${completed} of 7 constructs reviewed`;
+  $("rubricProgressBar").value = completed;
 }
 
 function readRubricReview({ validate = true } = {}) {
@@ -435,6 +508,32 @@ function renderForm(item) {
     }
   });
   updateConditionalControls();
+  updateSectionProgress();
+}
+
+function updateSectionProgress() {
+  $("annotationForm").querySelectorAll("[data-section]").forEach((section) => {
+    const fields = [...section.querySelectorAll("[data-field]")].filter((field) => (
+      !field.classList.contains("hidden")
+      && field.dataset.field !== "rationale"
+    ));
+    const active = fields.filter((field) => (
+      [...field.querySelectorAll("input, textarea")].some((control) => !control.disabled)
+    ));
+    const completed = active.filter((field) => {
+      const controls = [...field.querySelectorAll("input, textarea")].filter((control) => !control.disabled);
+      return controls.some((control) => (
+        ["radio", "checkbox"].includes(control.type)
+          ? control.checked
+          : String(control.value || "").trim() !== ""
+      ));
+    }).length;
+    const label = section.querySelector(".section-progress");
+    if (!label) return;
+    if (!active.length && fields.length) label.textContent = "Paused";
+    else label.textContent = `${completed}/${active.length} answered`;
+    label.classList.toggle("complete", active.length > 0 && completed === active.length);
+  });
 }
 
 function isComplete(itemId) {
@@ -453,6 +552,18 @@ function updateProgress() {
   $("progressText").textContent = `${completed} of ${state.items.length} complete${drafted ? ` · ${drafted} draft` : ""}`;
   $("progressBar").max = state.items.length;
   $("progressBar").value = completed;
+  const sessionNote = $("sessionNote");
+  if (sessionNote) {
+    const remaining = state.items.length - completed;
+    if (remaining === 0) {
+      sessionNote.textContent = "All conversations are complete. Review anything you flagged, then submit once.";
+    } else if (completed > 0 && completed % 6 === 0) {
+      sessionNote.textContent = "Good stopping point—your work is saved. A short break can reduce rating fatigue.";
+    } else {
+      const untilBreak = 6 - (completed % 6);
+      sessionNote.textContent = `${remaining} remaining · suggested break in ${Math.min(untilBreak, remaining)} item${Math.min(untilBreak, remaining) === 1 ? "" : "s"}.`;
+    }
+  }
   const submitButton = $("submitButton");
   const receipt = $("submissionReceipt");
   submitButton.disabled = state.demo || state.submitting || completed !== state.items.length || !state.rubricReviewComplete;
@@ -653,6 +764,7 @@ function captureDraft() {
   persist();
   setSaveStatus("Draft saved locally");
   renderItemList();
+  updateSectionProgress();
   updateProgress();
 }
 
@@ -733,7 +845,10 @@ async function submitFinal() {
     updateProgress();
     const response = await fetch("/api/submit", {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+      headers: {
+        "Content-Type": "application/json",
+        ...(state.inviteCode ? { "X-Conspire-Invite": state.inviteCode } : {}),
+      },
       body: JSON.stringify(submission),
       credentials: "same-origin",
     });
@@ -785,6 +900,7 @@ function captureRubricDraft() {
   state.rubricFeedback = readRubricReview({ validate: false });
   state.rubricReviewComplete = false;
   persist();
+  updateRubricReviewProgress();
 }
 
 function beginFlow() {
@@ -795,18 +911,24 @@ function beginFlow() {
 async function startAssignedWork() {
   try {
     const assignment = window.CONSPIRE_BENCH_ASSIGNMENT;
-    const { rows, annotatorId } = parseAssignment(assignment);
+    if (!assignment || !Array.isArray(assignment.items)) {
+      throw new Error("No assignment was attached to this page.");
+    }
+    const baseRows = parseJsonl(JSON.stringify(assignment.items));
     if (!crypto?.subtle) throw new Error("This browser cannot verify the assignment integrity. Please use a current browser.");
-    const publicItemDigest = await digestText(stableJson(rows));
+    const publicItemDigest = await digestText(stableJson(baseRows));
     if (assignment.publicItemDigest && assignment.publicItemDigest !== publicItemDigest) {
       throw new Error("The assignment integrity check failed. Request a fresh copy from the research team.");
     }
+    const invitation = await resolveInvitation(assignment);
+    const { rows, annotatorId } = parseAssignment(assignment, baseRows, invitation);
     state.items = rows;
     state.itemType = state.items[0].item_type;
     state.annotatorId = annotatorId;
     state.packageKey = publicItemDigest.slice(0, 16);
-    state.assignmentId = String(assignment.assignmentId || "");
+    state.assignmentId = String(invitation.assignmentId || assignment.assignmentId || "");
     state.publicItemDigest = publicItemDigest;
+    state.inviteCode = invitation.inviteCode || "";
     state.demo = assignment.demo === true;
     state.responses = {};
     state.index = 0;

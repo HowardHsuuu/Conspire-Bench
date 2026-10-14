@@ -724,6 +724,8 @@ class SmokeTests(unittest.TestCase):
         ui_page = (ROOT / "annotation_ui" / "index.html").read_text(encoding="utf-8")
 
         self.assertIn('fetch("/api/submit"', ui_script)
+        self.assertIn('fetch("/api/invite"', ui_script)
+        self.assertIn('"X-Conspire-Invite"', ui_script)
         self.assertNotIn("XMLHttpRequest", ui_script)
         self.assertNotIn("http://", ui_page)
         self.assertNotIn("https://", ui_page)

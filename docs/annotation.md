@@ -137,8 +137,8 @@ The importer uses the private randomization key to decode A/B into `neutral` ver
 - Randomization seed, source digest, rubric version, and readiness result are recorded in `manifest.json`.
 - The frozen private key also carries the rubric version. The importer rejects returned rows with a missing or different version, so pre-calibration and post-calibration ratings cannot be silently pooled.
 - The importer joins returned annotations to the private key and writes another private file; do not upload it to the annotation interface.
-- `annotation_ui/index.html` renders the public assignment attached to the page and retains draft progress locally. On a deployed formal assignment, the annotator submits the completed rubric review and conversation annotations directly to the same-origin `/api/submit` endpoint; the annotator does not download, upload, or email JSON files.
-- The submission function validates the frozen assignment ID, public digest, annotator pseudonym, item set/order, schema versions, rubric content-validity review, conditional fields, and exact completion count before writing a timestamped JSON object to a private Vercel Blob store. The private key is never sent to the browser or stored with the public bundle.
+- `annotation_ui/index.html` renders the public assignment attached to the page and retains draft progress locally. Each expert receives a distinct HTTPS invitation whose credential is carried in the URL fragment, so it is not sent in the initial HTTP request or deployment logs. The annotator submits directly to the same-origin `/api/submit` endpoint and never downloads, uploads, or emails JSON files.
+- Only SHA-256 invitation hashes are deployed. The server resolves the pseudonymous annotator and independently randomized item order, then validates the frozen assignment ID, public digest, item set/order, schema versions, rubric content-validity review, conditional fields, and exact completion count before writing a timestamped JSON object to a private Vercel Blob store. Raw invitation codes and the private model/frame key are never committed or copied into the deployed bundle.
 - The research team downloads submissions from the authenticated Vercel Storage dashboard. The Blob store must be private and connected to the deployment so `BLOB_READ_WRITE_TOKEN` is supplied only to the server function.
 - The expert interface shows the transcript beside the rubric, groups the seven reported outcomes separately from timing, across-turn course, and risk/usability checks, and requires only applicable fields. Harmful-elaboration subtypes and first-amplification turn are conditional; across-turn fields are automatically not applicable for one-assistant-turn transcripts. “Cannot determine” pauses other fields and requires an observable-evidence rationale.
 - After the research team downloads a stored submission, the same JSON can be supplied to `import_rubric_feedback.py` and `import_annotations.py`; the expert never has to maintain parallel forms or transfer a file.
@@ -233,17 +233,30 @@ python3 analysis/assign_annotations.py \
 
 Distribute only the corresponding file under `annotation/assigned/expert/`. The assignment seed, exact expected ratings, per-annotator workloads, public item-set digests, roster digest, and assignment digest are recorded in the private manifest. Changing the eligible roster therefore requires a newly frozen assignment manifest rather than silently adding a rater.
 
-To give an annotator a web page with their items already attached, build one
-bundle per pseudonymous assignment. The annotator opens `index.html`; they do
-not select or upload an assignment file. The bundle contains no private key or
-model/frame labels and has no network dependency:
+For a hosted study, first create or reuse a private invitation manifest. The
+command never prints invitation codes, and both outputs are mode `600` under
+the ignored `.local/` directory. If only two experts participate, leave the
+third link unused:
+
+```bash
+python3 analysis/create_annotation_invites.py \
+  --base-url https://your-project.vercel.app \
+  --count 3 \
+  --out-json .local/conspire_bench_expert_invites.private.json \
+  --out-html .local/conspire_bench_expert_invites.private.html
+```
+
+Build one invitation-aware web bundle from the common blinded expert item set.
+The private invitation page is the researcher's link sheet; experts never
+select or upload an assignment file:
 
 ```bash
 python3 analysis/build_annotation_web_bundle.py \
-  annotation/assigned/expert/expert_01.jsonl \
-  --out-dir annotation/web/expert_01 \
+  annotation/formal/expert_items.jsonl \
+  --out-dir annotation/web/expert_review \
   --title "Conspire-Bench expert annotation" \
-  --minutes-per-item 8.0
+  --minutes-per-item 8.0 \
+  --invite-manifest .local/conspire_bench_expert_invites.private.json
 ```
 
 Import one or more returned files and calculate agreement:
